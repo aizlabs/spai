@@ -1,0 +1,76 @@
+# AutoSpanishBlog - Base Configuration
+
+environment: base
+
+# Sources for topic discovery
+sources:
+  max_headlines_per_source: 20
+  fetch_timeout: 10
+
+# Topic discovery settings
+discovery:
+  min_sources: 3          # Minimum sources for topic validation
+  max_topics: 15          # Total topics to discover
+  output_limit: 10        # Topics to return to pipeline
+
+# Topic ranking algorithm
+ranking:
+  source_weight: 3        # Multiplier for source count
+  mention_weight: 2       # Multiplier for mention count
+  mention_cap: 10         # Cap mentions at this value for scoring
+  cultural_bonus: 5       # Bonus for learner-friendly topics
+  avoid_penalty: -10      # Penalty for inappropriate topics
+
+# Entity extraction settings
+entity_extraction:
+  min_entity_length: 2    # Minimum characters for entity
+  entity_types:           # SpaCy entity types to extract
+    - PER                 # Person
+    - LOC                 # Location
+    - ORG                 # Organization
+    - MISC                # Miscellaneous
+
+# Article generation settings
+generation:
+  articles_per_run: 4
+  levels:
+    - A2
+    - B1
+  target_word_count:
+    A2: 200
+    B1: 300
+
+# Quality gate settings
+quality_gate:
+  min_score: 7.5
+  max_attempts: 3
+
+# LLM configuration
+llm:
+  provider: anthropic  # or 'openai'
+  models:
+    generation: claude-sonnet-4-20250514
+    quality_check: claude-haiku-4-20250323
+  temperature: 0.3
+  max_tokens: 4096
+
+# Output settings
+output:
+  format: jekyll
+  path: ./output/_posts
+
+# Logging (overridden per environment)
+logging:
+  level: INFO
+  format: json
+  file: output/logs/app.log
+
+# Metrics
+metrics:
+  enabled: true
+  output: output/metrics/
+
+# Alerts
+alerts:
+  enabled: false
+  email: your@email.com

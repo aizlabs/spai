@@ -1,0 +1,168 @@
+# AutoSpanishBlog - Content Sources Configuration
+# 30+ Spanish language sources for topic discovery
+
+sources:
+  # ========================================
+  # Spanish News (Spain) - 5 sources
+  # ========================================
+
+  - type: rss
+    name: "El País"
+    url: "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada"
+    country: ES
+    category: news
+
+  - type: rss
+    name: "BBC Mundo"
+    url: "https://feeds.bbci.co.uk/mundo/rss.xml"
+    country: INT
+    category: news
+
+  - type: rss
+    name: "El Mundo"
+    url: "https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml"
+    country: ES
+    category: news
+
+  - type: rss
+    name: "20 Minutos"
+    url: "https://www.20minutos.es/rss/"
+    country: ES
+    category: news
+
+  - type: rss
+    name: "El Confidencial"
+    url: "https://rss.elconfidencial.com/espana/"
+    country: ES
+    category: news
+
+  # ========================================
+  # Latin America News - 5 sources
+  # ========================================
+
+  - type: rss
+    name: "Clarín"
+    url: "https://www.clarin.com/rss/lo-ultimo/"
+    country: AR
+    category: news
+
+  - type: rss
+    name: "La Nación"
+    url: "https://www.lanacion.com.ar/arcio/rss/"
+    country: AR
+    category: news
+
+  - type: rss
+    name: "CNN Español"
+    url: "https://cnnespanol.cnn.com/feed/"
+    country: INT
+    category: news
+
+  - type: rss
+    name: "El Tiempo"
+    url: "https://www.eltiempo.com/rss/colombia.xml"
+    country: CO
+    category: news
+
+  - type: rss
+    name: "El Diario"
+    url: "https://www.eldiario.es/rss/"
+    country: ES
+    category: news
+
+  # ========================================
+  # International Spanish - 4 sources
+  # ========================================
+
+  - type: rss
+    name: "Deutsche Welle ES"
+    url: "https://rss.dw.com/xml/rss-sp-all"
+    country: INT
+    category: news
+
+  - type: rss
+    name: "VOA Noticias"
+    url: "https://www.vozdeamerica.com/api/zeuvi$eot"
+    country: INT
+    category: news
+
+  - type: rss
+    name: "Noticias ONU"
+    url: "https://news.un.org/feed/subscribe/es/news/all/rss.xml"
+    country: INT
+    category: news
+
+  - type: rss
+    name: "Euronews Español"
+    url: "https://es.euronews.com/rss"
+    country: INT
+    category: news
+
+  # ========================================
+  # Culture & Lifestyle - 4 sources
+  # ========================================
+
+  - type: rss
+    name: "El País Cultura"
+    url: "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/cultura/portada"
+    country: ES
+    category: culture
+
+  - type: rss
+    name: "National Geographic ES"
+    url: "https://feeds.feedburner.com/NationalGeographicEspana"
+    country: ES
+    category: culture
+
+  - type: rss
+    name: "El Mundo Deportes"
+    url: "https://www.elmundo.es/rss/deportes.xml"
+    country: ES
+    category: sports
+
+  - type: rss
+    name: "Marca"
+    url: "https://e00-marca.uecdn.es/rss/portada.xml"
+    country: ES
+    category: sports
+
+  # ========================================
+  # Tech & Science - 3 sources
+  # ========================================
+
+  - type: rss
+    name: "Xataka"
+    url: "https://www.xataka.com/index.xml"
+    country: ES
+    category: tech
+
+  - type: rss
+    name: "Genbeta"
+    url: "https://www.genbeta.com/index.xml"
+    country: ES
+    category: tech
+
+  - type: rss
+    name: "El País Ciencia"
+    url: "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/ciencia/portada"
+    country: ES
+    category: science
+
+  # ========================================
+  # Wikipedia Trending - 1 source
+  # ========================================
+
+  - type: wikipedia_trending
+    name: "Wikipedia ES Trending"
+    lang: es
+    category: trending
+
+  # ========================================
+  # Google Trends - DISABLED (RSS deprecated)
+  # ========================================
+  # Note: Google Trends RSS feeds are no longer available
+  # Alternative: Use pytrends library for programmatic access
+  # or rely on trending topics from Wikipedia and news sources
+
+# Total: 27 sources
+# RSS: 26, Wikipedia: 1
