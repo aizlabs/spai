@@ -113,7 +113,6 @@ def get_generation_prompt(
     """
     validate_level(level)
     source_context = prepare_source_context(sources)
-    source_names = [s['source'] for s in sources[:3]]
 
     prompt = f"""You are a Spanish language teacher creating educational content for {level} level students.
 
@@ -149,9 +148,7 @@ CRITICAL RULES:
 - Write ORIGINAL content - synthesize ideas but use your own words
 - DO NOT copy phrases from the sources
 - This is educational fair use - transform the information
-
-Attribution line to add at end of content:
-"Fuentes: {', '.join(source_names)}"
+- DO NOT add source attribution - this will be added automatically during publishing
 """
 
     return prompt
