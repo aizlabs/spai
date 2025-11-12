@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Filter articles
       articles.forEach(article => {
         if (level === 'all' || article.dataset.level === level) {
-          article.style.display = 'block';
+          article.style.display = 'flex';
         } else {
           article.style.display = 'none';
         }

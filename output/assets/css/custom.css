@@ -245,7 +245,7 @@
 }
 
 /* Vocabulary Section Styling */
-.page__content h2:contains("Vocabulario") {
+.page__content h2 {
   color: #007bff;
   border-bottom: 2px solid #007bff;
   padding-bottom: 0.5em;
