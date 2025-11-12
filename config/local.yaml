@@ -2,9 +2,14 @@
 
 environment: local
 
-# Faster testing with fewer articles
+# Testing with 1 article only during development
 generation:
-  articles_per_run: 2
+  articles_per_run: 1
+  levels: [A2]  # Only A2 for faster testing
+
+# Lower quality threshold during development
+quality_gate:
+  min_score: 6.0
 
 # Console logging for development
 logging:

@@ -50,10 +50,10 @@ quality_gate:
 
 # LLM configuration
 llm:
-  provider: anthropic  # or 'openai'
+  provider: openai  # or 'anthropic'
   models:
-    generation: claude-sonnet-4-20250514
-    quality_check: claude-haiku-4-20250323
+    generation: gpt-4o
+    quality_check: gpt-4o-mini
   temperature: 0.3
   max_tokens: 4096
 
