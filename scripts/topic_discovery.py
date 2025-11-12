@@ -164,11 +164,11 @@ class TopicDiscoverer:
                         'id': article['title'],
                         'text': article['title'],
                         'url': f"https://{lang}.wikipedia.org/wiki/{article['title']}",
-                        'source': 'Wikipedia ES',
+                        'source': source['name'],  # Use configured source name
                         'published': None,
                         'summary': article.get('extract', '')[:200]
                     })
-            
+
             return headlines
         except Exception as e:
             self.logger.warning(f"Wikipedia trending error: {e}")
