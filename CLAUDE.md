@@ -34,10 +34,12 @@ uv run spai-discover
 spai/
 ├── scripts/              # Python modules
 │   ├── test_discovery.py     # Test topic discovery
+│   ├── test_fetcher.py       # Test content fetcher
 │   ├── topic_discovery.py    # RSS + SpaCy NER
+│   ├── content_fetcher.py    # Trafilatura scraping with parallel fetch
 │   ├── config.py             # Config loading
 │   ├── logger.py             # Logging setup
-│   ├── content_fetcher.py    # Trafilatura scraping
+│   ├── diagnose_sources.py   # RSS diagnostic tool
 │   ├── content_generator.py  # LLM article generation
 │   ├── quality_gate.py       # LLM quality judge
 │   ├── publisher.py          # Jekyll markdown output
@@ -71,9 +73,15 @@ spai/
 - **Useful code examples in `example-code/` directory**
 
 **Configuration:**
-- `config/base.yaml` - Shared settings, discovery & ranking config
-- `config/sources.yaml` - 32 Spanish RSS feeds + Wikipedia + Google Trends
+- `config/base.yaml` - Shared settings for discovery, ranking, and fetching
+- `config/sources.yaml` - 22 Spanish RSS feeds + Wikipedia (100% working)
 - `config/local.yaml` - Dev mode (colored logs, 2 articles/run)
+
+**Components Implemented:**
+- `scripts/topic_discovery.py` - Multi-source topic discovery with SpaCy NER
+- `scripts/content_fetcher.py` - Article fetcher with Trafilatura and parallel processing
+- `scripts/test_discovery.py` - Topic discovery test harness
+- `scripts/test_fetcher.py` - Content fetcher test harness
 
 ---
 
@@ -81,10 +89,10 @@ spai/
 
 ```bash
 # Test topic discovery
-python scripts/test_discovery.py
-
-# Or with uv
 uv run spai-discover
+
+# Test content fetcher
+uv run spai-fetch
 
 # Run full pipeline (when implemented)
 python scripts/main.py
@@ -263,7 +271,16 @@ tail -100 logs/local.log
 - SpaCy NER entity extraction
 - Cross-source validation (3+ sources)
 - Ranking algorithm with cultural bonuses
+- Parallel fetching (~9 seconds)
 - Test passing with 10 topics discovered
 - Fully reproducible environment with uv.lock
 
-**Next:** Content Fetcher component
+✅ **Content Fetcher: COMPLETE**
+- Trafilatura integration for clean article extraction
+- Parallel fetching (8 sources in ~2 seconds)
+- Wikipedia API special handling
+- Word truncation (300 words max per source)
+- Error handling for timeouts, 404s, empty content
+- Test passing with 5 sources per topic (100% success)
+
+**Next:** Content Generator component (LLM synthesis)

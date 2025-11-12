@@ -2,10 +2,13 @@
 
 environment: base
 
-# Sources for topic discovery
+# Sources for topic discovery and content fetching
 sources:
   max_headlines_per_source: 20
   fetch_timeout: 10
+  max_words_per_source: 300   # Truncate articles to this word count
+  min_words_per_source: 100   # Minimum words for valid article
+  max_sources_per_topic: 5    # Maximum sources to fetch per topic
 
 # Topic discovery settings
 discovery:
