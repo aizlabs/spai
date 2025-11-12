@@ -128,35 +128,36 @@ def setup_logger(config: Dict[str, Any], run_id: str) -> logging.Logger:
     logger.setLevel(level)
     logger.handlers.clear()  # Remove any existing handlers
     
+    # Create run_id filter that will be added to handlers
+    run_id_filter = RunIDFilter(run_id)
+
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(level)
-    
+    console_handler.addFilter(run_id_filter)  # Add filter to handler for child loggers
+
     if format_type == 'json':
         console_handler.setFormatter(JSONFormatter())
     else:
         console_handler.setFormatter(ColoredFormatter())
-    
+
     logger.addHandler(console_handler)
-    
+
     # File handler
     log_path = Path(log_file)
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     file_handler = logging.FileHandler(log_path, encoding='utf-8')
     file_handler.setLevel(level)
-    
+    file_handler.addFilter(run_id_filter)  # Add filter to handler for child loggers
+
     if format_type == 'json':
         file_handler.setFormatter(JSONFormatter())
     else:
         # Always use JSON for file in production for easier parsing
         file_handler.setFormatter(JSONFormatter())
-    
-    logger.addHandler(file_handler)
 
-    # Add run_id to all log records using a filter (no global state)
-    run_id_filter = RunIDFilter(run_id)
-    logger.addFilter(run_id_filter)
+    logger.addHandler(file_handler)
 
     return logger
 
