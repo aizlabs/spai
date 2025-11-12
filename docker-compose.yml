@@ -4,6 +4,9 @@ services:
   generator:
     build: .
     container_name: autospanish-generator
+    # Run as host user to avoid permission issues with mounted volumes
+    # Container user is UID 1000 by default, override if needed:
+    # user: "${UID:-1000}:${GID:-1000}"
     volumes:
       - ./output:/app/output
       - ./logs:/app/logs
@@ -15,4 +18,6 @@ services:
       - ENVIRONMENT=${ENVIRONMENT:-local}
       - DRY_RUN=${DRY_RUN:-false}
       - ARTICLES_PER_RUN=${ARTICLES_PER_RUN}
-    command: python scripts/main.py
+    # Default command from Dockerfile (test_discovery.py)
+    # Override in Makefile or command line as needed
+    # command: python scripts/main.py

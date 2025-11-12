@@ -51,9 +51,21 @@ class JSONFormatter(logging.Formatter):
         return json.dumps(log_data, ensure_ascii=False)
 
 
+class RunIDFilter(logging.Filter):
+    """Filter to add run_id to log records without global state"""
+
+    def __init__(self, run_id: str):
+        super().__init__()
+        self.run_id = run_id
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.run_id = self.run_id
+        return True
+
+
 class ColoredFormatter(logging.Formatter):
     """Colored formatter for human-readable local logging"""
-    
+
     # ANSI color codes
     COLORS = {
         'DEBUG': '\033[36m',    # Cyan
@@ -64,18 +76,18 @@ class ColoredFormatter(logging.Formatter):
     }
     RESET = '\033[0m'
     BOLD = '\033[1m'
-    
+
     def format(self, record: logging.LogRecord) -> str:
         # Color the level
         level_color = self.COLORS.get(record.levelname, '')
         colored_level = f"{level_color}{record.levelname:8s}{self.RESET}"
-        
+
         # Format timestamp
         timestamp = datetime.fromtimestamp(record.created).strftime('%H:%M:%S')
-        
+
         # Build message
         msg = record.getMessage()
-        
+
         # Add extra context if present
         extras = []
         if hasattr(record, 'level') and record.level:
@@ -85,11 +97,11 @@ class ColoredFormatter(logging.Formatter):
         if hasattr(record, 'duration_ms'):
             duration_s = record.duration_ms / 1000
             extras.append(f"({duration_s:.1f}s)")
-        
+
         extra_str = ' '.join(extras)
         if extra_str:
             msg = f"{msg} | {extra_str}"
-        
+
         # Combine
         return f"[{timestamp}] {colored_level} {self.BOLD}{record.name:20s}{self.RESET} | {msg}"
 
@@ -116,42 +128,37 @@ def setup_logger(config: Dict[str, Any], run_id: str) -> logging.Logger:
     logger.setLevel(level)
     logger.handlers.clear()  # Remove any existing handlers
     
+    # Create run_id filter that will be added to handlers
+    run_id_filter = RunIDFilter(run_id)
+
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(level)
-    
+    console_handler.addFilter(run_id_filter)  # Add filter to handler for child loggers
+
     if format_type == 'json':
         console_handler.setFormatter(JSONFormatter())
     else:
         console_handler.setFormatter(ColoredFormatter())
-    
+
     logger.addHandler(console_handler)
-    
+
     # File handler
     log_path = Path(log_file)
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     file_handler = logging.FileHandler(log_path, encoding='utf-8')
     file_handler.setLevel(level)
-    
+    file_handler.addFilter(run_id_filter)  # Add filter to handler for child loggers
+
     if format_type == 'json':
         file_handler.setFormatter(JSONFormatter())
     else:
         # Always use JSON for file in production for easier parsing
         file_handler.setFormatter(JSONFormatter())
-    
+
     logger.addHandler(file_handler)
-    
-    # Add run_id to all log records
-    old_factory = logging.getLogRecordFactory()
-    
-    def record_factory(*args, **kwargs):
-        record = old_factory(*args, **kwargs)
-        record.run_id = run_id
-        return record
-    
-    logging.setLogRecordFactory(record_factory)
-    
+
     return logger
 
 

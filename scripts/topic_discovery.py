@@ -15,6 +15,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.parse import quote
 import logging
 import re
 
@@ -26,21 +27,30 @@ class TopicDiscoverer:
         self.config = config
         self.logger = logger.getChild('TopicDiscoverer')
         self.sources = config.get('sources_list', [])
-        
+        self.min_sources = config.get('discovery', {}).get('min_sources', 3)
+
+        # Ranking configuration
+        ranking_config = config.get('ranking', {})
+        self.source_weight = ranking_config.get('source_weight', 3)
+        self.mention_weight = ranking_config.get('mention_weight', 2)
+        self.mention_cap = ranking_config.get('mention_cap', 10)
+        self.cultural_bonus = ranking_config.get('cultural_bonus', 5)
+        self.avoid_penalty = ranking_config.get('avoid_penalty', -10)
+
         # Load SpaCy Spanish model
         try:
             self.nlp = spacy.load("es_core_news_sm")
         except OSError:
             self.logger.error("SpaCy Spanish model not found. Install with: python -m spacy download es_core_news_sm")
             raise
-        
+
         # Learner-friendly topics
         self.friendly_keywords = {
             'cultura', 'arte', 'música', 'deporte', 'fútbol', 'cine', 'festival',
             'comida', 'gastronomía', 'turismo', 'viaje', 'historia', 'tradición',
             'celebración', 'familia', 'educación', 'libro', 'película'
         }
-        
+
         # Topics to avoid
         self.avoid_keywords = {
             'guerra', 'ataque', 'militar', 'bomba', 'terrorismo',
@@ -84,7 +94,9 @@ class TopicDiscoverer:
         entities_by_headline = {}
         for headline in all_headlines:
             entities = self._extract_entities(headline['text'])
-            entities_by_headline[headline['id']] = {
+            # Use composite key to prevent collisions when different sources report same story
+            composite_key = f"{headline['source']}:{headline['id']}"
+            entities_by_headline[composite_key] = {
                 'headline': headline,
                 'entities': entities
             }
@@ -119,10 +131,16 @@ class TopicDiscoverer:
             headlines = []
             
             for entry in feed.entries[:20]:
+                # Skip entries missing required fields
+                title = getattr(entry, 'title', None)
+                link = getattr(entry, 'link', None)
+                if not title or not link:
+                    continue
+
                 headlines.append({
-                    'id': entry.get('id', entry.link),
-                    'text': entry.title,
-                    'url': entry.link,
+                    'id': entry.get('id', link),
+                    'text': title,
+                    'url': link,
                     'source': source['name'],
                     'published': entry.get('published_parsed', None),
                     'summary': entry.get('summary', '')[:200]
@@ -151,15 +169,22 @@ class TopicDiscoverer:
             headlines = []
             if 'mostread' in data and 'articles' in data['mostread']:
                 for article in data['mostread']['articles'][:10]:
+                    # Skip articles missing required fields
+                    title = article.get('title')
+                    if not title:
+                        continue
+
+                    # URL encode the title to handle spaces and special characters
+                    encoded_title = quote(title.replace(' ', '_'), safe='')
                     headlines.append({
-                        'id': article['title'],
-                        'text': article['title'],
-                        'url': f"https://{lang}.wikipedia.org/wiki/{article['title']}",
-                        'source': 'Wikipedia ES',
+                        'id': title,
+                        'text': title,
+                        'url': f"https://{lang}.wikipedia.org/wiki/{encoded_title}",
+                        'source': source['name'],  # Use configured source name
                         'published': None,
                         'summary': article.get('extract', '')[:200]
                     })
-            
+
             return headlines
         except Exception as e:
             self.logger.warning(f"Wikipedia trending error: {e}")
@@ -175,10 +200,16 @@ class TopicDiscoverer:
             headlines = []
             
             for entry in feed.entries[:15]:
+                # Skip entries missing required fields
+                title = getattr(entry, 'title', None)
+                link = getattr(entry, 'link', None)
+                if not title or not link:
+                    continue
+
                 headlines.append({
-                    'id': entry.title,
-                    'text': entry.title,
-                    'url': entry.link,
+                    'id': title,
+                    'text': title,
+                    'url': link,
                     'source': f'Google Trends {geo}',
                     'published': None,
                     'summary': entry.get('description', '')[:200]
@@ -204,27 +235,33 @@ class TopicDiscoverer:
     
     def _cluster_topics(self, entities_by_headline: Dict) -> List[Dict]:
         """Find topics appearing in multiple sources"""
-        entity_to_headlines = defaultdict(list)
+        entity_to_headlines = defaultdict(set)  # Use set to avoid duplicates
         entity_to_sources = defaultdict(set)
-        
+
         for headline_id, data in entities_by_headline.items():
             headline = data['headline']
             entities = data['entities']
-            
-            for entity in entities:
-                normalized = entity.lower()
-                entity_to_headlines[normalized].append(headline)
+
+            # Deduplicate entities within the same headline
+            unique_entities = set(entity.lower() for entity in entities)
+
+            for normalized in unique_entities:
+                # Use headline_id to ensure unique headlines
+                entity_to_headlines[normalized].add(headline_id)
                 entity_to_sources[normalized].add(headline['source'])
-        
-        # Find entities in 3+ sources
+
+        # Find entities in min_sources+ sources
         topics = []
-        for entity, headlines in entity_to_headlines.items():
+        for entity, headline_ids in entity_to_headlines.items():
             sources = entity_to_sources[entity]
-            
-            if len(sources) >= 3:  # Cross-source validation
+
+            if len(sources) >= self.min_sources:  # Cross-source validation
+                # Convert headline_ids back to headline objects
+                headlines = [entities_by_headline[hid]['headline'] for hid in headline_ids]
+
                 topics.append({
                     'title': entity.title(),
-                    'mentions': len(headlines),
+                    'mentions': len(headlines),  # Now accurate count
                     'sources': list(sources),
                     'headlines': headlines,
                     'keywords': self._extract_keywords(headlines)
@@ -248,26 +285,30 @@ class TopicDiscoverer:
         """Rank topics by learnability"""
         for topic in topics:
             score = 0
-            
+
             # Base: more sources = more important
-            score += len(topic['sources']) * 3
-            
+            score += len(topic['sources']) * self.source_weight
+
             # Mentions matter (capped)
-            score += min(topic['mentions'], 10) * 2
-            
-            # Check keywords
-            keywords_lower = [k.lower() for k in topic['keywords']]
-            keywords_text = ' '.join(keywords_lower)
-            
-            # Learner-friendly bonus
-            if any(kw in keywords_text for kw in self.friendly_keywords):
-                score += 5
-            
-            # Avoid penalty
-            if any(kw in keywords_text for kw in self.avoid_keywords):
-                score -= 10
-            
+            score += min(topic['mentions'], self.mention_cap) * self.mention_weight
+
+            # Check keywords (use word boundaries to avoid partial matches)
+            keywords_lower = set(k.lower() for k in topic['keywords'])
+
+            # Split keywords into individual words for matching
+            keyword_words = set()
+            for keyword in keywords_lower:
+                keyword_words.update(keyword.split())
+
+            # Learner-friendly bonus (exact word match, not substring)
+            if any(kw in keyword_words for kw in self.friendly_keywords):
+                score += self.cultural_bonus
+
+            # Avoid penalty (exact word match, not substring)
+            if any(kw in keyword_words for kw in self.avoid_keywords):
+                score += self.avoid_penalty  # avoid_penalty is already negative
+
             topic['score'] = score
-        
+
         # Sort by score
         return sorted(topics, key=lambda t: t['score'], reverse=True)

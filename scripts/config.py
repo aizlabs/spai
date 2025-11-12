@@ -98,20 +98,24 @@ def apply_env_overrides(config: Dict) -> Dict:
 def validate_config(config: Dict):
     """Validate required configuration fields"""
     required_fields = [
-        'sources',
+        'sources',  # Base config section
         'generation',
         'quality_gate',
         'llm'
     ]
-    
+
     for field in required_fields:
         if field not in config:
             raise ValueError(f"Missing required config field: {field}")
-    
+
+    # Validate sources_list is populated (set by load_config)
+    if 'sources_list' not in config or not config['sources_list']:
+        raise ValueError("Missing or empty sources_list - check config/sources.yaml")
+
     # Validate LLM config
     if 'provider' not in config['llm']:
         raise ValueError("Missing llm.provider in config")
-    
+
     if 'models' not in config['llm']:
         raise ValueError("Missing llm.models in config")
 

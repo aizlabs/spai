@@ -174,7 +174,8 @@ def main():
 
     # Test Google Trends
     print("\n")
-    test_google_trends()
+    trends_success = test_google_trends()
+    results['Google Trends'] = trends_success
 
     # Summary
     print(f"\n{'='*60}")

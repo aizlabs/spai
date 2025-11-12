@@ -25,12 +25,18 @@ RUN uv sync --frozen
 COPY scripts/ ./scripts/
 COPY config/ ./config/
 
-# Create output directories
-RUN mkdir -p /app/output/_posts /app/output/logs /app/output/metrics /app/logs
-
 # Run as non-root user
+# Note: Create user before creating directories so they get correct ownership
 RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
+
 USER appuser
 
-CMD ["uv", "run", "python", "scripts/main.py"]
+# Create output directories as appuser
+# These will be overridden by volume mounts in docker-compose, but ensure
+# the container can write to these locations in standalone mode
+RUN mkdir -p /app/output/_posts /app/output/logs /app/output/metrics /app/logs
+
+# Default command runs test discovery
+# Override in docker-compose or command line as needed
+CMD ["python", "scripts/test_discovery.py"]
