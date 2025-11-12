@@ -67,7 +67,8 @@ class ContentGenerator:
         Returns:
             Article dict with title, content, vocabulary, etc.
         """
-        word_count = self.generation_config['target_word_count'][level]
+        # Get word count with fallback for unknown levels
+        word_count = self.generation_config['target_word_count'].get(level, 250)
 
         # Get prompt from centralized prompts module
         prompt = prompts.get_generation_prompt(topic, sources, level, word_count)
@@ -103,7 +104,8 @@ class ContentGenerator:
         Returns:
             New improved article
         """
-        word_count = self.generation_config['target_word_count'][level]
+        # Get word count with fallback for unknown levels
+        word_count = self.generation_config['target_word_count'].get(level, 250)
 
         feedback = {
             'previous_title': previous_attempt['title'],
@@ -203,29 +205,11 @@ class ContentGenerator:
             self.logger.error(f"Failed to parse LLM response as JSON: {e}")
             self.logger.debug(f"Response was: {response[:500]}")
 
-            # Return fallback article
-            return {
-                'title': f"{topic['title']} ({level})",
-                'content': "Error: Could not parse LLM response",
-                'vocabulary': {},
-                'summary': '',
-                'reading_time': 3,
-                'topic': topic,
-                'level': level,
-                'sources': [s['source'] for s in sources]
-            }
+            # Raise exception instead of returning fallback to avoid wasting regeneration attempts
+            raise ValueError(f"LLM returned invalid JSON: {e}")
 
         except ValueError as e:
             self.logger.error(f"Invalid article structure: {e}")
 
-            # Return fallback article
-            return {
-                'title': f"{topic['title']} ({level})",
-                'content': "Error: Invalid article structure",
-                'vocabulary': {},
-                'summary': '',
-                'reading_time': 3,
-                'topic': topic,
-                'level': level,
-                'sources': [s['source'] for s in sources]
-            }
+            # Raise exception instead of returning fallback to avoid wasting regeneration attempts
+            raise ValueError(f"Invalid article structure: {e}")

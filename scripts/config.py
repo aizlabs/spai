@@ -76,26 +76,43 @@ def load_config(environment: str = 'local') -> Dict[str, Any]:
 
 def apply_env_overrides(config: Dict) -> Dict:
     """Override config with environment variables"""
-    
+
     # LLM API keys
-    if os.getenv('ANTHROPIC_API_KEY'):
+    anthropic_key = os.getenv('ANTHROPIC_API_KEY')
+    openai_key = os.getenv('OPENAI_API_KEY')
+
+    if anthropic_key:
         config.setdefault('llm', {})
-        config['llm']['anthropic_api_key'] = os.getenv('ANTHROPIC_API_KEY')
-    
-    if os.getenv('OPENAI_API_KEY'):
+        config['llm']['anthropic_api_key'] = anthropic_key
+
+    if openai_key:
         config.setdefault('llm', {})
-        config['llm']['openai_api_key'] = os.getenv('OPENAI_API_KEY')
-    
+        config['llm']['openai_api_key'] = openai_key
+
+    # Smart provider detection: auto-switch provider based on available API key
+    # if configured provider's key is missing but another provider's key exists
+    configured_provider = config.get('llm', {}).get('provider', 'openai')
+
+    if configured_provider == 'openai' and not config.get('llm', {}).get('openai_api_key'):
+        if config.get('llm', {}).get('anthropic_api_key'):
+            config['llm']['provider'] = 'anthropic'
+            print("⚠️  Switched provider to 'anthropic' (OPENAI_API_KEY not found but ANTHROPIC_API_KEY is set)")
+
+    elif configured_provider == 'anthropic' and not config.get('llm', {}).get('anthropic_api_key'):
+        if config.get('llm', {}).get('openai_api_key'):
+            config['llm']['provider'] = 'openai'
+            print("⚠️  Switched provider to 'openai' (ANTHROPIC_API_KEY not found but OPENAI_API_KEY is set)")
+
     # Alerts
     if os.getenv('ALERT_EMAIL'):
         config.setdefault('alerts', {})
         config['alerts']['email'] = os.getenv('ALERT_EMAIL')
-    
+
     # Override articles per run
     if os.getenv('ARTICLES_PER_RUN'):
         config.setdefault('generation', {})
         config['generation']['articles_per_run'] = int(os.getenv('ARTICLES_PER_RUN'))
-    
+
     return config
 
 
