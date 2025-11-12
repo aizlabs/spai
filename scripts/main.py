@@ -184,6 +184,11 @@ def main():
                     if published:
                         stats['published'] += 1
                         print(f"✅ Published successfully!")
+
+                        # Check if target reached after each publication
+                        if stats['published'] >= target_articles:
+                            print(f"\n✓ Target reached: {target_articles} articles published")
+                            break
                     else:
                         print(f"❌ Publishing failed")
 

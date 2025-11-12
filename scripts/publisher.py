@@ -65,9 +65,11 @@ class Publisher:
         """
         Generate Jekyll filename
 
-        Format: YYYY-MM-DD-title-slug-level.md
+        Format: YYYY-MM-DD-HHMMSS-title-slug-level.md
+        Includes timestamp to prevent collisions when multiple articles
+        with similar titles are generated on the same day.
         """
-        date = datetime.now().strftime("%Y-%m-%d")
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
 
         # Create slug from title
         title = article['title']
@@ -75,7 +77,7 @@ class Publisher:
 
         level = article['level'].lower()
 
-        return f"{date}-{slug}-{level}.md"
+        return f"{timestamp}-{slug}-{level}.md"
 
     def _slugify(self, text: str) -> str:
         """Convert text to URL-safe slug"""
@@ -100,16 +102,36 @@ class Publisher:
 
         return text
 
+    def _escape_yaml_string(self, text: str) -> str:
+        """
+        Escape a string for safe use in YAML double-quoted strings
+
+        Args:
+            text: String to escape
+
+        Returns:
+            Escaped string safe for YAML
+        """
+        # Escape backslashes first
+        text = text.replace('\\', '\\\\')
+        # Escape double quotes
+        text = text.replace('"', '\\"')
+        return text
+
     def _generate_markdown(self, article: Dict) -> str:
         """Generate Jekyll markdown with frontmatter"""
 
+        # Escape title and sources for YAML
+        escaped_title = self._escape_yaml_string(article['title'])
+        escaped_sources = self._escape_yaml_string(', '.join(article.get('sources', [])))
+
         # YAML frontmatter
         frontmatter = f"""---
-title: "{article['title']}"
+title: "{escaped_title}"
 date: {datetime.now().isoformat()}
 level: {article['level']}
 topics: {self._format_topics(article)}
-sources: "{', '.join(article.get('sources', []))}"
+sources: "{escaped_sources}"
 reading_time: {article.get('reading_time', 3)}
 ---
 

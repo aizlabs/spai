@@ -45,6 +45,28 @@ B1 Level Grammar Expectations:
 }
 
 
+def validate_level(level: str) -> None:
+    """
+    Validate that the level exists in both rule dictionaries
+
+    Args:
+        level: CEFR level to validate
+
+    Raises:
+        ValueError: If level is not supported
+    """
+    if level not in LEVEL_GENERATION_RULES:
+        raise ValueError(
+            f"Unsupported level '{level}'. "
+            f"Supported levels: {', '.join(LEVEL_GENERATION_RULES.keys())}"
+        )
+    if level not in LEVEL_EVALUATION_CRITERIA:
+        raise ValueError(
+            f"Level '{level}' missing evaluation criteria. "
+            f"Available criteria for: {', '.join(LEVEL_EVALUATION_CRITERIA.keys())}"
+        )
+
+
 def prepare_source_context(sources: List[Dict]) -> str:
     """
     Prepare source text for prompt
@@ -85,7 +107,11 @@ def get_generation_prompt(
 
     Returns:
         Complete prompt string for LLM
+
+    Raises:
+        ValueError: If level is not supported
     """
+    validate_level(level)
     source_context = prepare_source_context(sources)
     source_names = [s['source'] for s in sources[:3]]
 
@@ -196,7 +222,11 @@ def get_quality_judge_prompt(article: Dict, level: str) -> str:
 
     Returns:
         Complete prompt string for quality judge
+
+    Raises:
+        ValueError: If level is not supported
     """
+    validate_level(level)
     vocab_count = len(article.get('vocabulary', {}))
 
     prompt = f"""You are a Spanish language teaching expert. Evaluate this article for {level} level learners.
