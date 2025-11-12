@@ -51,9 +51,21 @@ class JSONFormatter(logging.Formatter):
         return json.dumps(log_data, ensure_ascii=False)
 
 
+class RunIDFilter(logging.Filter):
+    """Filter to add run_id to log records without global state"""
+
+    def __init__(self, run_id: str):
+        super().__init__()
+        self.run_id = run_id
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.run_id = self.run_id
+        return True
+
+
 class ColoredFormatter(logging.Formatter):
     """Colored formatter for human-readable local logging"""
-    
+
     # ANSI color codes
     COLORS = {
         'DEBUG': '\033[36m',    # Cyan
@@ -64,18 +76,18 @@ class ColoredFormatter(logging.Formatter):
     }
     RESET = '\033[0m'
     BOLD = '\033[1m'
-    
+
     def format(self, record: logging.LogRecord) -> str:
         # Color the level
         level_color = self.COLORS.get(record.levelname, '')
         colored_level = f"{level_color}{record.levelname:8s}{self.RESET}"
-        
+
         # Format timestamp
         timestamp = datetime.fromtimestamp(record.created).strftime('%H:%M:%S')
-        
+
         # Build message
         msg = record.getMessage()
-        
+
         # Add extra context if present
         extras = []
         if hasattr(record, 'level') and record.level:
@@ -85,11 +97,11 @@ class ColoredFormatter(logging.Formatter):
         if hasattr(record, 'duration_ms'):
             duration_s = record.duration_ms / 1000
             extras.append(f"({duration_s:.1f}s)")
-        
+
         extra_str = ' '.join(extras)
         if extra_str:
             msg = f"{msg} | {extra_str}"
-        
+
         # Combine
         return f"[{timestamp}] {colored_level} {self.BOLD}{record.name:20s}{self.RESET} | {msg}"
 
@@ -141,17 +153,11 @@ def setup_logger(config: Dict[str, Any], run_id: str) -> logging.Logger:
         file_handler.setFormatter(JSONFormatter())
     
     logger.addHandler(file_handler)
-    
-    # Add run_id to all log records
-    old_factory = logging.getLogRecordFactory()
-    
-    def record_factory(*args, **kwargs):
-        record = old_factory(*args, **kwargs)
-        record.run_id = run_id
-        return record
-    
-    logging.setLogRecordFactory(record_factory)
-    
+
+    # Add run_id to all log records using a filter (no global state)
+    run_id_filter = RunIDFilter(run_id)
+    logger.addFilter(run_id_filter)
+
     return logger
 
 
