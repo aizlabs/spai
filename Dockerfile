@@ -38,5 +38,5 @@ USER appuser
 RUN mkdir -p /app/output/_posts /app/output/logs /app/output/metrics /app/logs
 
 # Default command runs test discovery
-# Override in docker-compose or command line as needed
-CMD ["python", "scripts/test_discovery.py"]
+# Use uv run to ensure virtual environment is activated
+CMD ["uv", "run", "python", "scripts/test_discovery.py"]
