@@ -127,7 +127,8 @@ jobs:
             Article generation pipeline failed.
 
             Run ID: ${{ github.run_id }}
-            Time: ${{ github.event.head_commit.timestamp }}
+            Workflow: ${{ github.workflow }}
+            Triggered by: ${{ github.event_name }}
             Branch: ${{ github.ref_name }}
 
             Check logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
