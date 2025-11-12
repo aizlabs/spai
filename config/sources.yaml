@@ -80,11 +80,14 @@ sources:
     country: INT
     category: news
 
-  - type: rss
-    name: "VOA Noticias"
-    url: "https://www.vozdeamerica.com/api/zeuvi$eot"
-    country: INT
-    category: news
+  # VOA Noticias - Disabled due to malformed RSS URL
+  # The URL contains $eot which is not a valid RSS endpoint
+  # TODO: Find correct VOA Noticias RSS feed URL
+  # - type: rss
+  #   name: "VOA Noticias"
+  #   url: "https://www.vozdeamerica.com/api/zeuvi$eot"
+  #   country: INT
+  #   category: news
 
   - type: rss
     name: "Noticias ONU"
@@ -164,5 +167,5 @@ sources:
   # Alternative: Use pytrends library for programmatic access
   # or rely on trending topics from Wikipedia and news sources
 
-# Total: 27 sources
-# RSS: 26, Wikipedia: 1
+# Total: 21 active sources
+# RSS: 20 active (1 disabled - VOA Noticias), Wikipedia: 1
