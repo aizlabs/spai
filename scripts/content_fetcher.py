@@ -40,7 +40,8 @@ class ContentFetcher:
         self.logger.info(f"Fetching sources for: {topic['title']}")
 
         # Parallel fetching with ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=8) as executor:
+        executor = ThreadPoolExecutor(max_workers=8)
+        try:
             # Submit all fetch tasks
             future_to_url = {
                 executor.submit(self._fetch_article, url): url
@@ -57,8 +58,11 @@ class ContentFetcher:
                         sources.append(content)
                         self.logger.debug(f"✓ Fetched: {urlparse(url).netloc}")
 
-                        # Stop after getting enough sources
+                        # Stop after getting enough sources - cancel remaining
                         if len(sources) >= self.max_sources:
+                            # Cancel all pending futures
+                            for f in future_to_url:
+                                f.cancel()
                             break
                     elif content:
                         self.logger.debug(f"✗ Too short: {urlparse(url).netloc} ({content.get('word_count', 0)} words)")
@@ -66,6 +70,9 @@ class ContentFetcher:
                 except Exception as e:
                     self.logger.debug(f"✗ Failed: {urlparse(url).netloc} - {e}")
                     continue
+        finally:
+            # Shutdown executor without waiting for cancelled tasks
+            executor.shutdown(wait=False)
 
         # Log summary
         if len(sources) < 3:

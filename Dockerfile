@@ -7,14 +7,19 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         git \
         build-essential \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:$PATH"
 
-# Download SpaCy Spanish model
-RUN python -m spacy download es_core_news_sm
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install Python dependencies using uv
+# This includes the SpaCy model from the direct dependency
+RUN uv sync --frozen
 
 # Copy application code
 COPY scripts/ ./scripts/
@@ -28,4 +33,4 @@ RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 USER appuser
 
-CMD ["python", "scripts/main.py"]
+CMD ["uv", "run", "python", "scripts/main.py"]
