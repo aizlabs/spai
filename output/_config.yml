@@ -95,7 +95,7 @@ plugins:
 # SEO
 lang: es
 locale: "es-ES"
-logo: "/assets/images/logo.png"
+logo: "/assets/images/logo.svg"
 social:
   type: WebSite
   links:
