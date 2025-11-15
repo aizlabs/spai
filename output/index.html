@@ -99,11 +99,12 @@ excerpt: "Learn Spanish with automatically generated articles from real news sou
 {% endif %}
 
 <script>
-// Level filtering
+// Level filtering and clickable cards
 document.addEventListener('DOMContentLoaded', function() {
   const filterBtns = document.querySelectorAll('.filter-btn');
   const articles = document.querySelectorAll('.article-card');
 
+  // Level filtering
   filterBtns.forEach(btn => {
     btn.addEventListener('click', function() {
       // Update active button
@@ -120,6 +121,22 @@ document.addEventListener('DOMContentLoaded', function() {
           article.style.display = 'none';
         }
       });
+    });
+  });
+
+  // Make entire card clickable
+  articles.forEach(card => {
+    card.addEventListener('click', function(e) {
+      // Don't navigate if clicking on a link
+      if (e.target.tagName === 'A' || e.target.closest('a')) {
+        return;
+      }
+
+      // Find the article link
+      const link = card.querySelector('.article-title a, .read-more');
+      if (link) {
+        link.click();
+      }
     });
   });
 });
