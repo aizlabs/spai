@@ -81,9 +81,8 @@ jobs:
           git config user.name "AutoSpanishBot"
           git config user.email "bot@github.com"
 
-          # Add generated articles
+          # Add generated articles (logs are gitignored)
           git add output/_posts/
-          git add output/logs/
 
           # Create commit with timestamp
           TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M UTC")
