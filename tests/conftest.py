@@ -120,8 +120,8 @@ def sample_sources():
 
 
 @pytest.fixture
-def sample_base_article():
-    """Sample base article (native Spanish)"""
+def sample_base_article(sample_topic):
+    """Sample base article (native Spanish) - matches real ArticleSynthesizer output"""
     return {
         'title': 'España logra reducir sus emisiones de CO2 en un 15% este año',
         'content': 'España ha conseguido reducir sus emisiones de dióxido de carbono en un 15% '
@@ -135,7 +135,22 @@ def sample_base_article():
                   'en la lucha contra el cambio climático. Sin embargo, advierten que aún queda mucho '
                   'trabajo por hacer para alcanzar los objetivos establecidos en el Acuerdo de París.',
         'summary': 'España reduce sus emisiones de CO2 un 15% gracias al aumento de energías renovables.',
-        'reading_time': 3
+        'reading_time': 3,
+        # Metadata added by ArticleSynthesizer (these fields are CRITICAL for downstream components)
+        'topic': sample_topic,
+        'sources': ['El País', 'BBC Mundo', 'El Mundo']
+    }
+
+
+@pytest.fixture
+def sample_base_article_minimal():
+    """Minimal base article without optional metadata - tests edge cases"""
+    return {
+        'title': 'Test Article',
+        'content': 'Test content for minimal article.',
+        'summary': 'Test summary.',
+        'reading_time': 2
+        # No 'topic' or 'sources' - simulates edge case
     }
 
 

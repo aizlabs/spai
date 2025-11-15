@@ -351,3 +351,107 @@ class TestLevelAdapterModelSelection:
         # Should use generation model as fallback
         call_kwargs = mock_client.chat.completions.create.call_args.kwargs
         assert call_kwargs['model'] == 'gpt-4o'
+
+
+class TestLevelAdapterEdgeCases:
+    """Test edge cases and missing metadata handling"""
+
+    @patch('scripts.level_adapter.OpenAI')
+    def test_adapt_with_missing_topic_metadata(self, mock_openai, base_config, mock_logger,
+                                                 sample_base_article_minimal, sample_a2_article):
+        """Test adaptation handles missing topic metadata gracefully"""
+        mock_client = MagicMock()
+        mock_openai.return_value = mock_client
+
+        response_article = sample_a2_article.copy()
+        del response_article['base_article']
+
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = json.dumps(response_article)
+        mock_client.chat.completions.create.return_value = mock_response
+
+        adapter = LevelAdapter(base_config, mock_logger)
+        result = adapter.adapt_to_a2(sample_base_article_minimal)
+
+        # Should not crash and should have empty dict for topic
+        assert result['topic'] == {}
+        assert result['sources'] == []
+
+    @patch('scripts.level_adapter.OpenAI')
+    def test_adapt_with_none_topic(self, mock_openai, base_config, mock_logger, sample_a2_article):
+        """Test adaptation handles explicit None topic"""
+        mock_client = MagicMock()
+        mock_openai.return_value = mock_client
+
+        # Base article with explicit None topic
+        base_with_none = {
+            'title': 'Test',
+            'content': 'Content',
+            'summary': 'Summary',
+            'reading_time': 2,
+            'topic': None,  # Explicit None
+            'sources': None
+        }
+
+        response_article = sample_a2_article.copy()
+        del response_article['base_article']
+
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = json.dumps(response_article)
+        mock_client.chat.completions.create.return_value = mock_response
+
+        adapter = LevelAdapter(base_config, mock_logger)
+        result = adapter.adapt_to_a2(base_with_none)
+
+        # Should default to empty dict/list, not None
+        assert result['topic'] == {}
+        assert result['sources'] == []
+
+    @patch('scripts.level_adapter.OpenAI')
+    def test_base_article_preserved_in_result(self, mock_openai, base_config, mock_logger,
+                                               sample_base_article, sample_a2_article):
+        """Test base_article is preserved for regeneration"""
+        mock_client = MagicMock()
+        mock_openai.return_value = mock_client
+
+        response_article = sample_a2_article.copy()
+        del response_article['base_article']
+
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = json.dumps(response_article)
+        mock_client.chat.completions.create.return_value = mock_response
+
+        adapter = LevelAdapter(base_config, mock_logger)
+        result = adapter.adapt_to_a2(sample_base_article)
+
+        # Base article should be stored
+        assert 'base_article' in result
+        assert result['base_article']['title'] == sample_base_article['title']
+        assert result['base_article']['content'] == sample_base_article['content']
+        assert result['base_article']['summary'] == sample_base_article['summary']
+        assert result['base_article']['reading_time'] == sample_base_article['reading_time']
+
+    @patch('scripts.level_adapter.OpenAI')
+    def test_metadata_inheritance_from_base(self, mock_openai, base_config, mock_logger,
+                                             sample_base_article, sample_a2_article):
+        """Test metadata is correctly inherited from base article"""
+        mock_client = MagicMock()
+        mock_openai.return_value = mock_client
+
+        response_article = sample_a2_article.copy()
+        del response_article['base_article']
+
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = json.dumps(response_article)
+        mock_client.chat.completions.create.return_value = mock_response
+
+        adapter = LevelAdapter(base_config, mock_logger)
+        result = adapter.adapt_to_a2(sample_base_article)
+
+        # Metadata should match base article
+        assert result['topic'] == sample_base_article['topic']
+        assert result['sources'] == sample_base_article['sources']
