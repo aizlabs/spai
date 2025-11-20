@@ -49,7 +49,7 @@ class TestPrepareSourceContext:
         result = prepare_source_context(sources)
 
         assert 'Source 1 (El País):' in result
-        assert sample_sources[0]['text'] in result
+        assert sample_sources[0].text in result
 
     def test_prepare_multiple_sources(self, sample_sources):
         """Test preparing multiple sources"""
@@ -61,9 +61,9 @@ class TestPrepareSourceContext:
         assert 'Source 3 (El Mundo):' in result
 
         # Should contain all texts
-        assert sample_sources[0]['text'] in result
-        assert sample_sources[1]['text'] in result
-        assert sample_sources[2]['text'] in result
+        assert sample_sources[0].text in result
+        assert sample_sources[1].text in result
+        assert sample_sources[2].text in result
 
     def test_prepare_limits_to_five_sources(self, sample_sources):
         """Test only first 5 sources used"""
@@ -92,7 +92,7 @@ class TestGetSynthesisPrompt:
         prompt = get_synthesis_prompt(sample_topic, sample_sources)
 
         # Should contain topic
-        assert sample_topic['title'] in prompt
+        assert sample_topic.title in prompt
 
         # Should contain sources
         assert 'Source 1 (El País):' in prompt
@@ -119,7 +119,7 @@ class TestGetSynthesisPrompt:
         prompt = get_synthesis_prompt(sample_topic, sample_sources)
 
         for source in sample_sources:
-            assert source['text'] in prompt
+            assert source.text in prompt
 
 
 class TestGetA2AdaptationPrompt:
@@ -130,8 +130,8 @@ class TestGetA2AdaptationPrompt:
         prompt = get_a2_adaptation_prompt(sample_base_article)
 
         # Should contain base article
-        assert sample_base_article['title'] in prompt
-        assert sample_base_article['content'] in prompt
+        assert sample_base_article.title in prompt
+        assert sample_base_article.content in prompt
 
         # Should use A2_NEWS_PROCESSING_INSTRUCTIONS
         assert 'STEP 1: VOCABULARY ASSESSMENT' in prompt or 'A2 CEFR level' in prompt
@@ -181,8 +181,8 @@ class TestGetB1AdaptationPrompt:
         prompt = get_b1_adaptation_prompt(sample_base_article)
 
         # Should contain base article
-        assert sample_base_article['title'] in prompt
-        assert sample_base_article['content'] in prompt
+        assert sample_base_article.title in prompt
+        assert sample_base_article.content in prompt
 
         # Should have B1 guidelines
         assert 'B1 ADAPTATION GUIDELINES' in prompt
@@ -280,8 +280,8 @@ class TestPromptConsistency:
 
         # Both should include title and content
         for prompt in [a2_prompt, b1_prompt]:
-            assert sample_base_article['title'] in prompt
-            assert sample_base_article['content'] in prompt
+            assert sample_base_article.title in prompt
+            assert sample_base_article.content in prompt
 
     def test_all_prompts_request_json_output(self, sample_base_article):
         """Test all prompts request JSON output"""

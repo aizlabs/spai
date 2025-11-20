@@ -17,32 +17,28 @@ from typing import Dict, List, Optional
 
 from scripts.article_synthesizer import ArticleSynthesizer
 from scripts.level_adapter import LevelAdapter
+from scripts.models import Topic, SourceArticle, BaseArticle, AdaptedArticle
+from scripts.config import AppConfig
 
 
 class ContentGenerator:
     """Orchestrates two-step article generation (synthesis + adaptation)"""
 
-    def __init__(self, config: Dict, logger: logging.Logger):
+    def __init__(self, config: AppConfig, logger: logging.Logger):
         self.config = config
         self.logger = logger.getChild('ContentGenerator')
-        self.generation_config = config['generation']
+        self.generation_config = config.generation
 
         # Initialize sub-components
         self.synthesizer = ArticleSynthesizer(config, logger)
         self.adapter = LevelAdapter(config, logger)
 
         # Two-step settings
-        two_step_config = self.generation_config.get('two_step_synthesis', {})
-        self.two_step_enabled = two_step_config.get('enabled', True)
-        self.save_base_articles = two_step_config.get('save_base_article', False)
-        self.base_article_path = two_step_config.get(
-            'base_article_path',
-            './output/base_articles/'
-        )
-        self.regeneration_strategy = two_step_config.get(
-            'regeneration_strategy',
-            'adaptation_only'
-        )
+        two_step_config = self.generation_config.two_step_synthesis
+        self.two_step_enabled = two_step_config.enabled
+        self.save_base_articles = two_step_config.save_base_article
+        self.base_article_path = two_step_config.base_article_path
+        self.regeneration_strategy = two_step_config.regeneration_strategy
 
         self.logger.info(f"ContentGenerator initialized (two_step: {self.two_step_enabled})")
         if self.save_base_articles:
@@ -50,10 +46,10 @@ class ContentGenerator:
 
     def generate_article(
         self,
-        topic: Dict,
-        sources: List[Dict],
+        topic: Topic,
+        sources: List[SourceArticle],
         level: str
-    ) -> Dict:
+    ) -> AdaptedArticle:
         """
         Generate article using two-step process
 
@@ -77,7 +73,7 @@ class ContentGenerator:
             )
 
         # Step 1: Synthesize native-level base article
-        self.logger.info(f"Starting two-step generation for {level}: {topic['title']}")
+        self.logger.info(f"Starting two-step generation for {level}: {topic.title}")
         base_article = self.synthesizer.synthesize(topic, sources)
 
         # Optional: Save base article to disk (configurable)
@@ -87,18 +83,18 @@ class ContentGenerator:
         # Step 2: Adapt to target CEFR level
         article = self.adapter.adapt_to_level(base_article, level)
 
-        self.logger.info(f"Two-step generation complete: {article['title']}")
+        self.logger.info(f"Two-step generation complete: {article.title}")
 
         return article
 
     def regenerate_with_feedback(
         self,
-        topic: Dict,
-        sources: List[Dict],
+        topic: Topic,
+        sources: List[SourceArticle],
         level: str,
-        previous_attempt: Dict,
+        previous_attempt: AdaptedArticle,
         issues: List[str]
-    ) -> Dict:
+    ) -> AdaptedArticle:
         """
         Regenerate article with quality feedback
 
@@ -123,7 +119,7 @@ class ContentGenerator:
 
         if self.regeneration_strategy == 'adaptation_only':
             # Extract base article from previous attempt
-            base_article = previous_attempt.get('base_article')
+            base_article = previous_attempt.base_article
 
             if not base_article:
                 # Fallback: Re-synthesize if base article not available
@@ -150,8 +146,8 @@ class ContentGenerator:
 
     def _save_base_article(
         self,
-        base_article: Dict,
-        topic: Dict,
+        base_article: BaseArticle,
+        topic: Topic,
         suffix: str = ''
     ):
         """
@@ -171,7 +167,7 @@ class ContentGenerator:
             # Sanitize topic title for filename
             safe_title = ''.join(
                 c if c.isalnum() or c in (' ', '-', '_') else ''
-                for c in topic['title']
+                for c in topic.title
             )[:50]
             safe_title = safe_title.strip().replace(' ', '-')
             filename = f"{timestamp}-{safe_title}{suffix}.json"
@@ -179,7 +175,7 @@ class ContentGenerator:
 
             # Save as JSON
             with open(filepath, 'w', encoding='utf-8') as f:
-                json.dump(base_article, f, ensure_ascii=False, indent=2)
+                json.dump(base_article.model_dump(), f, ensure_ascii=False, indent=2)
 
             self.logger.debug(f"Saved base article: {filepath}")
 

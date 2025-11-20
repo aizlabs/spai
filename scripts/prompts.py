@@ -7,6 +7,8 @@ for easy iteration and A/B testing.
 
 from typing import Dict, List, Optional
 
+from scripts.models import Topic, SourceArticle, BaseArticle, AdaptedArticle
+
 
 # Level-specific grammar rules
 LEVEL_GENERATION_RULES = {
@@ -295,7 +297,7 @@ def validate_level(level: str) -> None:
         )
 
 
-def prepare_source_context(sources: List[Dict]) -> str:
+def prepare_source_context(sources: List[SourceArticle]) -> str:
     """
     Prepare source text for prompt
 
@@ -308,16 +310,16 @@ def prepare_source_context(sources: List[Dict]) -> str:
     context = []
 
     for i, source in enumerate(sources[:5], 1):
-        context.append(f"""Source {i} ({source['source']}):
-{source['text']}
+        context.append(f"""Source {i} ({source.source}):
+{source.text}
 """)
 
     return '\n\n'.join(context)
 
 
 def get_generation_prompt(
-    topic: Dict,
-    sources: List[Dict],
+    topic: Topic,
+    sources: List[SourceArticle],
     level: str,
     word_count: int
 ) -> str:
@@ -344,7 +346,7 @@ def get_generation_prompt(
 
     prompt = f"""You are a Spanish language teacher creating educational content for {level} level students.
 
-TOPIC: {topic['title']}
+TOPIC: {topic.title}
 
 REFERENCE SOURCES (synthesize information, DO NOT copy text):
 {source_context}
@@ -383,11 +385,12 @@ CRITICAL RULES:
 
 
 def get_regeneration_prompt(
-    topic: Dict,
-    sources: List[Dict],
+    topic: Topic,
+    sources: List[SourceArticle],
     level: str,
     word_count: int,
-    feedback: Dict
+    previous_attempt: AdaptedArticle,
+    issues: List[str]
 ) -> str:
     """
     Prompt for article regeneration with feedback
@@ -409,20 +412,20 @@ def get_regeneration_prompt(
     base_prompt = get_generation_prompt(topic, sources, level, word_count)
 
     # Truncate previous content to first 200 words for context
-    first_200 = ' '.join(feedback['previous_content'].split()[:200])
+    first_200 = ' '.join(previous_attempt.content.split()[:200])
 
     # Add feedback section
     feedback_section = f"""
 
 ⚠️ IMPORTANT: PREVIOUS ATTEMPT HAD ISSUES - YOU MUST FIX THEM
 
-Previous Title: {feedback['previous_title']}
+Previous Title: {previous_attempt.title}
 
 Previous Content (first 200 words):
 {first_200}...
 
 SPECIFIC ISSUES TO FIX:
-{chr(10).join(f"- {issue}" for issue in feedback['issues'])}
+{chr(10).join(f"- {issue}" for issue in issues)}
 
 Generate a NEW, IMPROVED version that specifically addresses these issues.
 Make sure to fix the problems mentioned above.
@@ -431,7 +434,7 @@ Make sure to fix the problems mentioned above.
     return base_prompt + feedback_section
 
 
-def get_quality_judge_prompt(article: Dict, level: str) -> str:
+def get_quality_judge_prompt(article: AdaptedArticle, level: str) -> str:
     """
     Prompt for quality evaluation
 
@@ -452,15 +455,15 @@ def get_quality_judge_prompt(article: Dict, level: str) -> str:
         ValueError: If level is not supported
     """
     validate_level(level)
-    vocab_count = len(article.get('vocabulary', {}))
+    vocab_count = len(article.vocabulary)
 
     prompt = f"""You are a Spanish language teaching expert. Evaluate this article for {level} level learners.
 
 ARTICLE:
-Title: {article['title']}
+Title: {article.title}
 Level: {level}
 Content:
-{article['content']}
+{article.content}
 
 Vocabulary provided: {vocab_count} words
 
@@ -561,7 +564,7 @@ Remember:
 # ============================================================================
 
 
-def get_synthesis_prompt(topic: Dict, sources: List[Dict]) -> str:
+def get_synthesis_prompt(topic: Topic, sources: List[SourceArticle]) -> str:
     """
     Step 1: Native-level synthesis without CEFR constraints
 
@@ -580,7 +583,7 @@ def get_synthesis_prompt(topic: Dict, sources: List[Dict]) -> str:
 
     prompt = f"""You are a professional Spanish journalist. Synthesize the following sources into ONE coherent news article in natural, native-level Spanish.
 
-TOPIC: {topic['title']}
+TOPIC: {topic.title}
 
 SOURCES TO SYNTHESIZE:
 {source_context}
@@ -617,7 +620,7 @@ Remember: This is native-level Spanish. Write naturally and accurately without a
 
 
 def get_a2_adaptation_prompt(
-    base_article: Dict,
+    base_article: BaseArticle,
     feedback: Optional[List[str]] = None
 ) -> str:
     """
@@ -647,10 +650,10 @@ Make sure to specifically address these issues in your adaptation.
 
 === ARTICLE TO ADAPT ===
 
-Title: {base_article['title']}
+Title: {base_article.title}
 
 Content:
-{base_article['content']}
+{base_article.content}
 
 {feedback_section}
 
@@ -686,7 +689,7 @@ IMPORTANT: Follow the A2 processing instructions exactly. Verify all requirement
 
 
 def get_b1_adaptation_prompt(
-    base_article: Dict,
+    base_article: BaseArticle,
     feedback: Optional[List[str]] = None
 ) -> str:
     """
@@ -716,10 +719,10 @@ Make sure to specifically address these issues in your adaptation.
 
 === BASE ARTICLE ===
 
-Title: {base_article['title']}
+Title: {base_article.title}
 
 Content:
-{base_article['content']}
+{base_article.content}
 
 {feedback_section}
 

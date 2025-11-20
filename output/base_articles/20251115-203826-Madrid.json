@@ -1,0 +1,220 @@
+{
+  "title": "Madrid entre música, luces navideñas y desafíos urbanos",
+  "content": "Madrid se encuentra en un momento vibrante y lleno de contrastes. Por un lado, la ciudad se prepara para recibir la temporada navideña con eventos que prometen encantar tanto a residentes como a visitantes. El Only YOU Boutique Hotel, ubicado en la calle Barquillo, será el escenario de un mercadillo navideño único del 5 al 7 de diciembre. Este evento, organizado por la marca asturiana Eleven People, ofrecerá talleres artesanales y una selección de aromas exclusivos, convirtiéndose en un punto de encuentro para los amantes del diseño y la creatividad.\n\nMientras tanto, la música también resuena en la capital. Dani Martín, exlíder de El Canto del Loco, ha iniciado una serie de diez conciertos en el Movistar Arena, un logro sin precedentes en este recinto. Con su gira \"25 p*t*s años\", Martín celebra su trayectoria musical con un repertorio que conecta profundamente con su público, demostrando que su autenticidad y pasión siguen siendo su mayor fortaleza.\n\nSin embargo, no todo es celebración en Madrid. La ciudad enfrenta desafíos significativos, como el soterramiento del Paseo de Extremadura, que ha transformado el suroeste de la capital en un paisaje caótico de polvo y ruido. Esta obra pública, aunque promete mejorar la infraestructura a largo plazo, actualmente complica la vida diaria de los vecinos, quienes deben lidiar con atascos y cortes de servicios. Además, la atención sanitaria en la Comunidad de Madrid sigue siendo un tema de preocupación. A pesar de los esfuerzos por reducir los tiempos de espera en los centros de salud, la falta de personal médico sigue siendo un problema crítico que requiere atención urgente.\n\nPor último, la seguridad también ha sido un tema destacado tras el hallazgo de dos cadáveres con signos de violencia en Alpedrete, un caso que está siendo investigado por la Guardia Civil. Estos eventos reflejan la complejidad de una ciudad que, aunque vibrante y llena de vida, enfrenta retos que requieren soluciones efectivas y a largo plazo.",
+  "summary": "Madrid vive un momento de contrastes con eventos culturales y desafíos urbanos.",
+  "reading_time": 3,
+  "topic": {
+    "title": "Madrid",
+    "mentions": 10,
+    "sources": [
+      "BBC Mundo",
+      "El País Cultura",
+      "El Confidencial",
+      "Genbeta",
+      "Marca",
+      "Xataka"
+    ],
+    "headlines": [
+      {
+        "id": "https://www.elconfidencial.com/espana/madrid/2025-10-12/madrid-a5-obras-soterramiento-vecinos-1hms_4223509/",
+        "text": "Apocalipsis 5 (A-5), Madrid entierra su presente en nombre del futuro",
+        "url": "https://www.elconfidencial.com/espana/madrid/2025-10-12/madrid-a5-obras-soterramiento-vecinos-1hms_4223509/",
+        "source": "El Confidencial",
+        "published": [
+          2025,
+          10,
+          12,
+          3,
+          0,
+          0,
+          6,
+          285,
+          0
+        ],
+        "summary": "Entre excavadoras y atascos, ratas y escolares perdidos, el soterramiento del Paseo de Extremadura ha convertido el suroeste de la capital en una distopía de polvo, ruido y paciencia"
+      },
+      {
+        "id": "https://www.elconfidencial.com/espana/madrid/2025-10-19/auge-iglesias-evangelicas-madrid-1hms_4227837/",
+        "text": "El auge evangélico transforma el mapa religioso de Madrid",
+        "url": "https://www.elconfidencial.com/espana/madrid/2025-10-19/auge-iglesias-evangelicas-madrid-1hms_4227837/",
+        "source": "El Confidencial",
+        "published": [
+          2025,
+          10,
+          19,
+          3,
+          0,
+          0,
+          6,
+          292,
+          0
+        ],
+        "summary": "La Comunidad de Madrid cuenta ya con más de 1.100 templos evangélicos —uno nuevo cada cuatro días— y duplica el número de parroquias católicas, en una expansión impulsada por comunidades latinoamerica"
+      },
+      {
+        "id": "https://www.xataka.com/ecologia-y-naturaleza/madrid-tiene-grave-problema-sus-rios-construcciones-ilegales",
+        "text": "Madrid tiene dos problemas con sus ríos: el primero son las construcciones ilegales, el segundo es no saber qué hacer con ellas",
+        "url": "https://www.xataka.com/ecologia-y-naturaleza/madrid-tiene-grave-problema-sus-rios-construcciones-ilegales",
+        "source": "Xataka",
+        "published": [
+          2025,
+          11,
+          15,
+          17,
+          30,
+          12,
+          5,
+          319,
+          0
+        ],
+        "summary": "<p>\n      <img alt=\"Madrid&#x20;tiene&#x20;dos&#x20;problemas&#x20;con&#x20;sus&#x20;r&#x00ED;os&#x3A;&#x20;el&#x20;primero&#x20;son&#x20;las&#x20;construcciones&#x20;ilegales,&#x20;el&#x20;segundo&#x"
+      },
+      {
+        "id": "https://www.elconfidencial.com/espana/madrid/2025-11-02/madrid-cementerios-muerte-almudena-1hms_4236888/",
+        "text": "De Madrid al cielo (pasando por los cementerios)",
+        "url": "https://www.elconfidencial.com/espana/madrid/2025-11-02/madrid-cementerios-muerte-almudena-1hms_4236888/",
+        "source": "El Confidencial",
+        "published": [
+          2025,
+          11,
+          2,
+          4,
+          0,
+          0,
+          6,
+          306,
+          0
+        ],
+        "summary": "El puente de Todos los Santos es un pretexto idóneo para recorrer los camposantos del foro, incluidas las cinco millones de almas que reposan en La Almudena"
+      },
+      {
+        "id": "https://elpais.com/cultura/2025-11-15/dani-martin-en-madrid-tanto-en-sus-fortalezas-como-en-sus-debilidades-un-crack.html",
+        "text": "Dani Martín en Madrid: tanto en sus fortalezas como en sus debilidades, un ‘crack’",
+        "url": "https://elpais.com/cultura/2025-11-15/dani-martin-en-madrid-tanto-en-sus-fortalezas-como-en-sus-debilidades-un-crack.html",
+        "source": "El País Cultura",
+        "published": [
+          2025,
+          11,
+          15,
+          0,
+          21,
+          43,
+          5,
+          319,
+          0
+        ],
+        "summary": "El músico triunfa con un repertorio basado en El Canto del Loco en el primer concierto de los diez que ofrecerá en Movistar Arena"
+      },
+      {
+        "id": "https://www.elconfidencial.com/espana/madrid/2025-11-15/alpedrete-violencia-chalet-fallecidos-1tna-1tps_4248156/",
+        "text": "Hallan los cadáveres de un hombre y una mujer con signos de violencia en Alpedrete (Madrid)",
+        "url": "https://www.elconfidencial.com/espana/madrid/2025-11-15/alpedrete-violencia-chalet-fallecidos-1tna-1tps_4248156/",
+        "source": "El Confidencial",
+        "published": [
+          2025,
+          11,
+          15,
+          14,
+          41,
+          0,
+          5,
+          319,
+          0
+        ],
+        "summary": "Dos personas de 60 años han sido halladas sin vida con indicios de agresión en una vivienda de Alpedrete; la investigación está en manos de la Guardia Civil"
+      },
+      {
+        "id": "https://www.elconfidencial.com/espana/madrid/2025-11-15/mercadillo-navideno-madrid-talleres-olfativos_4247548/",
+        "text": "Navidad con alma en Madrid: descubre el mercadillo de diseño y talleres olfativos en Only YOU Boutique Hotel",
+        "url": "https://www.elconfidencial.com/espana/madrid/2025-11-15/mercadillo-navideno-madrid-talleres-olfativos_4247548/",
+        "source": "El Confidencial",
+        "published": [
+          2025,
+          11,
+          15,
+          4,
+          0,
+          0,
+          5,
+          319,
+          0
+        ],
+        "summary": "El Only You Boutique Hotel Navidad acoge un evento prenavideño que contará con talleres artesanales de arreglos florales, ambientadores perfumados de cera de soja y acuarelas"
+      },
+      {
+        "id": "https://www.genbeta.com/actualidad/madrid-pone-marcha-plan-frente-al-colapso-sus-centros-salud-asignar-cualquier-medico-a-pacientes-no-sea-suyo",
+        "text": "Madrid pone en marcha un plan frente al colapso de sus centros de salud: asignar cualquier médico a los pacientes, aunque no sea el suyo",
+        "url": "https://www.genbeta.com/actualidad/madrid-pone-marcha-plan-frente-al-colapso-sus-centros-salud-asignar-cualquier-medico-a-pacientes-no-sea-suyo",
+        "source": "Genbeta",
+        "published": [
+          2025,
+          11,
+          14,
+          11,
+          43,
+          29,
+          4,
+          318,
+          0
+        ],
+        "summary": "<p>\n      <img alt=\"Madrid&#x20;pone&#x20;en&#x20;marcha&#x20;un&#x20;plan&#x20;frente&#x20;al&#x20;colapso&#x20;de&#x20;sus&#x20;centros&#x20;de&#x20;salud&#x3A;&#x20;asignar&#x20;cualquier&#x20;m&#x"
+      },
+      {
+        "id": "https://www.bbc.com/mundo/articles/cm2dl44yvnno#0",
+        "text": "La increíble historia del Reino de Belmonte, el barrio de Madrid que se independizó y cuyos vecinos pidieron asilo a Cuba hace 35 años",
+        "url": "https://www.bbc.com/mundo/articles/cm2dl44yvnno?at_medium=RSS&at_campaign=rss",
+        "source": "BBC Mundo",
+        "published": [
+          2025,
+          11,
+          15,
+          12,
+          0,
+          22,
+          5,
+          319,
+          0
+        ],
+        "summary": "Enfrentados a un proceso de expropiación por parte de las autoridades municipales, un grupo de vecinos de Madrid apostó por declarar su \"independencia\" de España y buscar el apoyo de Fidel Castro, qui"
+      },
+      {
+        "id": "https://www.marca.com/futbol/mundial/2025/11/15/01-0116-20251115-520-118.html",
+        "text": "De la Fuente: &quot;Estamos en perfecta comunicación con los médicos del Madrid...&quot;",
+        "url": "https://www.marca.com/futbol/mundial/2025/11/15/01-0116-20251115-520-118.html",
+        "source": "Marca",
+        "published": [
+          2025,
+          11,
+          15,
+          15,
+          0,
+          29,
+          5,
+          319,
+          0
+        ],
+        "summary": "Sigue el minuto a minuto del Georgia - España en directo"
+      }
+    ],
+    "keywords": [
+      "Madrid",
+      "Alpedrete",
+      "España",
+      "Apocalipsis",
+      "A-5",
+      "Entre excavadoras y atascos",
+      "Paseo de Extremadura",
+      "El auge evangélico",
+      "Comunidad de Madrid",
+      "alt=\"Madrid&#x20;tiene&#x20;dos&#x20;problemas&#x20;con&#x20;sus&#x20;r&#x00ED;os&#x3A;&#x20;el&#x20;primero&#x20;son&#x20;las&#x20;construcciones&#x20;ilegales,&#x20;el&#x20;segundo&#x"
+    ],
+    "score": 38
+  },
+  "sources": [
+    "elpais.com",
+    "www.elconfidencial.com",
+    "www.genbeta.com",
+    "www.elconfidencial.com",
+    "www.elconfidencial.com"
+  ]
+}

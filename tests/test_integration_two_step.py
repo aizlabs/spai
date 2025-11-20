@@ -20,45 +20,22 @@ from scripts.models import Topic, BaseArticle, AdaptedArticle
 class TestTwoStepPipelineIntegration:
     """Integration tests for synthesis → adaptation flow"""
 
-    @patch('scripts.article_synthesizer.OpenAI')
-    @patch('scripts.level_adapter.OpenAI')
-    def test_synthesis_to_adaptation_a2(self, mock_adapter_openai, mock_synth_openai,
-                                         base_config, mock_logger, sample_topic, sample_sources):
+    @patch('scripts.article_synthesizer.ArticleSynthesizer._call_llm')
+    @patch('scripts.level_adapter.LevelAdapter._call_llm')
+    def test_synthesis_to_adaptation_a2(self, mock_adapter_call_llm, mock_synth_call_llm,
+                                         base_config, mock_logger, sample_topic, sample_sources,
+                                         sample_base_article, sample_a2_article):
         """Test complete two-step flow: ArticleSynthesizer → LevelAdapter (A2)"""
         # Setup synthesizer mock
-        synth_client = MagicMock()
-        mock_synth_openai.return_value = synth_client
-
-        base_response = {
-            'title': 'España reduce emisiones de CO2',
-            'content': 'España ha logrado reducir sus emisiones de dióxido de carbono...',
-            'summary': 'España reduce CO2 gracias a energías renovables.',
-            'reading_time': 3
-        }
-
-        synth_mock_response = MagicMock()
-        synth_mock_response.choices = [MagicMock()]
-        synth_mock_response.choices[0].message.content = json.dumps(base_response)
-        synth_client.chat.completions.create.return_value = synth_mock_response
+        mock_synth_call_llm.return_value = json.dumps(sample_base_article.model_dump())
 
         # Setup adapter mock
-        adapter_client = MagicMock()
-        mock_adapter_openai.return_value = adapter_client
-
-        a2_response = {
-            'title': 'España tiene menos contaminación',
-            'content': 'España reduce sus **emisiones**. El gobierno dice que baja 15%.',
-            'summary': 'España contamina menos.',
-            'reading_time': 2,
-            'vocabulary': {
-                'emisiones': 'emissions - gases que salen al aire'
-            }
-        }
-
-        adapter_mock_response = MagicMock()
-        adapter_mock_response.choices = [MagicMock()]
-        adapter_mock_response.choices[0].message.content = json.dumps(a2_response)
-        adapter_client.chat.completions.create.return_value = adapter_mock_response
+        response_adapter_dict = sample_a2_article.model_dump()
+        del response_adapter_dict['base_article']
+        del response_adapter_dict['topic']
+        del response_adapter_dict['sources']
+        del response_adapter_dict['level']
+        mock_adapter_call_llm.return_value = json.dumps(response_adapter_dict)
 
         # Execute two-step pipeline
         synthesizer = ArticleSynthesizer(base_config, mock_logger)
@@ -68,26 +45,27 @@ class TestTwoStepPipelineIntegration:
         base_article = synthesizer.synthesize(sample_topic, sample_sources)
 
         # Verify base article structure
-        assert base_article['title'] == base_response['title']
-        assert base_article['topic'] == sample_topic
-        assert base_article['sources'] == ['El País', 'BBC Mundo', 'El Mundo']
+        assert isinstance(base_article, BaseArticle)
+        assert base_article.title == sample_base_article.title
+        assert base_article.topic == sample_topic
+        assert base_article.sources == [s.source for s in sample_sources]
 
         # Step 2: Adapt
         a2_article = adapter.adapt_to_level(base_article, 'A2')
 
         # Verify adapted article
-        assert a2_article['level'] == 'A2'
-        assert a2_article['title'] == a2_response['title']
-        assert 'vocabulary' in a2_article
-        assert len(a2_article['vocabulary']) > 0
+        assert isinstance(a2_article, AdaptedArticle)
+        assert a2_article.level == 'A2'
+        assert a2_article.title == sample_a2_article.title
+        assert a2_article.vocabulary is not None
+        assert len(a2_article.vocabulary) > 0
 
         # CRITICAL: Verify metadata propagation (would have caught the bug!)
-        assert a2_article['topic'] == sample_topic  # Not None!
-        assert a2_article['sources'] == ['El País', 'BBC Mundo', 'El Mundo']
+        assert a2_article.topic == sample_topic  # Not None!
+        assert a2_article.sources == [s.source for s in sample_sources]
 
         # Verify base article stored for regeneration
-        assert 'base_article' in a2_article
-        assert a2_article['base_article']['title'] == base_article['title']
+        assert a2_article.base_article == base_article
 
     @patch('scripts.content_generator.ArticleSynthesizer')
     @patch('scripts.content_generator.LevelAdapter')
@@ -119,51 +97,29 @@ class TestTwoStepPipelineIntegration:
 class TestPublisherIntegration:
     """Integration tests including Publisher (would have caught the bug!)"""
 
-    @patch('scripts.article_synthesizer.OpenAI')
-    @patch('scripts.level_adapter.OpenAI')
+    @patch('scripts.article_synthesizer.ArticleSynthesizer._call_llm')
+    @patch('scripts.level_adapter.LevelAdapter._call_llm')
     @patch('builtins.open', new_callable=MagicMock)
     @patch('pathlib.Path.mkdir')
     def test_synthesis_to_adaptation_to_publisher(self, mock_mkdir, mock_open,
-                                                    mock_adapter_openai, mock_synth_openai,
+                                                    mock_adapter_call_llm, mock_synth_call_llm,
                                                     base_config, mock_logger, sample_topic,
-                                                    sample_sources):
+                                                    sample_sources, sample_base_article, sample_a2_article):
         """
         Test complete flow: Synthesize → Adapt → Publish
 
         This test would have caught the Publisher AttributeError bug!
         """
         # Setup synthesizer
-        synth_client = MagicMock()
-        mock_synth_openai.return_value = synth_client
-
-        base_response = {
-            'title': 'España reduce emisiones',
-            'content': 'Content here...',
-            'summary': 'Summary',
-            'reading_time': 3
-        }
-
-        synth_mock_response = MagicMock()
-        synth_mock_response.choices = [MagicMock()]
-        synth_mock_response.choices[0].message.content = json.dumps(base_response)
-        synth_client.chat.completions.create.return_value = synth_mock_response
+        mock_synth_call_llm.return_value = json.dumps(sample_base_article.model_dump())
 
         # Setup adapter
-        adapter_client = MagicMock()
-        mock_adapter_openai.return_value = adapter_client
-
-        a2_response = {
-            'title': 'España contamina menos',
-            'content': 'España reduce **emisiones**.',
-            'summary': 'España mejor.',
-            'reading_time': 2,
-            'vocabulary': {'emisiones': 'emissions - gases'}
-        }
-
-        adapter_mock_response = MagicMock()
-        adapter_mock_response.choices = [MagicMock()]
-        adapter_mock_response.choices[0].message.content = json.dumps(a2_response)
-        adapter_client.chat.completions.create.return_value = adapter_mock_response
+        response_adapter_dict = sample_a2_article.model_dump()
+        del response_adapter_dict['base_article']
+        del response_adapter_dict['topic']
+        del response_adapter_dict['sources']
+        del response_adapter_dict['level']
+        mock_adapter_call_llm.return_value = json.dumps(response_adapter_dict)
 
         # Execute full pipeline
         synthesizer = ArticleSynthesizer(base_config, mock_logger)
@@ -184,36 +140,25 @@ class TestPublisherIntegration:
         # If we get here, the bug is fixed!
         assert success or not success  # Either works, we just shouldn't crash
 
-    @patch('scripts.article_synthesizer.OpenAI')
-    @patch('scripts.level_adapter.OpenAI')
+    @patch('scripts.level_adapter.LevelAdapter._call_llm')
     @patch('builtins.open', new_callable=MagicMock)
     @patch('pathlib.Path.mkdir')
     def test_publisher_handles_missing_topic_metadata(self, mock_mkdir, mock_open,
-                                                        mock_adapter_openai, mock_synth_openai,
+                                                        mock_adapter_call_llm,
                                                         base_config, mock_logger,
-                                                        sample_base_article_minimal):
+                                                        sample_base_article_minimal, sample_a2_article):
         """
         Test Publisher handles missing topic metadata gracefully
 
         This is the EXACT bug scenario that occurred in production.
         """
         # Setup adapter (synthesizer not needed for this test)
-        adapter_client = MagicMock()
-        mock_adapter_openai.return_value = adapter_client
-
-        # Adapter returns article without topic metadata
-        a2_response = {
-            'title': 'Test Article',
-            'content': 'Test content.',
-            'summary': 'Test',
-            'reading_time': 2,
-            'vocabulary': {}
-        }
-
-        adapter_mock_response = MagicMock()
-        adapter_mock_response.choices = [MagicMock()]
-        adapter_mock_response.choices[0].message.content = json.dumps(a2_response)
-        adapter_client.chat.completions.create.return_value = adapter_mock_response
+        response_adapter_dict = sample_a2_article.model_dump()
+        del response_adapter_dict['base_article']
+        del response_adapter_dict['topic']
+        del response_adapter_dict['sources']
+        del response_adapter_dict['level']
+        mock_adapter_call_llm.return_value = json.dumps(response_adapter_dict)
 
         # Execute
         adapter = LevelAdapter(base_config, mock_logger)
@@ -244,7 +189,7 @@ class TestRegenerationIntegration:
                                               sample_sources, sample_base_article,
                                               sample_a2_article):
         """Test regeneration preserves topic metadata through the flow"""
-        base_config['generation']['two_step_synthesis']['regeneration_strategy'] = 'adaptation_only'
+        base_config.generation.two_step_synthesis.regeneration_strategy = 'adaptation_only'
 
         # Setup mocks
         mock_synthesizer = MagicMock()
@@ -252,11 +197,11 @@ class TestRegenerationIntegration:
         mock_synth_class.return_value = mock_synthesizer
 
         # First attempt: article with issues
-        first_attempt = sample_a2_article.copy()
+        first_attempt = sample_a2_article.model_copy()
 
         # Second attempt: improved article
-        improved_article = sample_a2_article.copy()
-        improved_article['title'] = 'Improved Title'
+        improved_article = sample_a2_article.model_copy()
+        improved_article.title = 'Improved Title'
 
         mock_adapter = MagicMock()
         mock_adapter.adapt_to_level.return_value = improved_article
@@ -275,8 +220,8 @@ class TestRegenerationIntegration:
         )
 
         # Verify metadata preserved
-        assert result['topic'] == sample_topic  # Critical!
-        assert result['sources'] == sample_base_article['sources']
+        assert result.topic == sample_topic  # Critical!
+        assert result.sources == sample_base_article.sources
 
         # Verify adapter called with feedback
         mock_adapter.adapt_to_level.assert_called_once()

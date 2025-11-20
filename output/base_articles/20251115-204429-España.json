@@ -1,0 +1,459 @@
+{
+  "title": "España destaca en longevidad, fútbol y eventos internacionales",
+  "content": "España se encuentra en el centro de atención por diversos motivos, desde la longevidad de sus ciudadanos hasta su destacada actuación en el fútbol internacional y la organización de eventos deportivos de gran envergadura. Carme Noguera, nacida en Girona en 1914, se ha convertido en una de las mujeres más longevas de España, alcanzando los 111 años. Su vida tranquila en Taradell, Barcelona, junto a su hija, se caracteriza por actividades sencillas como el canto en una coral y el ganchillo, demostrando que la longevidad puede estar ligada a un estilo de vida activo y social.\n\nEn el ámbito deportivo, la selección española de fútbol ha dado un paso crucial hacia el Mundial 2026 tras vencer a Georgia con un contundente 4-0. Este triunfo deja a España prácticamente clasificada, a falta de un último encuentro contra Turquía en Sevilla. Bajo la dirección de Luis de la Fuente, el equipo ha demostrado una impresionante cohesión y habilidad, superando incluso la ausencia de jugadores clave por lesión. Esta victoria no solo refuerza su posición en el grupo E, sino que también extiende su racha invicta a 30 partidos, superando marcas históricas anteriores.\n\nPor otro lado, España también se prepara para acoger eventos internacionales de gran magnitud, como los conciertos de Bad Bunny en Madrid y Barcelona, y partidos de la NFL, que han generado un debate sobre la cultura deportiva local frente a la estadounidense. Mientras que las entradas para los conciertos del artista puertorriqueño se agotaron rápidamente, la reventa oficial ha permitido que aún se puedan adquirir algunas. En cuanto a la NFL, el debate se centra en la diferencia cultural entre la experiencia deportiva en Europa y Estados Unidos, destacando la importancia de la pertenencia local en el fútbol español frente a la experiencia más comercial de la NFL.",
+  "summary": "España destaca en longevidad, fútbol y eventos internacionales, reflejando su diversidad cultural y deportiva.",
+  "reading_time": 3,
+  "topic": {
+    "title": "España",
+    "mentions": 23,
+    "sources": [
+      "El País Ciencia",
+      "Xataka",
+      "20 Minutos",
+      "Euronews Español",
+      "El Mundo Deportes",
+      "El Mundo",
+      "Clarín",
+      "El País",
+      "National Geographic ES",
+      "El País Cultura",
+      "El Diario"
+    ],
+    "headlines": [
+      {
+        "id": "https://elpais.com/cultura/2025-11-14/si-bad-bunny-agoto-sus-conciertos-en-espana-como-es-posible-que-todavia-se-puedan-comprar-entradas-oficiales.html",
+        "text": "Si Bad Bunny agotó sus conciertos en España, ¿cómo es posible que todavía se puedan comprar entradas oficiales?",
+        "url": "https://elpais.com/cultura/2025-11-14/si-bad-bunny-agoto-sus-conciertos-en-espana-como-es-posible-que-todavia-se-puedan-comprar-entradas-oficiales.html",
+        "source": "El País Cultura",
+        "published": [
+          2025,
+          11,
+          14,
+          4,
+          30,
+          1,
+          4,
+          318,
+          0
+        ],
+        "summary": "La confusión en torno a la venta de boletos para recitales masivos suma un nuevo capítulo a cuenta de las 12 noches del puertorriqueño entre Madrid y Barcelona"
+      },
+      {
+        "id": "https://www.20minutos.es/cataluna/barcelona/formula-secreta-carme-noguera-111-anos-para-subir-podio-longevidad-espana_6898328_0.html",
+        "text": "La fórmula secreta de Carme Noguera, de 111 años, para subir al podio de la longevidad en España",
+        "url": "https://www.20minutos.es/cataluna/barcelona/formula-secreta-carme-noguera-111-anos-para-subir-podio-longevidad-espana_6898328_0.html",
+        "source": "20 Minutos",
+        "published": [
+          2025,
+          11,
+          15,
+          15,
+          29,
+          25,
+          5,
+          319,
+          0
+        ],
+        "summary": "Nacida en Girona el 22 de agosto de 1914, Carme Noguera ha pasado a ser la catalana de mayor edad con vida y se sitúa en el podio de España."
+      },
+      {
+        "id": "https://www.xataka.com/movilidad/quien-quien-fabricantes-coches-chinos-espana",
+        "text": "MG, BYD, Lynk&Co, Omoda: quién es quién de los fabricantes de coches chinos en España",
+        "url": "https://www.xataka.com/movilidad/quien-quien-fabricantes-coches-chinos-espana",
+        "source": "Xataka",
+        "published": [
+          2025,
+          11,
+          15,
+          14,
+          30,
+          12,
+          5,
+          319,
+          0
+        ],
+        "summary": "<p>\n      <img alt=\"MG,&#x20;BYD,&#x20;Lynk&amp;Co,&#x20;Omoda&#x3A;&#x20;qui&#x00E9;n&#x20;es&#x20;qui&#x00E9;n&#x20;de&#x20;los&#x20;fabricantes&#x20;de&#x20;coches&#x20;chinos&#x20;en&#x20;Espa&#x0"
+      },
+      {
+        "id": "26702",
+        "text": "La ciencia confirma que se pueden volver a producir nuevas auroras en España",
+        "url": "https://www.nationalgeographic.com.es/ciencia/josep-m-trigo-astrofisico-experto-ciencias-espacio-estamos-punto-algido-actividad-solar-y-podrian-producirse-nuevas-auroras_26702",
+        "source": "National Geographic ES",
+        "published": [
+          2025,
+          11,
+          13,
+          16,
+          0,
+          0,
+          3,
+          317,
+          0
+        ],
+        "summary": "<p>Lo que algunas personas han observado a simple vista en el cielo de España no es exactamente lo que parece. Los astrofísicos señalan una sutil diferencia. En mayo de 2024, las <strong>tormentas ele"
+      },
+      {
+        "id": "https://www.clarin.com/deportes/espana-goleada-meter-pie-medio-mundial-2026-record-alcanzo-falta-clasificarse_0_3ptPh2jx9e.html",
+        "text": "España y otra goleada para meter un pie y medio en el Mundial 2026: el récord que alcanzó y qué le falta para clasificarse",
+        "url": "https://www.clarin.com/deportes/espana-goleada-meter-pie-medio-mundial-2026-record-alcanzo-falta-clasificarse_0_3ptPh2jx9e.html",
+        "source": "Clarín",
+        "published": [
+          2025,
+          11,
+          15,
+          19,
+          53,
+          23,
+          5,
+          319,
+          0
+        ],
+        "summary": "<ul><li>Venció 4-0 a Georgia, este sábado en Tiflis.</li><li>El martes, contra Turquía en Sevilla, define su destino.</li></ul>"
+      },
+      {
+        "id": "https://www.eldiario.es/euskadi/ministra-espana-presidio-partido-seleccion-vasca-gran-simbolismo-politico-partido-palestina_129_12771219.html",
+        "text": "Y una ministra de España presidió el partido de la selección vasca: el gran simbolismo político del partido contra Palestina",
+        "url": "https://www.eldiario.es/euskadi/ministra-espana-presidio-partido-seleccion-vasca-gran-simbolismo-politico-partido-palestina_129_12771219.html",
+        "source": "El Diario",
+        "published": [
+          2025,
+          11,
+          15,
+          20,
+          24,
+          18,
+          5,
+          319,
+          0
+        ],
+        "summary": "<p><img alt=\"Y una ministra de España presidió el partido de la selección vasca: el gran simbolismo político del partido contra Palestina\" height=\"675\" src=\"https://static.eldiario.es/clip/108b8882-8d"
+      },
+      {
+        "id": "https://www.20minutos.es/deportes/futbol/georgia-espana-fase-clasificacion-mundial-2026-directo-marcador-goles-ultima-hora-jornada-5_6898355_6.html",
+        "text": "Georgia - España de la fase de clasificación al Mundial 2026, en directo: marcador, goles y última hora de la jornada 5",
+        "url": "https://www.20minutos.es/deportes/futbol/georgia-espana-fase-clasificacion-mundial-2026-directo-marcador-goles-ultima-hora-jornada-5_6898355_6.html",
+        "source": "20 Minutos",
+        "published": [
+          2025,
+          11,
+          15,
+          15,
+          43,
+          51,
+          5,
+          319,
+          0
+        ],
+        "summary": "La selección española de fútbol se enfrenta a Georgia en el penúltimo encuentro clasificatorio para el Mundial 2026, con el billete a Canadá, Estados Unidos y México en el aire."
+      },
+      {
+        "id": "https://www.elmundo.es/deportes/2025/11/13/6915b882e9cf4a2d098b457a.html",
+        "text": "Por qué la NFL en España no tiene  nada que ver con la Liga en Estados Unidos",
+        "url": "https://www.elmundo.es/deportes/2025/11/13/6915b882e9cf4a2d098b457a.html",
+        "source": "El Mundo Deportes",
+        "published": [
+          2025,
+          11,
+          13,
+          22,
+          12,
+          32,
+          3,
+          317,
+          0
+        ],
+        "summary": "&nbsp;<a href=\"https://www.elmundo.es/deportes/2025/11/13/6915b882e9cf4a2d098b457a.html\">Leer</a><img alt=\"\" src=\"http://secure-uk.imrworldwide.com/cgi-bin/m?cid=es-widgetueditorial&amp;cg=rss-elmundo"
+      },
+      {
+        "id": "https://www.eldiario.es/sociedad/tribunal-europeo-derechos-humanos-condena-espana-ingreso-psiquiatrico-forzoso-ley-debe-cambiar_1_12764826.html",
+        "text": "El Tribunal Europeo de Derechos Humanos condena a España por un ingreso psiquiátrico forzoso: “La ley debe cambiar”",
+        "url": "https://www.eldiario.es/sociedad/tribunal-europeo-derechos-humanos-condena-espana-ingreso-psiquiatrico-forzoso-ley-debe-cambiar_1_12764826.html",
+        "source": "El Diario",
+        "published": [
+          2025,
+          11,
+          14,
+          21,
+          33,
+          42,
+          4,
+          318,
+          0
+        ],
+        "summary": "<p><img alt=\"El Tribunal Europeo de Derechos Humanos condena a España por un ingreso psiquiátrico forzoso: “La ley debe cambiar”\" height=\"675\" src=\"https://static.eldiario.es/clip/a2935ef5-b9ac-4517-8"
+      },
+      {
+        "id": "https://elpais.com/ciencia/2025-11-11/eclipse-total-de-agosto-de-2026-en-espana-el-gobierno-pide-un-plan-a-todas-las-comunidades-autonomas-para-garantizar-la-seguridad.html",
+        "text": "Eclipse total de agosto de 2026 en España: el Gobierno pide un plan a todas las comunidades autónomas para garantizar la seguridad",
+        "url": "https://elpais.com/ciencia/2025-11-11/eclipse-total-de-agosto-de-2026-en-espana-el-gobierno-pide-un-plan-a-todas-las-comunidades-autonomas-para-garantizar-la-seguridad.html",
+        "source": "El País Ciencia",
+        "published": [
+          2025,
+          11,
+          11,
+          16,
+          34,
+          45,
+          1,
+          315,
+          0
+        ],
+        "summary": "La segunda reunión de la comisión interministerial para organizar el evento astronómico del siglo en España se ha celebrado en Madrid este martes con la participación de todas las autonomías menos el "
+      },
+      {
+        "id": "https://www.elmundo.es/deportes/futbol/mundial-de-futbol/2025/11/15/6918baaffc6c83dc198b45ac.html",
+        "text": "España arrasa de nuevo a Georgia y obtiene su billete para el Mundial (salvo la mayor hecatombe de la historia)",
+        "url": "https://www.elmundo.es/deportes/futbol/mundial-de-futbol/2025/11/15/6918baaffc6c83dc198b45ac.html",
+        "source": "El Mundo Deportes",
+        "published": [
+          2025,
+          11,
+          15,
+          18,
+          58,
+          8,
+          5,
+          319,
+          0
+        ],
+        "summary": "En otro gran partido, la selección deja cerrada su clasificación pues el único resultado que la dejaría fuera es un 0-7 contra Turquía el martes en Sevilla&nbsp;<a href=\"https://www.elmundo.es/deporte"
+      },
+      {
+        "id": "https://elpais.com/cultura/2025-11-15/squeeze-la-banda-de-culto-de-la-new-wave-britanica-que-nunca-toco-en-espana-hasta-ahora.html",
+        "text": "Squeeze, la banda de culto de la ‘new wave’ británica que nunca tocó en España (hasta ahora)",
+        "url": "https://elpais.com/cultura/2025-11-15/squeeze-la-banda-de-culto-de-la-new-wave-britanica-que-nunca-toco-en-espana-hasta-ahora.html",
+        "source": "El País Cultura",
+        "published": [
+          2025,
+          11,
+          15,
+          4,
+          30,
+          1,
+          5,
+          319,
+          0
+        ],
+        "summary": "Los dos líderes del grupo, que actúa este fin de semana en Barcelona, repasan las vicisitudes de una trayectoria de 50 años discreta en cuanto a éxito pero de reconocida calidad"
+      },
+      {
+        "id": "https://www.elmundo.es/deportes/futbol-americano/2025/11/13/6914efa1e85ece32118b4595.html",
+        "text": "Los Chiefs de Travis Kelce (y Taylor Swift) quieren ser los siguientes en jugar un partido de la NFL en España: \"Sueño con eso, sería increíble\"",
+        "url": "https://www.elmundo.es/deportes/futbol-americano/2025/11/13/6914efa1e85ece32118b4595.html",
+        "source": "El Mundo Deportes",
+        "published": [
+          2025,
+          11,
+          13,
+          22,
+          12,
+          23,
+          3,
+          317,
+          0
+        ],
+        "summary": "EL MUNDO habla con la estrella y con directivos de la franquicia. \"Queremos ser el equipo de todo el mundo y tenemos todo para lograrlo\", explica Mark Donovan, su presidente.&nbsp;<a href=\"https://www"
+      },
+      {
+        "id": "https://elpais.com/deportes/futbol/2025-11-15/esta-espana-es-mundial-golea-a-georgia-y-casi-esta-en-la-proxima-copa-del-mundo.html",
+        "text": "Esta España es mundial: golea a Georgia y casi está en la próxima Copa del mundo",
+        "url": "https://elpais.com/deportes/futbol/2025-11-15/esta-espana-es-mundial-golea-a-georgia-y-casi-esta-en-la-proxima-copa-del-mundo.html",
+        "source": "El País",
+        "published": [
+          2025,
+          11,
+          15,
+          19,
+          46,
+          18,
+          5,
+          319,
+          0
+        ],
+        "summary": "Solo un 0-7 ante Turquía el martes privaría a la Roja del pase directo al campeonato en EE UU, Canadá y México después de otra exhibición bajo la batuta de Zubimendi y con otros dos tantos de Oyarzaba"
+      },
+      {
+        "id": "https://elpais.com/ciencia/2025-11-12/arrancan-las-negociaciones-para-instalar-en-espana-el-mayor-telescopio-del-hemisferio-norte.html",
+        "text": "Arrancan las negociaciones para instalar en España el mayor telescopio del hemisferio norte",
+        "url": "https://elpais.com/ciencia/2025-11-12/arrancan-las-negociaciones-para-instalar-en-espana-el-mayor-telescopio-del-hemisferio-norte.html",
+        "source": "El País Ciencia",
+        "published": [
+          2025,
+          11,
+          12,
+          8,
+          57,
+          11,
+          2,
+          316,
+          0
+        ],
+        "summary": "Los países miembros anuncian el inicio de conversaciones con el Gobierno para explorar la construcción del Telescopio de Treinta Metros en la isla de La Palma"
+      },
+      {
+        "id": "https://www.elmundo.es/pais-vasco/2025/11/15/6918d8c8e9cf4aad218b457d.html",
+        "text": "20.000 manifestantes se suman a la marcha ultra 'abertzale' por Palestina con gritos contra España y quema de contenedores",
+        "url": "https://www.elmundo.es/pais-vasco/2025/11/15/6918d8c8e9cf4aad218b457d.html",
+        "source": "El Mundo",
+        "published": [
+          2025,
+          11,
+          15,
+          20,
+          14,
+          42,
+          5,
+          319,
+          0
+        ],
+        "summary": "Los grupos radicales multiplican su apoyo en una de las dos manifestaciones soberanistas celebradas antes de partido entre Euskadi y Palestina&nbsp;<a href=\"https://www.elmundo.es/pais-vasco/2025/11/1"
+      },
+      {
+        "id": "http://es.euronews.com/cultura/2025/11/15/comer-en-un-restaurante-michelin-en-espana-sin-necesidad-de-quedarse-en-numeros-rojos",
+        "text": "Comer en un restaurante Michelín en España sin necesidad de quedarse en números rojos",
+        "url": "http://es.euronews.com/cultura/2025/11/15/comer-en-un-restaurante-michelin-en-espana-sin-necesidad-de-quedarse-en-numeros-rojos",
+        "source": "Euronews Español",
+        "published": [
+          2025,
+          11,
+          15,
+          11,
+          30,
+          2,
+          5,
+          319,
+          0
+        ],
+        "summary": "El Restaurante Chirón ofrece la posibilidad de acercar la comida de más alto nivel a prácticamente cualquier comensal sin necesidad de pensar en vender un riñón o pedir un préstamo para vivir la exper"
+      },
+      {
+        "id": "https://www.eldiario.es/catalunya/matrimonio-forzado-lacra-silenciosa-espana-denuncias-son-punta-iceberg_1_12762180.html",
+        "text": "El matrimonio forzado, una lacra silenciosa en España: \"Las denuncias son la punta del iceberg\"",
+        "url": "https://www.eldiario.es/catalunya/matrimonio-forzado-lacra-silenciosa-espana-denuncias-son-punta-iceberg_1_12762180.html",
+        "source": "El Diario",
+        "published": [
+          2025,
+          11,
+          14,
+          21,
+          33,
+          41,
+          4,
+          318,
+          0
+        ],
+        "summary": "<p><img alt=\"El matrimonio forzado, una lacra silenciosa en España: &quot;Las denuncias son la punta del iceberg&quot;\" height=\"675\" src=\"https://static.eldiario.es/clip/f24b293a-44b3-4f06-8123-db81f7"
+      },
+      {
+        "id": "https://www.elmundo.es/deportes/futbol/mundial-de-futbol/2025/11/15/6918baaffc6c83dc198b45ac.html",
+        "text": "España arrasa de nuevo a Georgia y obtiene su billete para el Mundial (salvo la mayor hecatombe de la historia)",
+        "url": "https://www.elmundo.es/deportes/futbol/mundial-de-futbol/2025/11/15/6918baaffc6c83dc198b45ac.html",
+        "source": "El Mundo",
+        "published": [
+          2025,
+          11,
+          15,
+          18,
+          58,
+          8,
+          5,
+          319,
+          0
+        ],
+        "summary": "En otro gran partido, la selección deja cerrada su clasificación pues el único resultado que la dejaría fuera es un 0-7 contra Turquía el martes en Sevilla&nbsp;<a href=\"https://www.elmundo.es/deporte"
+      },
+      {
+        "id": "https://elpais.com/ciencia/cafe-y-teoremas/2025-08-01/la-historia-de-la-unica-mujer-en-la-foto-maria-del-carmen-martinez-sancho-primera-doctora-en-matematicas-de-espana.html",
+        "text": "La historia de la única mujer en la foto: María del Carmen Martínez Sancho, primera doctora en matemáticas de España",
+        "url": "https://elpais.com/ciencia/cafe-y-teoremas/2025-08-01/la-historia-de-la-unica-mujer-en-la-foto-maria-del-carmen-martinez-sancho-primera-doctora-en-matematicas-de-espana.html",
+        "source": "El País Ciencia",
+        "published": [
+          2025,
+          8,
+          1,
+          3,
+          20,
+          0,
+          4,
+          213,
+          0
+        ],
+        "summary": "La matemática fue pionera en el estudio de la geometría de la teoría de la relatividad, durante una breve carrera como investigadora que tuvo que abandonar para dedicarse a la docencia"
+      },
+      {
+        "id": "https://www.elmundo.es/deportes/futbol/mundial-de-futbol/2025/11/15/6918d270e9cf4a0a418b4579.html",
+        "text": "España, la autoridad del juego y el gol, con Lamine o sin Lamine",
+        "url": "https://www.elmundo.es/deportes/futbol/mundial-de-futbol/2025/11/15/6918d270e9cf4a0a418b4579.html",
+        "source": "El Mundo",
+        "published": [
+          2025,
+          11,
+          15,
+          19,
+          21,
+          16,
+          5,
+          319,
+          0
+        ],
+        "summary": "&nbsp;<a href=\"https://www.elmundo.es/deportes/futbol/mundial-de-futbol/2025/11/15/6918d270e9cf4a0a418b4579.html\">Leer</a><img alt=\"\" src=\"http://secure-uk.imrworldwide.com/cgi-bin/m?cid=es-widgetuedi"
+      },
+      {
+        "id": "https://www.elmundo.es/deportes/futbol/mundial-de-futbol/2025/11/15/6918ae37fdddff003f8b4573.html",
+        "text": "Apostar por los goles que va a marcar España es lo más difícil",
+        "url": "https://www.elmundo.es/deportes/futbol/mundial-de-futbol/2025/11/15/6918ae37fdddff003f8b4573.html",
+        "source": "El Mundo Deportes",
+        "published": [
+          2025,
+          11,
+          15,
+          20,
+          20,
+          55,
+          5,
+          319,
+          0
+        ],
+        "summary": "&nbsp;<a href=\"https://www.elmundo.es/deportes/futbol/mundial-de-futbol/2025/11/15/6918ae37fdddff003f8b4573.html\">Leer</a><img alt=\"\" src=\"http://secure-uk.imrworldwide.com/cgi-bin/m?cid=es-widgetuedi"
+      },
+      {
+        "id": "https://www.elmundo.es/deportes/futbol/mundial-de-futbol/2025/11/15/6918d270e9cf4a0a418b4579.html",
+        "text": "España, la autoridad del juego y el gol, con Lamine o sin Lamine",
+        "url": "https://www.elmundo.es/deportes/futbol/mundial-de-futbol/2025/11/15/6918d270e9cf4a0a418b4579.html",
+        "source": "El Mundo Deportes",
+        "published": [
+          2025,
+          11,
+          15,
+          19,
+          21,
+          16,
+          5,
+          319,
+          0
+        ],
+        "summary": "&nbsp;<a href=\"https://www.elmundo.es/deportes/futbol/mundial-de-futbol/2025/11/15/6918d270e9cf4a0a418b4579.html\">Leer</a><img alt=\"\" src=\"http://secure-uk.imrworldwide.com/cgi-bin/m?cid=es-widgetuedi"
+      }
+    ],
+    "keywords": [
+      "España",
+      "href=\"https://www.elmundo.es",
+      "Georgia",
+      "Turquía",
+      "src=\"http://secure-uk.imrworldwide.com/cgi-bin",
+      "Palestina",
+      "Madrid",
+      "Barcelona",
+      "Carme Noguera",
+      "Mundial 2026"
+    ],
+    "score": 53
+  },
+  "sources": [
+    "www.20minutos.es",
+    "www.20minutos.es",
+    "www.clarin.com",
+    "elpais.com",
+    "www.elmundo.es"
+  ]
+}

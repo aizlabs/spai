@@ -11,15 +11,18 @@ import json
 import logging
 from typing import Dict, List, Optional
 
+from scripts.models import BaseArticle, AdaptedArticle
+from scripts.config import AppConfig
+
 
 class LevelAdapter:
     """Adapts articles to specific CEFR levels"""
 
-    def __init__(self, config: Dict, logger: logging.Logger):
+    def __init__(self, config: AppConfig, logger: logging.Logger):
         self.config = config
         self.logger = logger.getChild('LevelAdapter')
-        self.llm_config = config['llm']
-        self.generation_config = config['generation']
+        self.llm_config = config.llm.model_dump()
+        self.generation_config = config.generation.model_dump()
 
         # Initialize LLM client
         self._init_llm_client()
@@ -51,10 +54,10 @@ class LevelAdapter:
 
     def adapt_to_level(
         self,
-        base_article: Dict,
+        base_article: BaseArticle,
         level: str,
         feedback: Optional[List[str]] = None
-    ) -> Dict:
+    ) -> AdaptedArticle:
         """
         Adapt base article to target CEFR level
 
@@ -84,9 +87,9 @@ class LevelAdapter:
 
     def adapt_to_a2(
         self,
-        base_article: Dict,
+        base_article: BaseArticle,
         feedback: Optional[List[str]] = None
-    ) -> Dict:
+    ) -> AdaptedArticle:
         """
         Adapt to A2 using glossing strategy
 
@@ -96,7 +99,7 @@ class LevelAdapter:
 
         prompt = prompts.get_a2_adaptation_prompt(base_article, feedback)
 
-        self.logger.info(f"Adapting to A2: {base_article['title']}")
+        self.logger.info(f"Adapting to A2: {base_article.title}")
         if feedback:
             self.logger.debug(f"A2 adaptation with feedback: {len(feedback)} issues")
 
@@ -105,17 +108,17 @@ class LevelAdapter:
             response, base_article, 'A2'
         )
 
-        word_count = len(article['content'].split())
-        vocab_count = len(article.get('vocabulary', {}))
+        word_count = len(article.content.split())
+        vocab_count = len(article.vocabulary)
         self.logger.info(f"A2 article adapted: {word_count} words, {vocab_count} vocabulary items")
 
         return article
 
     def adapt_to_b1(
         self,
-        base_article: Dict,
+        base_article: BaseArticle,
         feedback: Optional[List[str]] = None
-    ) -> Dict:
+    ) -> AdaptedArticle:
         """
         Adapt to B1 with light modifications
 
@@ -126,7 +129,7 @@ class LevelAdapter:
 
         prompt = prompts.get_b1_adaptation_prompt(base_article, feedback)
 
-        self.logger.info(f"Adapting to B1: {base_article['title']}")
+        self.logger.info(f"Adapting to B1: {base_article.title}")
         if feedback:
             self.logger.debug(f"B1 adaptation with feedback: {len(feedback)} issues")
 
@@ -135,8 +138,8 @@ class LevelAdapter:
             response, base_article, 'B1'
         )
 
-        word_count = len(article['content'].split())
-        vocab_count = len(article.get('vocabulary', {}))
+        word_count = len(article.content.split())
+        vocab_count = len(article.vocabulary)
         self.logger.info(f"B1 article adapted: {word_count} words, {vocab_count} vocabulary items")
 
         return article
@@ -180,9 +183,9 @@ class LevelAdapter:
     def _parse_adaptation_response(
         self,
         response: str,
-        base_article: Dict,
+        base_article: BaseArticle,
         level: str
-    ) -> Dict:
+    ) -> AdaptedArticle:
         """Parse adapted article response and merge with base metadata"""
 
         # Extract JSON from response (handle markdown code blocks)
@@ -200,45 +203,19 @@ class LevelAdapter:
             parsed['level'] = level
 
             # Inherit metadata from base article
-            # Use default {} for topic to avoid None issues with Publisher
-            parsed['topic'] = base_article.get('topic', {})
-            parsed['sources'] = base_article.get('sources', [])
+            parsed['topic'] = base_article.topic.model_dump() if base_article.topic else None
+            parsed['sources'] = base_article.sources
 
             # Store base article for regeneration
-            parsed['base_article'] = {
-                'title': base_article['title'],
-                'content': base_article['content'],
-                'summary': base_article['summary'],
-                'reading_time': base_article['reading_time']
-            }
+            parsed['base_article'] = base_article.model_dump()
 
-            # Validate required fields
-            required = ['title', 'content', 'summary', 'reading_time']
-            for field in required:
-                if field not in parsed:
-                    self.logger.error(f"Missing required field in adapted article: {field}")
-                    raise ValueError(f"Missing required field: {field}")
-
-            # Ensure vocabulary is present (even if empty)
-            if 'vocabulary' not in parsed or not parsed['vocabulary']:
-                self.logger.warning(f"No vocabulary in {level} article, setting empty dict")
-                parsed['vocabulary'] = {}
-
-            # Ensure reading_time is an integer
-            if not isinstance(parsed['reading_time'], int):
-                try:
-                    parsed['reading_time'] = int(parsed['reading_time'])
-                except (ValueError, TypeError):
-                    self.logger.warning("Invalid reading_time, defaulting based on level")
-                    parsed['reading_time'] = 2 if level == 'A2' else 3
-
-            return parsed
+            # Create AdaptedArticle instance, Pydantic handles validation and type coercion
+            return AdaptedArticle(**parsed)
 
         except json.JSONDecodeError as e:
             self.logger.error(f"Failed to parse adaptation response as JSON: {e}")
             self.logger.debug(f"Response was: {response[:500]}")
             raise ValueError(f"LLM returned invalid JSON during {level} adaptation: {e}")
-
-        except ValueError as e:
-            self.logger.error(f"Invalid adapted article structure: {e}")
-            raise ValueError(f"Invalid adapted article structure: {e}")
+        except Exception as e:
+            self.logger.error(f"Invalid adapted article structure or Pydantic validation error: {e}")
+            raise ValueError(f"Invalid adapted article structure or Pydantic validation error: {e}")

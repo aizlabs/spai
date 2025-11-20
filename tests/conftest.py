@@ -7,6 +7,10 @@ import json
 from unittest.mock import Mock, MagicMock
 from pathlib import Path
 
+from typing import List
+from scripts.models import Topic, SourceArticle, BaseArticle, AdaptedArticle, LLMConfig, TwoStepSynthesisConfig, LLMModelsConfig
+from scripts.config import AppConfig
+
 
 # =============================================================================
 # Configuration Fixtures
@@ -14,9 +18,9 @@ from pathlib import Path
 
 
 @pytest.fixture
-def base_config():
+def base_config() -> AppConfig:
     """Base configuration dict for testing"""
-    return {
+    config_dict = {
         'environment': 'test',
         'generation': {
             'articles_per_run': 2,
@@ -51,8 +55,13 @@ def base_config():
             'max_words_per_source': 300,
             'min_words_per_source': 100,
             'max_sources_per_topic': 5
-        }
+        },
+        'output': {
+            'path': 'output/_posts'
+        },
+        'alerts': {}
     }
+    return AppConfig(**config_dict)
 
 
 @pytest.fixture
@@ -73,44 +82,44 @@ def mock_logger():
 
 
 @pytest.fixture
-def sample_topic():
+def sample_topic() -> Topic:
     """Sample topic dict"""
-    return {
-        'title': 'España reduce emisiones de CO2',
-        'sources': ['El País', 'BBC Mundo', 'El Mundo'],
-        'mentions': 5,
-        'score': 25.0
-    }
+    return Topic(
+        title='España reduce emisiones de CO2',
+        sources=['El País', 'BBC Mundo', 'El Mundo'],
+        mentions=5,
+        score=25.0
+    )
 
 
 @pytest.fixture
-def sample_sources():
+def sample_sources() -> List[SourceArticle]:
     """Sample source articles"""
     return [
-        {
-            'source': 'El País',
-            'text': 'España ha reducido sus emisiones de CO2 en un 15% este año. '
-                   'El gobierno atribuye esta reducción al aumento del uso de energías renovables. '
-                   'Los expertos consideran que es un paso importante en la lucha contra el cambio climático.',
-            'word_count': 150,
-            'url': 'https://elpais.com/test'
-        },
-        {
-            'source': 'BBC Mundo',
-            'text': 'Las nuevas medidas implementadas por el gobierno español están dando resultados. '
-                   'La reducción de emisiones alcanza el 15% comparado con el año anterior. '
-                   'Los paneles solares y la energía eólica han sido clave en este logro.',
-            'word_count': 140,
-            'url': 'https://bbc.com/test'
-        },
-        {
-            'source': 'El Mundo',
-            'text': 'Expertos ambientales celebran los datos de España. '
-                   'El país ha logrado reducir significativamente sus emisiones contaminantes. '
-                   'La inversión en tecnologías limpias ha sido fundamental.',
-            'word_count': 120,
-            'url': 'https://elmundo.es/test'
-        }
+        SourceArticle(
+            source='El País',
+            text='España ha reducido sus emisiones de CO2 en un 15% este año. '
+                 'El gobierno atribuye esta reducción al aumento del uso de energías renovables. '
+                 'Los expertos consideran que es un paso importante en la lucha contra el cambio climático.',
+            word_count=150,
+            url='https://elpais.com/test'
+        ),
+        SourceArticle(
+            source='BBC Mundo',
+            text='Las nuevas medidas implementadas por el gobierno español están dando resultados. '
+                 'La reducción de emisiones alcanza el 15% comparado con el año anterior. '
+                 'Los paneles solares y la energía eólica han sido clave en este logro.',
+            word_count=140,
+            url='https://bbc.com/test'
+        ),
+        SourceArticle(
+            source='El Mundo',
+            text='Expertos ambientales celebran los datos de España. '
+                 'El país ha logrado reducir significativamente sus emisiones contaminantes. '
+                 'La inversión en tecnologías limpias ha sido fundamental.',
+            word_count=120,
+            url='https://elmundo.es/test'
+        )
     ]
 
 
@@ -120,78 +129,80 @@ def sample_sources():
 
 
 @pytest.fixture
-def sample_base_article(sample_topic):
+def sample_base_article(sample_topic: Topic) -> BaseArticle:
     """Sample base article (native Spanish) - matches real ArticleSynthesizer output"""
-    return {
-        'title': 'España logra reducir sus emisiones de CO2 en un 15% este año',
-        'content': 'España ha conseguido reducir sus emisiones de dióxido de carbono en un 15% '
-                  'durante el presente año, según datos publicados por el Ministerio de Transición Ecológica. '
-                  'Este descenso se atribuye principalmente al incremento en el uso de energías renovables, '
-                  'especialmente la energía solar y eólica.\n\n'
-                  'El gobierno español ha invertido significativamente en infraestructuras de energías limpias '
-                  'durante los últimos años. Los paneles solares y los parques eólicos han proliferado '
-                  'por todo el territorio nacional, contribuyendo a una matriz energética más sostenible.\n\n'
-                  'Los expertos en medio ambiente consideran que estos resultados son un paso importante '
-                  'en la lucha contra el cambio climático. Sin embargo, advierten que aún queda mucho '
-                  'trabajo por hacer para alcanzar los objetivos establecidos en el Acuerdo de París.',
-        'summary': 'España reduce sus emisiones de CO2 un 15% gracias al aumento de energías renovables.',
-        'reading_time': 3,
+    return BaseArticle(
+        title='España logra reducir sus emisiones de CO2 en un 15% este año',
+        content='España ha conseguido reducir sus emisiones de dióxido de carbono en un 15% '
+                'durante el presente año, según datos publicados por el Ministerio de Transición Ecológica. '
+                'Este descenso se atribuye principalmente al incremento en el uso de energías renovables, '
+                'especialmente la energía solar y eólica.\n\n'
+                'El gobierno español ha invertido significativamente en infraestructuras de energías limpias '
+                'durante los últimos años. Los paneles solares y los parques eólicos han proliferado '
+                'por todo el territorio nacional, contribuyendo a una matriz energética más sostenible.\n\n'
+                'Los expertos en medio ambiente consideran que estos resultados son un paso importante '
+                'en la lucha contra el cambio climático. Sin embargo, advierten que aún queda mucho '
+                'trabajo por hacer para alcanzar los objetivos establecidos en el Acuerdo de París.',
+        summary='España reduce sus emisiones de CO2 un 15% gracias al aumento de energías renovables.',
+        reading_time=3,
         # Metadata added by ArticleSynthesizer (these fields are CRITICAL for downstream components)
-        'topic': sample_topic,
-        'sources': ['El País', 'BBC Mundo', 'El Mundo']
-    }
+        topic=sample_topic,
+        sources=['El País', 'BBC Mundo', 'El Mundo']
+    )
 
 
 @pytest.fixture
-def sample_base_article_minimal():
+def sample_base_article_minimal() -> BaseArticle:
     """Minimal base article without optional metadata - tests edge cases"""
-    return {
-        'title': 'Test Article',
-        'content': 'Test content for minimal article.',
-        'summary': 'Test summary.',
-        'reading_time': 2
+    return BaseArticle(
+        title='Test Article',
+        content='Test content for minimal article. This content needs to be at least 100 characters long to pass Pydantic validation. So, I am adding more text here to meet the requirement.',
+        summary='Test summary.',
+        reading_time=2
         # No 'topic' or 'sources' - simulates edge case
-    }
+    )
 
 
 @pytest.fixture
-def sample_a2_article(sample_base_article):
+def sample_a2_article(sample_base_article: BaseArticle) -> AdaptedArticle:
     """Sample A2-adapted article"""
-    return {
-        'title': 'España tiene menos contaminación',
-        'content': 'España reduce sus emisiones de CO2. El gobierno dice que la contaminación baja un 15%. '
-                  'Esto es bueno para el **medio ambiente**.\n\n'
-                  'El país usa más **energías renovables**. Los **paneles solares** y el viento producen electricidad. '
-                  'Estas energías son limpias.\n\n'
-                  'Los expertos están contentos. Dicen que España va por buen camino. '
-                  'Pero necesita hacer más para ayudar al planeta.',
-        'vocabulary': {
+    return AdaptedArticle(
+        title='España tiene menos contaminación',
+        content='España reduce sus emisiones de CO2. El gobierno dice que la contaminación baja un 15%. '
+                'Esto es bueno para el **medio ambiente**.\n\n'
+                'El país usa más **energías renovables**. Los **paneles solares** y el viento producen electricidad. '
+                'Estas energías son limpias.\n\n'
+                'Los expertos están contentos. Dicen que España va por buen camino. '
+                'Pero necesita hacer más para ayudar al planeta.',
+        vocabulary={
             'medio ambiente': 'environment - el aire, agua y naturaleza que nos rodea',
             'energías renovables': 'renewable energy - energía del sol, viento y agua',
             'paneles solares': 'solar panels - aparatos que capturan la energía del sol'
         },
-        'summary': 'España contamina menos gracias a las energías limpias.',
-        'reading_time': 2,
-        'level': 'A2',
-        'base_article': sample_base_article
-    }
+        summary='España contamina menos gracias a las energías limpias.',
+        reading_time=2,
+        level='A2',
+        base_article=sample_base_article,
+        topic=sample_base_article.topic,
+        sources=sample_base_article.sources
+    )
 
 
 @pytest.fixture
-def sample_b1_article(sample_base_article):
+def sample_b1_article(sample_base_article: BaseArticle) -> AdaptedArticle:
     """Sample B1-adapted article"""
-    return {
-        'title': 'España reduce sus emisiones de CO2 gracias a energías limpias',
-        'content': 'España ha logrado reducir sus **emisiones de dióxido de carbono** en un 15% este año. '
-                  'El **Ministerio de Transición Ecológica** publicó estos datos positivos. '
-                  'El aumento de **energías renovables** explica esta mejora.\n\n'
-                  'El gobierno invirtió mucho dinero en infraestructuras de energías limpias. '
-                  'Los **paneles solares** y **parques eólicos** se multiplicaron en todo el país. '
-                  'Esto creó una matriz energética más **sostenible**.\n\n'
-                  'Los expertos ambientales celebran estos resultados. Consideran que es un avance importante '
-                  'contra el **cambio climático**. Sin embargo, advierten que España debe hacer más '
-                  'para cumplir los objetivos del **Acuerdo de París**.',
-        'vocabulary': {
+    return AdaptedArticle(
+        title='España reduce sus emisiones de CO2 gracias a energías limpias',
+        content='España ha logrado reducir sus **emisiones de dióxido de carbono** en un 15% este año. '
+                'El **Ministerio de Transición Ecológica** publicó estos datos positivos. '
+                'El aumento de **energías renovables** explica esta mejora.\n\n'
+                'El gobierno invirtió mucho dinero en infraestructuras de energías limpias. '
+                'Los **paneles solares** y **parques eólicos** se multiplicaron en todo el país. '
+                'Esto creó una matriz energética más **sostenible**.\n\n'
+                'Los expertos ambientales celebran estos resultados. Consideran que es un avance importante '
+                'contra el **cambio climático**. Sin embargo, advierten que España debe hacer más '
+                'para cumplir los objetivos del **Acuerdo de París**.',
+        vocabulary={
             'emisiones de dióxido de carbono': 'carbon dioxide emissions - gases contaminantes del aire',
             'Ministerio de Transición Ecológica': 'Ministry of Ecological Transition - departamento del gobierno español',
             'energías renovables': 'renewable energy - energía del sol, viento y agua que no se agota',
@@ -201,11 +212,13 @@ def sample_b1_article(sample_base_article):
             'cambio climático': 'climate change - alteración del clima global por actividad humana',
             'Acuerdo de París': 'Paris Agreement - tratado internacional sobre cambio climático'
         },
-        'summary': 'España reduce emisiones de CO2 en 15% mediante energías renovables.',
-        'reading_time': 3,
-        'level': 'B1',
-        'base_article': sample_base_article
-    }
+        summary='España reduce emisiones de CO2 en 15% mediante energías renovables.',
+        reading_time=3,
+        level='B1',
+        base_article=sample_base_article,
+        topic=sample_base_article.topic,
+        sources=sample_base_article.sources
+    )
 
 
 # =============================================================================

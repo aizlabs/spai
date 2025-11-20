@@ -7,6 +7,7 @@ import json
 from unittest.mock import Mock, MagicMock, patch, call
 from pathlib import Path
 from scripts.content_generator import ContentGenerator
+from scripts.models import AdaptedArticle
 
 
 class TestContentGeneratorInit:
@@ -33,7 +34,7 @@ class TestContentGeneratorInit:
     def test_init_save_base_articles_enabled(self, mock_adapter_class, mock_synth_class,
                                               base_config, mock_logger):
         """Test initialization with base article saving enabled"""
-        base_config['generation']['two_step_synthesis']['save_base_article'] = True
+        base_config.generation.two_step_synthesis.save_base_article = True
 
         generator = ContentGenerator(base_config, mock_logger)
 
@@ -102,7 +103,7 @@ class TestContentGeneratorSaveBaseArticle:
                                         base_config, mock_logger, sample_topic,
                                         sample_sources, sample_base_article, sample_a2_article):
         """Test base article is saved when enabled"""
-        base_config['generation']['two_step_synthesis']['save_base_article'] = True
+        base_config.generation.two_step_synthesis.save_base_article = True
 
         mock_synthesizer = MagicMock()
         mock_synthesizer.synthesize.return_value = sample_base_article
@@ -120,7 +121,7 @@ class TestContentGeneratorSaveBaseArticle:
 
         # Verify file written
         mock_open.assert_called()
-        assert mock_open.call_args[0][0].endswith('.json')
+        assert str(mock_open.call_args[0][0]).endswith('.json')
 
     @patch('scripts.content_generator.ArticleSynthesizer')
     @patch('scripts.content_generator.LevelAdapter')
@@ -129,7 +130,7 @@ class TestContentGeneratorSaveBaseArticle:
                                          base_config, mock_logger, sample_topic,
                                          sample_sources, sample_base_article, sample_a2_article):
         """Test base article not saved when disabled"""
-        base_config['generation']['two_step_synthesis']['save_base_article'] = False
+        base_config.generation.two_step_synthesis.save_base_article = False
 
         mock_synthesizer = MagicMock()
         mock_synthesizer.synthesize.return_value = sample_base_article
@@ -155,14 +156,14 @@ class TestContentGeneratorRegenerateWithFeedback:
                                                    base_config, mock_logger, sample_topic,
                                                    sample_sources, sample_a2_article):
         """Test regeneration with adaptation_only strategy"""
-        base_config['generation']['two_step_synthesis']['regeneration_strategy'] = 'adaptation_only'
+        base_config.generation.two_step_synthesis.regeneration_strategy = 'adaptation_only'
 
         mock_synthesizer = MagicMock()
         mock_synth_class.return_value = mock_synthesizer
 
         mock_adapter = MagicMock()
-        improved_article = sample_a2_article.copy()
-        improved_article['title'] = 'Improved Title'
+        improved_article = sample_a2_article.model_copy() # Use model_copy for Pydantic objects
+        improved_article.title = 'Improved Title'
         mock_adapter.adapt_to_level.return_value = improved_article
         mock_adapter_class.return_value = mock_adapter
 
@@ -185,7 +186,7 @@ class TestContentGeneratorRegenerateWithFeedback:
         call_args = mock_adapter.adapt_to_level.call_args
         assert call_args[1]['feedback'] == issues
 
-        assert result['title'] == 'Improved Title'
+        assert result.title == 'Improved Title'
 
     @patch('scripts.content_generator.ArticleSynthesizer')
     @patch('scripts.content_generator.LevelAdapter')
@@ -194,15 +195,15 @@ class TestContentGeneratorRegenerateWithFeedback:
                                                  sample_sources, sample_base_article,
                                                  sample_a2_article):
         """Test regeneration with full_pipeline strategy"""
-        base_config['generation']['two_step_synthesis']['regeneration_strategy'] = 'full_pipeline'
+        base_config.generation.two_step_synthesis.regeneration_strategy = 'full_pipeline'
 
         mock_synthesizer = MagicMock()
         mock_synthesizer.synthesize.return_value = sample_base_article
         mock_synth_class.return_value = mock_synthesizer
 
         mock_adapter = MagicMock()
-        improved_article = sample_a2_article.copy()
-        improved_article['title'] = 'Improved Title'
+        improved_article = sample_a2_article.model_copy()
+        improved_article.title = 'Improved Title'
         mock_adapter.adapt_to_level.return_value = improved_article
         mock_adapter_class.return_value = mock_adapter
 
@@ -221,7 +222,7 @@ class TestContentGeneratorRegenerateWithFeedback:
         mock_synthesizer.synthesize.assert_called_once_with(sample_topic, sample_sources)
         mock_adapter.adapt_to_level.assert_called_once()
 
-        assert result['title'] == 'Improved Title'
+        assert result.title == 'Improved Title'
 
     @patch('scripts.content_generator.ArticleSynthesizer')
     @patch('scripts.content_generator.LevelAdapter')
@@ -230,15 +231,17 @@ class TestContentGeneratorRegenerateWithFeedback:
                                                         sample_sources, sample_base_article,
                                                         sample_a2_article):
         """Test regeneration falls back to full pipeline if base_article missing"""
-        base_config['generation']['two_step_synthesis']['regeneration_strategy'] = 'adaptation_only'
+        base_config.generation.two_step_synthesis.regeneration_strategy = 'adaptation_only'
 
         # Previous attempt WITHOUT base_article
-        previous_attempt = {
-            'title': 'Old Title',
-            'content': 'Content',
-            'level': 'A2'
+        previous_attempt = AdaptedArticle(
+            title='Old Title',
+            content='Content' * 10, # Make sure content is long enough for validation
+            summary='Summary' * 2, # Make sure summary is long enough for validation
+            reading_time=2,
+            level='A2'
             # Missing 'base_article' key
-        }
+        )
 
         mock_synthesizer = MagicMock()
         mock_synthesizer.synthesize.return_value = sample_base_article
@@ -312,7 +315,7 @@ class TestContentGeneratorErrorHandling:
                                                             sample_topic, sample_sources,
                                                             sample_base_article, sample_a2_article):
         """Test save error doesn't fail the pipeline"""
-        base_config['generation']['two_step_synthesis']['save_base_article'] = True
+        base_config.generation.two_step_synthesis.save_base_article = True
 
         mock_synthesizer = MagicMock()
         mock_synthesizer.synthesize.return_value = sample_base_article

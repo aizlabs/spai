@@ -9,12 +9,61 @@ Hierarchical configuration loading:
 
 import os
 import yaml
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 from pathlib import Path
 from dotenv import load_dotenv
+from pydantic import BaseModel, Field, model_validator
+
+from scripts.models import LLMConfig, TwoStepSynthesisConfig, LLMModelsConfig
+
 
 # Load .env file at module import time
 load_dotenv()
+
+
+class GenerationConfig(BaseModel):
+    articles_per_run: int = Field(..., ge=1)
+    levels: List[str] = Field(..., min_length=1)
+    target_word_count: Dict[str, int]
+    two_step_synthesis: TwoStepSynthesisConfig
+
+
+class QualityGateConfig(BaseModel):
+    min_score: float = Field(..., ge=0, le=10)
+    max_attempts: int = Field(..., ge=1)
+
+
+class SourceConfig(BaseModel):
+    max_words_per_source: int = Field(..., ge=50)
+    min_words_per_source: int = Field(..., ge=10)
+    max_sources_per_topic: int = Field(..., ge=1)
+
+
+class AppConfig(BaseModel):
+    environment: str = "local"
+    sources_list: List[Dict[str, str]] = Field(default_factory=list)
+    generation: GenerationConfig
+    llm: LLMConfig
+    quality_gate: QualityGateConfig
+    sources: SourceConfig
+    output: Dict[str, str] = Field(default_factory=dict)
+    alerts: Dict[str, str] = Field(default_factory=dict)
+
+    @model_validator(mode='after')
+    def validate_llm_keys(self) -> 'AppConfig':
+        if self.llm.provider == 'openai' and not self.llm.openai_api_key:
+            if self.llm.anthropic_api_key:
+                self.llm.provider = 'anthropic'
+                print("⚠️  Switched provider to 'anthropic' (OPENAI_API_KEY not found but ANTHROPIC_API_KEY is set)")
+            else:
+                raise ValueError("OPENAI_API_KEY is required for OpenAI provider")
+        elif self.llm.provider == 'anthropic' and not self.llm.anthropic_api_key:
+            if self.llm.openai_api_key:
+                self.llm.provider = 'openai'
+                print("⚠️  Switched provider to 'openai' (ANTHROPIC_API_KEY not found but OPENAI_API_KEY is set)")
+            else:
+                raise ValueError("ANTHROPIC_API_KEY is required for Anthropic provider")
+        return self
 
 
 def load_yaml(filepath: Path) -> Dict[str, Any]:
@@ -39,109 +88,71 @@ def deep_merge(base: Dict, override: Dict) -> Dict:
     return result
 
 
-def load_config(environment: str = 'local') -> Dict[str, Any]:
+def load_config(environment: str = 'local') -> AppConfig:
     """
-    Load configuration with hierarchical merging
-    
+    Load configuration with hierarchical merging and Pydantic validation
+
     Args:
         environment: 'local' or 'production'
-    
+
     Returns:
-        Merged configuration dictionary
+        AppConfig instance
     """
     config_dir = Path(__file__).parent.parent / 'config'
-    
+
     # Load base config
-    base_config = load_yaml(config_dir / 'base.yaml')
+    base_config_dict = load_yaml(config_dir / 'base.yaml')
 
     # Load sources configuration
-    sources_config = load_yaml(config_dir / 'sources.yaml')
-    if sources_config:
-        base_config['sources_list'] = sources_config.get('sources', [])
+    sources_config_dict = load_yaml(config_dir / 'sources.yaml')
+    if sources_config_dict:
+        base_config_dict['sources_list'] = sources_config_dict.get('sources', [])
 
     # Load environment-specific config
-    env_config = load_yaml(config_dir / f'{environment}.yaml')
+    env_config_dict = load_yaml(config_dir / f'{environment}.yaml')
 
     # Merge configs
-    config = deep_merge(base_config, env_config)
-    
+    merged_config_dict = deep_merge(base_config_dict, env_config_dict)
+
     # Override with environment variables
-    config = apply_env_overrides(config)
-    
-    # Validate required fields
-    validate_config(config)
-    
-    return config
+    final_config_dict = apply_env_overrides(merged_config_dict)
+
+    # Instantiate Pydantic model for validation and type-safe access
+    return AppConfig(**final_config_dict)
 
 
-def apply_env_overrides(config: Dict) -> Dict:
-    """Override config with environment variables"""
+def apply_env_overrides(config_dict: Dict) -> Dict:
+    """Override config dictionary with environment variables before Pydantic validation"""
 
     # LLM API keys
     anthropic_key = os.getenv('ANTHROPIC_API_KEY')
     openai_key = os.getenv('OPENAI_API_KEY')
 
     if anthropic_key:
-        config.setdefault('llm', {})
-        config['llm']['anthropic_api_key'] = anthropic_key
+        config_dict.setdefault('llm', {})
+        config_dict['llm']['anthropic_api_key'] = anthropic_key
 
     if openai_key:
-        config.setdefault('llm', {})
-        config['llm']['openai_api_key'] = openai_key
-
-    # Smart provider detection: auto-switch provider based on available API key
-    # if configured provider's key is missing but another provider's key exists
-    configured_provider = config.get('llm', {}).get('provider', 'openai')
-
-    if configured_provider == 'openai' and not config.get('llm', {}).get('openai_api_key'):
-        if config.get('llm', {}).get('anthropic_api_key'):
-            config['llm']['provider'] = 'anthropic'
-            print("⚠️  Switched provider to 'anthropic' (OPENAI_API_KEY not found but ANTHROPIC_API_KEY is set)")
-
-    elif configured_provider == 'anthropic' and not config.get('llm', {}).get('anthropic_api_key'):
-        if config.get('llm', {}).get('openai_api_key'):
-            config['llm']['provider'] = 'openai'
-            print("⚠️  Switched provider to 'openai' (ANTHROPIC_API_KEY not found but OPENAI_API_KEY is set)")
+        config_dict.setdefault('llm', {})
+        config_dict['llm']['openai_api_key'] = openai_key
 
     # Alerts
     if os.getenv('ALERT_EMAIL'):
-        config.setdefault('alerts', {})
-        config['alerts']['email'] = os.getenv('ALERT_EMAIL')
+        config_dict.setdefault('alerts', {})
+        config_dict['alerts']['email'] = os.getenv('ALERT_EMAIL')
 
     # Override articles per run
     if os.getenv('ARTICLES_PER_RUN'):
-        config.setdefault('generation', {})
-        config['generation']['articles_per_run'] = int(os.getenv('ARTICLES_PER_RUN'))
+        config_dict.setdefault('generation', {})
+        config_dict['generation']['articles_per_run'] = int(os.getenv('ARTICLES_PER_RUN'))
 
-    return config
-
-
-def validate_config(config: Dict):
-    """Validate required configuration fields"""
-    required_fields = [
-        'sources',  # Base config section
-        'generation',
-        'quality_gate',
-        'llm'
-    ]
-
-    for field in required_fields:
-        if field not in config:
-            raise ValueError(f"Missing required config field: {field}")
-
-    # Validate sources_list is populated (set by load_config)
-    if 'sources_list' not in config or not config['sources_list']:
-        raise ValueError("Missing or empty sources_list - check config/sources.yaml")
-
-    # Validate LLM config
-    if 'provider' not in config['llm']:
-        raise ValueError("Missing llm.provider in config")
-
-    if 'models' not in config['llm']:
-        raise ValueError("Missing llm.models in config")
+    return config_dict
 
 
-def get_config_value(config: Dict, path: str, default: Any = None) -> Any:
+
+
+
+def get_config_value(config: AppConfig, path: str, default: Any = None) -> Any:
     """
     Get nested config value using dot notation
     
@@ -152,8 +163,8 @@ def get_config_value(config: Dict, path: str, default: Any = None) -> Any:
     value = config
     
     for key in keys:
-        if isinstance(value, dict) and key in value:
-            value = value[key]
+        if hasattr(value, key):
+            value = getattr(value, key)
         else:
             return default
     
