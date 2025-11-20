@@ -10,22 +10,26 @@ from pathlib import Path
 from typing import Dict
 import re
 
+from scripts.models import AdaptedArticle
+from scripts.config import AppConfig
+from scripts.config import AppConfig
+
 
 class Publisher:
     """Publishes articles to Jekyll format"""
 
-    def __init__(self, config: Dict, logger: logging.Logger, dry_run: bool = False):
+    def __init__(self, config: AppConfig, logger: logging.Logger, dry_run: bool = False):
         self.config = config
         self.logger = logger.getChild('Publisher')
         self.dry_run = dry_run
 
         # Output directory
-        self.output_dir = Path(config.get('output', {}).get('path', 'output/_posts'))
+        self.output_dir = Path(config.output['path'])
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         self.logger.info(f"Publisher initialized (dry_run={dry_run}, output={self.output_dir})")
 
-    def save_article(self, article: Dict) -> bool:
+    def save_article(self, article: AdaptedArticle) -> bool:
         """
         Save article as Jekyll markdown file
 
@@ -64,7 +68,7 @@ class Publisher:
             self.logger.debug(traceback.format_exc())
             return False
 
-    def _generate_filename(self, article: Dict, timestamp: datetime) -> str:
+    def _generate_filename(self, article: AdaptedArticle, timestamp: datetime) -> str:
         """
         Generate Jekyll filename
 
@@ -79,10 +83,10 @@ class Publisher:
         timestamp_str = timestamp.strftime("%Y-%m-%d-%H%M%S")
 
         # Create slug from title
-        title = article['title']
+        title = article.title
         slug = self._slugify(title)[:50]  # Max 50 chars
 
-        level = article['level'].lower()
+        level = article.level.lower()
 
         return f"{timestamp_str}-{slug}-{level}.md"
 
@@ -125,7 +129,7 @@ class Publisher:
         text = text.replace('"', '\\"')
         return text
 
-    def _generate_markdown(self, article: Dict, timestamp: datetime) -> str:
+    def _generate_markdown(self, article: AdaptedArticle, timestamp: datetime) -> str:
         """
         Generate Jekyll markdown with frontmatter
 
@@ -135,29 +139,29 @@ class Publisher:
         """
 
         # Escape title and sources for YAML
-        escaped_title = self._escape_yaml_string(article['title'])
-        escaped_sources = self._escape_yaml_string(', '.join(article.get('sources', [])))
+        escaped_title = self._escape_yaml_string(article.title)
+        escaped_sources = self._escape_yaml_string(', '.join(article.sources))
 
         # YAML frontmatter
         frontmatter = f"""---
 title: "{escaped_title}"
 date: {timestamp.isoformat()}
-level: {article['level']}
+level: {article.level}
 topics: {self._format_topics(article)}
 sources: "{escaped_sources}"
-reading_time: {article.get('reading_time', 3)}
+reading_time: {article.reading_time}
 ---
 
 """
 
         # Article content
-        content = article['content']
+        content = article.content
 
         # Vocabulary section
-        vocabulary = self._format_vocabulary(article.get('vocabulary', {}))
+        vocabulary = self._format_vocabulary(article.vocabulary)
 
         # Attribution
-        sources_list = article.get('sources', [])
+        sources_list = article.sources
         attribution = f"""
 
 ---
@@ -170,13 +174,14 @@ reading_time: {article.get('reading_time', 3)}
 
         return markdown
 
-    def _format_topics(self, article: Dict) -> str:
+    def _format_topics(self, article: AdaptedArticle) -> str:
         """Extract and format topics from article as valid YAML"""
         import json
 
         # Try to infer topics from article topic data
-        topic_data = article.get('topic', {})
-        keywords = topic_data.get('keywords', [])
+        # Use 'or {}' to handle None case (when topic is explicitly None)
+        topic_data = article.topic
+        keywords = topic_data.keywords if topic_data else []
 
         if keywords:
             # Take first 3 keywords, lowercased

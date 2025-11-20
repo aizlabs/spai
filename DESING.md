@@ -504,6 +504,143 @@ Triggers automatic Jekyll rebuild on GitHub Pages.
 
 ## Content Pipeline
 
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         TOPIC DISCOVERY                                  │
+│  TopicDiscoverer → Finds trending topics from 22+ Spanish news sources  │
+└────────────────────────────────┬────────────────────────────────────────┘
+                                 │
+                                 ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        CONTENT FETCHING                                  │
+│  ContentFetcher → Fetches 3-5 full articles per topic (Trafilatura)    │
+└────────────────────────────────┬────────────────────────────────────────┘
+                                 │
+                                 ↓
+                 ┌───────────────────────────────┐
+                 │   FOR EACH LEVEL (A2, B1)     │
+                 └───────────┬───────────────────┘
+                             │
+                             ↓
+        ╔════════════════════════════════════════════════════╗
+        ║          STEP 1: SYNTHESIS                         ║
+        ║  ArticleSynthesizer.synthesize()                   ║
+        ║                                                     ║
+        ║  Input:  Topic + 3-5 source articles               ║
+        ║  Model:  gpt-4o (config: generation)               ║
+        ║  Prompt: get_synthesis_prompt()                    ║
+        ║                                                     ║
+        ║  Output: BASE ARTICLE (native Spanish)             ║
+        ║    • title (8-12 words)                            ║
+        ║    • content (300-400 words, native-level)         ║
+        ║    • summary (1 sentence)                          ║
+        ║    • reading_time                                  ║
+        ║                                                     ║
+        ║  Focus: Factual accuracy, natural Spanish          ║
+        ║  No CEFR constraints                               ║
+        ╚════════════════════════════════════════════════════╝
+                             │
+                             ↓
+                   [Optional: Save to disk]
+                   ./output/base_articles/
+                             │
+                             ↓
+        ╔════════════════════════════════════════════════════╗
+        ║          STEP 2: ADAPTATION                        ║
+        ║  LevelAdapter.adapt_to_level()                     ║
+        ║                                                     ║
+        ║  Input:  Base article + target level (A2/B1)       ║
+        ║  Model:  gpt-4o (config: adaptation)               ║
+        ║  Prompt: get_a2_adaptation_prompt() OR             ║
+        ║          get_b1_adaptation_prompt()                ║
+        ║                                                     ║
+        ║  A2 Processing:                                    ║
+        ║    • Simplify to present/preterite tenses          ║
+        ║    • Break long sentences (max 20 words)           ║
+        ║    • Use only 1,500 most common words              ║
+        ║    • Gloss 10-15 advanced terms with **bold**      ║
+        ║    • Target: ~200 words                            ║
+        ║                                                     ║
+        ║  B1 Processing:                                    ║
+        ║    • Allow mixed tenses (presente/pretérito/       ║
+        ║      imperfecto/futuro)                            ║
+        ║    • Light simplification only                     ║
+        ║    • Gloss 8-12 specialized terms                  ║
+        ║    • Target: ~300 words                            ║
+        ║                                                     ║
+        ║  Output: ADAPTED ARTICLE                           ║
+        ║    • title (level-appropriate)                     ║
+        ║    • content (with **bold** glossed terms)         ║
+        ║    • vocabulary (glossary with translations)       ║
+        ║    • summary (level-appropriate)                   ║
+        ║    • reading_time                                  ║
+        ║    • base_article (stored for regeneration)        ║
+        ╚════════════════════════════════════════════════════╝
+                             │
+                             ↓
+        ┌────────────────────────────────────────────────────┐
+        │          QUALITY GATE                              │
+        │  QualityGate.check_and_improve()                   │
+        │                                                     │
+        │  LLM Judge evaluates (4 criteria, 0-10 score):     │
+        │    • Grammar & Language (0-4 pts)                  │
+        │    • Educational Value (0-3 pts)                   │
+        │    • Content Quality (0-2 pts)                     │
+        │    • Level Appropriateness (0-1 pt)                │
+        │                                                     │
+        │  If score < 7.5: REGENERATE                        │
+        └────────────────┬────────────┬──────────────────────┘
+                         │            │
+                    PASS │            │ FAIL (attempts < 3)
+                         │            │
+                         │            ↓
+                         │   ╔═══════════════════════════════════╗
+                         │   ║  REGENERATION (configurable)      ║
+                         │   ║                                   ║
+                         │   ║  Strategy: adaptation_only        ║
+                         │   ║  • Reuse base_article             ║
+                         │   ║  • Re-adapt with feedback         ║
+                         │   ║  • 1 LLM call (faster, cheaper)   ║
+                         │   ║                                   ║
+                         │   ║  OR: full_pipeline                ║
+                         │   ║  • Re-synthesize base             ║
+                         │   ║  • Re-adapt to level              ║
+                         │   ║  • 2 LLM calls (more thorough)    ║
+                         │   ╚════════════════════════════════════
+                         │            │
+                         │            ↓
+                         │      [Back to Quality Gate]
+                         │
+                         ↓
+        ┌────────────────────────────────────────────────────┐
+        │            PUBLISHING                              │
+        │  Publisher.save_article()                          │
+        │                                                     │
+        │  Saves to: ./output/_posts/YYYY-MM-DD-slug.md     │
+        │  Format: Jekyll markdown with frontmatter          │
+        └────────────────────────────────────────────────────┘
+```
+
+### Configuration
+
+```yaml
+# config/base.yaml
+generation:
+  two_step_synthesis:
+    enabled: true                      # Enable two-step process
+    save_base_article: false           # Save native articles for debugging
+    base_article_path: ./output/base_articles/
+    regeneration_strategy: adaptation_only  # Fast regeneration
+
+llm:
+  models:
+    generation: gpt-4o       # Step 1: Synthesis
+    adaptation: gpt-4o       # Step 2: Adaptation (can use gpt-4o-mini)
+    quality_check: gpt-4o-mini
+```
+
 ### Single Run Execution
 
 **Trigger:** Cron schedule (3x daily: 2am, 10am, 6pm UTC)

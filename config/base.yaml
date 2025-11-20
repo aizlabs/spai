@@ -43,6 +43,13 @@ generation:
     A2: 200
     B1: 300
 
+  # Two-step synthesis settings
+  two_step_synthesis:
+    enabled: true                    # Toggle for two-step vs single-step generation
+    save_base_article: false         # Save intermediate base articles for debugging
+    base_article_path: ./output/base_articles/  # Where to save base articles
+    regeneration_strategy: adaptation_only  # 'adaptation_only' or 'full_pipeline'
+
 # Quality gate settings
 quality_gate:
   min_score: 7.5
@@ -52,7 +59,8 @@ quality_gate:
 llm:
   provider: openai  # or 'anthropic'
   models:
-    generation: gpt-4o
+    generation: gpt-4o        # For synthesis (Step 1)
+    adaptation: gpt-4o        # For level adaptation (Step 2) - can use cheaper model
     quality_check: gpt-4o-mini
   temperature: 0.3
   max_tokens: 4096

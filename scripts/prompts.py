@@ -7,6 +7,8 @@ for easy iteration and A/B testing.
 
 from typing import Dict, List, Optional
 
+from scripts.models import Topic, SourceArticle, BaseArticle, AdaptedArticle
+
 
 # Level-specific grammar rules
 LEVEL_GENERATION_RULES = {
@@ -295,7 +297,7 @@ def validate_level(level: str) -> None:
         )
 
 
-def prepare_source_context(sources: List[Dict]) -> str:
+def prepare_source_context(sources: List[SourceArticle]) -> str:
     """
     Prepare source text for prompt
 
@@ -308,16 +310,16 @@ def prepare_source_context(sources: List[Dict]) -> str:
     context = []
 
     for i, source in enumerate(sources[:5], 1):
-        context.append(f"""Source {i} ({source['source']}):
-{source['text']}
+        context.append(f"""Source {i} ({source.source}):
+{source.text}
 """)
 
     return '\n\n'.join(context)
 
 
 def get_generation_prompt(
-    topic: Dict,
-    sources: List[Dict],
+    topic: Topic,
+    sources: List[SourceArticle],
     level: str,
     word_count: int
 ) -> str:
@@ -344,7 +346,7 @@ def get_generation_prompt(
 
     prompt = f"""You are a Spanish language teacher creating educational content for {level} level students.
 
-TOPIC: {topic['title']}
+TOPIC: {topic.title}
 
 REFERENCE SOURCES (synthesize information, DO NOT copy text):
 {source_context}
@@ -383,11 +385,12 @@ CRITICAL RULES:
 
 
 def get_regeneration_prompt(
-    topic: Dict,
-    sources: List[Dict],
+    topic: Topic,
+    sources: List[SourceArticle],
     level: str,
     word_count: int,
-    feedback: Dict
+    previous_attempt: AdaptedArticle,
+    issues: List[str]
 ) -> str:
     """
     Prompt for article regeneration with feedback
@@ -409,20 +412,20 @@ def get_regeneration_prompt(
     base_prompt = get_generation_prompt(topic, sources, level, word_count)
 
     # Truncate previous content to first 200 words for context
-    first_200 = ' '.join(feedback['previous_content'].split()[:200])
+    first_200 = ' '.join(previous_attempt.content.split()[:200])
 
     # Add feedback section
     feedback_section = f"""
 
 ⚠️ IMPORTANT: PREVIOUS ATTEMPT HAD ISSUES - YOU MUST FIX THEM
 
-Previous Title: {feedback['previous_title']}
+Previous Title: {previous_attempt.title}
 
 Previous Content (first 200 words):
 {first_200}...
 
 SPECIFIC ISSUES TO FIX:
-{chr(10).join(f"- {issue}" for issue in feedback['issues'])}
+{chr(10).join(f"- {issue}" for issue in issues)}
 
 Generate a NEW, IMPROVED version that specifically addresses these issues.
 Make sure to fix the problems mentioned above.
@@ -431,7 +434,7 @@ Make sure to fix the problems mentioned above.
     return base_prompt + feedback_section
 
 
-def get_quality_judge_prompt(article: Dict, level: str) -> str:
+def get_quality_judge_prompt(article: AdaptedArticle, level: str) -> str:
     """
     Prompt for quality evaluation
 
@@ -452,15 +455,15 @@ def get_quality_judge_prompt(article: Dict, level: str) -> str:
         ValueError: If level is not supported
     """
     validate_level(level)
-    vocab_count = len(article.get('vocabulary', {}))
+    vocab_count = len(article.vocabulary)
 
     prompt = f"""You are a Spanish language teaching expert. Evaluate this article for {level} level learners.
 
 ARTICLE:
-Title: {article['title']}
+Title: {article.title}
 Level: {level}
 Content:
-{article['content']}
+{article.content}
 
 Vocabulary provided: {vocab_count} words
 
@@ -551,6 +554,235 @@ Remember:
 - Maintain factual accuracy absolutely
 - Preserve the core news value
 - Make it accessible to A2 learners while maintaining authenticity
+"""
+
+    return prompt
+
+
+# ============================================================================
+# TWO-STEP SYNTHESIS PROMPTS
+# ============================================================================
+
+
+def get_synthesis_prompt(topic: Topic, sources: List[SourceArticle]) -> str:
+    """
+    Step 1: Native-level synthesis without CEFR constraints
+
+    Synthesizes multiple source articles into one coherent native-level
+    Spanish article. No vocabulary limitations or grammar simplification.
+    Focus is on factual accuracy and natural Spanish expression.
+
+    Args:
+        topic: Topic dict with 'title' key
+        sources: List of source content dicts with 'source' and 'text' keys
+
+    Returns:
+        Complete prompt string for native-level synthesis
+    """
+    source_context = prepare_source_context(sources)
+
+    prompt = f"""You are a professional Spanish journalist. Synthesize the following sources into ONE coherent news article in natural, native-level Spanish.
+
+TOPIC: {topic.title}
+
+SOURCES TO SYNTHESIZE:
+{source_context}
+
+TASK: Write an ORIGINAL article in Spanish that:
+1. Synthesizes facts from all sources into a coherent narrative
+2. Uses natural, native-level Spanish (no simplification)
+3. Is approximately 300-400 words
+4. Has 3-4 well-structured paragraphs
+5. Maintains journalistic objectivity and accuracy
+6. Flows naturally with good transitions
+
+CRITICAL RULES:
+- Write ORIGINAL content - synthesize ideas in your own words
+- DO NOT copy phrases directly from sources
+- Cross-validate facts across sources (prioritize information from multiple sources)
+- Use natural Spanish vocabulary and grammar (no CEFR constraints)
+- Focus on FACTUAL ACCURACY above all else
+- DO NOT add source attribution (will be added later)
+- Maintain a neutral, journalistic tone
+
+OUTPUT FORMAT (return ONLY valid JSON, no markdown):
+{{
+  "title": "Engaging headline in Spanish (8-12 words)",
+  "content": "Full article in natural Spanish (300-400 words, 3-4 paragraphs)",
+  "summary": "One sentence summary in Spanish",
+  "reading_time": estimated_minutes_as_integer
+}}
+
+Remember: This is native-level Spanish. Write naturally and accurately without any simplification.
+"""
+
+    return prompt
+
+
+def get_a2_adaptation_prompt(
+    base_article: BaseArticle,
+    feedback: Optional[List[str]] = None
+) -> str:
+    """
+    Step 2: Adapt base article to A2 level using glossing strategy
+
+    Adapts a native-level Spanish article to A2 CEFR level while preserving
+    informational value through strategic glossing of key terminology.
+    Uses existing A2_NEWS_PROCESSING_INSTRUCTIONS.
+
+    Args:
+        base_article: Base article dict from ArticleSynthesizer with native Spanish
+        feedback: Optional list of issues from quality gate (for regeneration)
+
+    Returns:
+        Complete prompt string for A2 adaptation
+    """
+    feedback_section = ""
+    if feedback:
+        feedback_section = f"""
+⚠️ PREVIOUS ATTEMPT HAD ISSUES - FIX THEM:
+{chr(10).join(f"- {issue}" for issue in feedback)}
+
+Make sure to specifically address these issues in your adaptation.
+"""
+
+    prompt = f"""{A2_NEWS_PROCESSING_INSTRUCTIONS}
+
+=== ARTICLE TO ADAPT ===
+
+Title: {base_article.title}
+
+Content:
+{base_article.content}
+
+{feedback_section}
+
+=== YOUR TASK ===
+
+Adapt the above NATIVE-LEVEL article to A2 CEFR level following ALL steps (1-6) in the instructions above.
+
+Key points:
+- This is already a well-written, factually accurate article
+- Your job is to make it A2-accessible while preserving the information
+- Use the glossing strategy for important terminology
+- Simplify grammar and sentence structure
+- Maintain factual accuracy absolutely
+- Target word count: ~200 words
+- Target vocabulary: 10-15 glossed terms
+
+OUTPUT FORMAT (return ONLY valid JSON, no markdown):
+{{
+  "title": "Simplified title (max 10 words)",
+  "content": "A2-adapted content with **bold** glossed terms (~200 words)",
+  "vocabulary": {{
+    "term1": "English translation - Spanish A2 explanation",
+    "term2": "English translation - Spanish A2 explanation"
+  }},
+  "summary": "One sentence summary in simple Spanish",
+  "reading_time": 2
+}}
+
+IMPORTANT: Follow the A2 processing instructions exactly. Verify all requirements in Step 5 before outputting.
+"""
+
+    return prompt
+
+
+def get_b1_adaptation_prompt(
+    base_article: BaseArticle,
+    feedback: Optional[List[str]] = None
+) -> str:
+    """
+    Step 2: Adapt base article to B1 level (light adaptation)
+
+    Adapts a native-level Spanish article to B1 CEFR level.
+    Similar structure to A2 but less restrictive.
+    This is designed to be similar to A2 prompt but will be refined externally.
+
+    Args:
+        base_article: Base article dict from ArticleSynthesizer with native Spanish
+        feedback: Optional list of issues from quality gate (for regeneration)
+
+    Returns:
+        Complete prompt string for B1 adaptation
+    """
+    feedback_section = ""
+    if feedback:
+        feedback_section = f"""
+⚠️ PREVIOUS ATTEMPT HAD ISSUES - FIX THEM:
+{chr(10).join(f"- {issue}" for issue in feedback)}
+
+Make sure to specifically address these issues in your adaptation.
+"""
+
+    prompt = f"""You are a Spanish language education specialist tasked with adapting news articles to B1 CEFR level while maintaining their informational value.
+
+=== BASE ARTICLE ===
+
+Title: {base_article.title}
+
+Content:
+{base_article.content}
+
+{feedback_section}
+
+=== B1 ADAPTATION GUIDELINES ===
+
+VOCABULARY ASSESSMENT:
+1. Identify words/phrases outside the 3,000 most frequent Spanish words
+2. Select 8-12 terms for glossing (prioritize specialized/technical terms)
+3. Mark selected terms with **bold** formatting in the text
+4. Keep glossed terms in original form (do not simplify these)
+
+GRAMMAR & STRUCTURE:
+- Allow mixed tenses: presente, pretérito, imperfecto, futuro
+- Subjunctive allowed in common expressions (espero que, es importante que)
+- Target sentence length: 12-20 words average
+- Maximum sentence length: 25 words
+- Use varied connectors: aunque, mientras, sin embargo, ya que, por lo tanto
+
+SIMPLIFICATION (LIGHT):
+- Convert very complex constructions to simpler alternatives
+- Avoid: pluscuamperfecto, conditional perfect, complex passive voice
+- Prefer: active voice, direct constructions
+- Maintain chronological flow
+
+VOCABULARY GLOSSES:
+Format: [Spanish term] - [English translation] - [Spanish B1 explanation]
+- Spanish explanations use B1-level vocabulary
+- Maximum 20 words per Spanish explanation
+- Include cultural context when needed
+- Be functional and practical
+
+CONTENT ORGANIZATION:
+- Title: Clear and engaging (8-10 words)
+- Lead paragraph: WHO, WHAT, WHEN, WHERE
+- Body: 3-4 paragraphs with clear topic sentences
+- Target: ~300 words total
+- One main idea per paragraph
+
+OUTPUT FORMAT (return ONLY valid JSON, no markdown):
+{{
+  "title": "Engaging title in Spanish (8-10 words)",
+  "content": "B1-adapted content with **bold** glossed terms (~300 words)",
+  "vocabulary": {{
+    "term1": "English translation - Spanish B1 explanation",
+    "term2": "English translation - Spanish B1 explanation"
+  }},
+  "summary": "One sentence summary in Spanish",
+  "reading_time": 3
+}}
+
+QUALITY VERIFICATION:
+Before finalizing, verify:
+□ 8-12 vocabulary terms are glossed and marked with **bold**
+□ No sentence exceeds 25 words
+□ Mixed tenses used appropriately (not just presente)
+□ Main facts from base article are preserved
+□ Content is engaging for B1 learners
+□ Vocabulary glosses use B1-appropriate Spanish
+
+Remember: B1 learners have solid intermediate skills. Don't over-simplify, but do make specialized terminology accessible through glossing.
 """
 
     return prompt

@@ -7,33 +7,24 @@ Regenerates articles that fail, with feedback for improvement.
 
 import json
 import logging
-from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 from scripts import prompts
-
-
-@dataclass
-class QualityResult:
-    """Result from quality check"""
-    passed: bool
-    score: float
-    issues: List[str]
-    strengths: List[str]
-    attempts: int
+from scripts.models import AdaptedArticle, Topic, SourceArticle, QualityResult
+from scripts.config import AppConfig
 
 
 class QualityGate:
     """Quality checking with smart regeneration"""
 
-    def __init__(self, config: Dict, logger: logging.Logger):
+    def __init__(self, config: AppConfig, logger: logging.Logger):
         self.config = config
         self.logger = logger.getChild('QualityGate')
 
-        self.quality_config = config['quality_gate']
+        self.quality_config = config.quality_gate.model_dump()
         self.min_score = self.quality_config['min_score']
         self.max_attempts = self.quality_config['max_attempts']
-        self.llm_config = config['llm']
+        self.llm_config = config.llm.model_dump()
 
         # Initialize LLM client
         self._init_llm_client()
@@ -65,11 +56,11 @@ class QualityGate:
 
     def check_and_improve(
         self,
-        article: Dict,
+        article: AdaptedArticle,
         generator,
-        topic: Dict,
-        sources: List[Dict]
-    ) -> Tuple[Optional[Dict], QualityResult]:
+        topic: Topic,
+        sources: List[SourceArticle]
+    ) -> Tuple[Optional[AdaptedArticle], QualityResult]:
         """
         Check quality and regenerate if needed
 
@@ -84,50 +75,58 @@ class QualityGate:
         """
         attempt_history = []
         current_article = article
-        level = article['level']
+        level = article.level
 
         for attempt in range(1, self.max_attempts + 1):
             self.logger.info(f"Quality check attempt {attempt}/{self.max_attempts}")
 
             # Evaluate current version
-            result = self._evaluate(current_article)
+            result_dict = self._evaluate(current_article) # _evaluate returns Dict for now
 
             attempt_history.append({
                 'attempt': attempt,
-                'score': result['total_score'],
-                'issues': result['issues']
+                'score': result_dict['total_score'],
+                'issues': result_dict['issues']
             })
 
-            passed = result['total_score'] >= self.min_score
+            passed = result_dict['total_score'] >= self.min_score
 
             if passed:
-                self.logger.info(f"✅ Passed on attempt {attempt} (score: {result['total_score']:.1f}/{self.min_score})")
+                self.logger.info(f"✅ Passed on attempt {attempt} (score: {result_dict['total_score']:.1f}/{self.min_score})")
                 return current_article, QualityResult(
                     passed=True,
-                    score=result['total_score'],
+                    score=result_dict['total_score'],
                     issues=[],
-                    strengths=result.get('strengths', []),
-                    attempts=attempt
+                    strengths=result_dict.get('strengths', []),
+                    attempts=attempt,
+                    grammar_score=result_dict.get('grammar_score'),
+                    educational_score=result_dict.get('educational_score'),
+                    content_score=result_dict.get('content_score'),
+                    level_score=result_dict.get('level_score')
                 )
 
             # Failed - should we try again?
             if attempt >= self.max_attempts:
                 self.logger.warning(
-                    f"❌ Failed after {attempt} attempts (final: {result['total_score']:.1f}/{self.min_score})"
+                    f"❌ Failed after {attempt} attempts (final: {result_dict['total_score']:.1f}/{self.min_score})"
                 )
                 return None, QualityResult(
                     passed=False,
-                    score=result['total_score'],
-                    issues=result['issues'],
-                    strengths=result.get('strengths', []),
-                    attempts=attempt
+                    score=result_dict['total_score'],
+                    issues=result_dict['issues'],
+                    strengths=result_dict.get('strengths', []),
+                    attempts=attempt,
+                    grammar_score=result_dict.get('grammar_score'),
+                    educational_score=result_dict.get('educational_score'),
+                    content_score=result_dict.get('content_score'),
+                    level_score=result_dict.get('level_score')
                 )
 
             # Regenerate with feedback
             self.logger.info(
-                f"🔄 Regenerating (attempt {attempt + 1}) - score was {result['total_score']:.1f}/{self.min_score}"
+                f"🔄 Regenerating (attempt {attempt + 1}) - score was {result_dict['total_score']:.1f}/{self.min_score}"
             )
-            self.logger.debug(f"   Issues: {', '.join(result['issues'][:3])}")
+            self.logger.debug(f"   Issues: {', '.join(result_dict['issues'][:3])}")
 
             try:
                 current_article = generator.regenerate_with_feedback(
@@ -135,16 +134,20 @@ class QualityGate:
                     sources=sources,
                     level=level,
                     previous_attempt=current_article,
-                    issues=result['issues']
+                    issues=result_dict['issues']
                 )
             except Exception as e:
                 self.logger.error(f"Regeneration failed: {e}")
                 return None, QualityResult(
                     passed=False,
-                    score=result['total_score'],
-                    issues=result['issues'] + [f"Regeneration failed: {str(e)}"],
-                    strengths=result.get('strengths', []),
-                    attempts=attempt
+                    score=result_dict['total_score'],
+                    issues=result_dict['issues'] + [f"Regeneration failed: {str(e)}"],
+                    strengths=result_dict.get('strengths', []),
+                    attempts=attempt,
+                    grammar_score=result_dict.get('grammar_score'),
+                    educational_score=result_dict.get('educational_score'),
+                    content_score=result_dict.get('content_score'),
+                    level_score=result_dict.get('level_score')
                 )
 
         # Should not reach here, but just in case
@@ -156,10 +159,10 @@ class QualityGate:
             attempts=self.max_attempts
         )
 
-    def _evaluate(self, article: Dict) -> Dict:
+    def _evaluate(self, article: AdaptedArticle) -> Dict:
         """Evaluate article quality using LLM judge"""
 
-        level = article['level']
+        level = article.level
 
         # Get prompt from centralized prompts module
         prompt = prompts.get_quality_judge_prompt(article, level)

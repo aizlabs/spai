@@ -1,215 +1,184 @@
 """
-Content Generator Component
+Content Generator - Orchestrates Two-Step Generation
 
-Generates original Spanish articles by synthesizing multiple sources using LLM.
-Supports regeneration with feedback for quality improvement.
+Coordinates ArticleSynthesizer (Step 1) and LevelAdapter (Step 2)
+to produce level-appropriate Spanish articles.
+
+Architecture:
+  Step 1: ArticleSynthesizer.synthesize() → Native-level article
+  Step 2: LevelAdapter.adapt_to_level() → CEFR-adapted article
 """
 
 import json
 import logging
+from pathlib import Path
+from datetime import datetime
 from typing import Dict, List, Optional
 
-from scripts import prompts
+from scripts.article_synthesizer import ArticleSynthesizer
+from scripts.level_adapter import LevelAdapter
+from scripts.models import Topic, SourceArticle, BaseArticle, AdaptedArticle
+from scripts.config import AppConfig
 
 
 class ContentGenerator:
-    """Generates articles from multiple sources using LLM"""
+    """Orchestrates two-step article generation (synthesis + adaptation)"""
 
-    def __init__(self, config: Dict, logger: logging.Logger):
+    def __init__(self, config: AppConfig, logger: logging.Logger):
         self.config = config
         self.logger = logger.getChild('ContentGenerator')
+        self.generation_config = config.generation
 
-        self.generation_config = config['generation']
-        self.llm_config = config['llm']
+        # Initialize sub-components
+        self.synthesizer = ArticleSynthesizer(config, logger)
+        self.adapter = LevelAdapter(config, logger)
 
-        # Initialize LLM client based on provider
-        self._init_llm_client()
+        # Two-step settings
+        two_step_config = self.generation_config.two_step_synthesis
+        self.two_step_enabled = two_step_config.enabled
+        self.save_base_articles = two_step_config.save_base_article
+        self.base_article_path = two_step_config.base_article_path
+        self.regeneration_strategy = two_step_config.regeneration_strategy
 
-    def _init_llm_client(self):
-        """Initialize LLM client (Anthropic or OpenAI) based on config"""
-        provider = self.llm_config['provider']
-
-        if provider == 'anthropic':
-            api_key = self.llm_config.get('anthropic_api_key')
-            if not api_key:
-                raise ValueError("Missing ANTHROPIC_API_KEY in config/environment")
-
-            from anthropic import Anthropic
-            self.llm_client = Anthropic(api_key=api_key)
-            self.logger.info("Initialized Anthropic client")
-
-        elif provider == 'openai':
-            api_key = self.llm_config.get('openai_api_key')
-            if not api_key:
-                raise ValueError("Missing OPENAI_API_KEY in config/environment")
-
-            from openai import OpenAI
-            self.llm_client = OpenAI(api_key=api_key)
-            self.logger.info("Initialized OpenAI client")
-
-        else:
-            raise ValueError(f"Unknown LLM provider: {provider}")
+        self.logger.info(f"ContentGenerator initialized (two_step: {self.two_step_enabled})")
+        if self.save_base_articles:
+            self.logger.info(f"Base articles will be saved to: {self.base_article_path}")
 
     def generate_article(
         self,
-        topic: Dict,
-        sources: List[Dict],
+        topic: Topic,
+        sources: List[SourceArticle],
         level: str
-    ) -> Dict:
+    ) -> AdaptedArticle:
         """
-        Generate initial article (no feedback)
+        Generate article using two-step process
 
         Args:
-            topic: Topic dict from discovery
+            topic: Topic dict from discovery with 'title' key
             sources: List of source content dicts
             level: 'A2' or 'B1'
 
         Returns:
-            Article dict with title, content, vocabulary, etc.
+            Complete article ready for quality gate with:
+            - title, content, vocabulary, summary, reading_time
+            - level, topic, sources (metadata)
+            - base_article (stored for regeneration)
         """
-        # Get word count with fallback for unknown levels
-        word_count = self.generation_config['target_word_count'].get(level, 250)
+        if not self.two_step_enabled:
+            # Fallback: Use legacy single-step generation
+            # (Could implement legacy path if needed, but for now just log warning)
+            self.logger.warning(
+                "two_step_synthesis is disabled but ContentGenerator only supports two-step. "
+                "Proceeding with two-step generation."
+            )
 
-        # Get prompt from centralized prompts module
-        prompt = prompts.get_generation_prompt(topic, sources, level, word_count)
+        # Step 1: Synthesize native-level base article
+        self.logger.info(f"Starting two-step generation for {level}: {topic.title}")
+        base_article = self.synthesizer.synthesize(topic, sources)
 
-        self.logger.info(f"Generating {level} article for topic: {topic['title']}")
+        # Optional: Save base article to disk (configurable)
+        if self.save_base_articles:
+            self._save_base_article(base_article, topic)
 
-        response = self._call_llm(prompt)
+        # Step 2: Adapt to target CEFR level
+        article = self.adapter.adapt_to_level(base_article, level)
 
-        article = self._parse_response(response, topic, level, sources)
-
-        self.logger.info(f"Generated {level} article: {article['title']}")
+        self.logger.info(f"Two-step generation complete: {article.title}")
 
         return article
 
     def regenerate_with_feedback(
         self,
-        topic: Dict,
-        sources: List[Dict],
+        topic: Topic,
+        sources: List[SourceArticle],
         level: str,
-        previous_attempt: Dict,
+        previous_attempt: AdaptedArticle,
         issues: List[str]
-    ) -> Dict:
+    ) -> AdaptedArticle:
         """
-        Regenerate article with feedback about issues
+        Regenerate article with quality feedback
+
+        Strategy is configurable via regeneration_strategy:
+        - 'adaptation_only': Re-adapt same base article with feedback (default, faster)
+        - 'full_pipeline': Re-synthesize + re-adapt (more thorough)
 
         Args:
             topic: Topic dict
             sources: Source content
-            level: CEFR level
-            previous_attempt: Previous article that failed
-            issues: List of specific issues to fix
+            level: CEFR level ('A2' or 'B1')
+            previous_attempt: Previous article that failed quality check
+            issues: List of specific issues from quality gate
 
         Returns:
-            New improved article
+            Improved article
         """
-        # Get word count with fallback for unknown levels
-        word_count = self.generation_config['target_word_count'].get(level, 250)
-
-        feedback = {
-            'previous_title': previous_attempt['title'],
-            'previous_content': previous_attempt['content'],
-            'issues': issues
-        }
-
-        # Get regeneration prompt from centralized prompts module
-        prompt = prompts.get_regeneration_prompt(
-            topic, sources, level, word_count, feedback
+        self.logger.info(
+            f"Regenerating {level} article with {len(issues)} issues "
+            f"(strategy: {self.regeneration_strategy})"
         )
 
-        self.logger.info(f"Regenerating {level} article with feedback")
-        self.logger.debug(f"Issues to fix: {', '.join(issues[:3])}")
+        if self.regeneration_strategy == 'adaptation_only':
+            # Extract base article from previous attempt
+            base_article = previous_attempt.base_article
 
-        response = self._call_llm(prompt, temperature=0.4)  # Slightly higher temp
-
-        article = self._parse_response(response, topic, level, sources)
-
-        self.logger.info(f"Regenerated {level} article: {article['title']}")
-
-        return article
-
-    def _call_llm(self, prompt: str, temperature: float = 0.3) -> str:
-        """Call LLM with prompt"""
-        model = self.llm_config['models']['generation']
-        max_tokens = self.llm_config.get('max_tokens', 4096)
-
-        provider = self.llm_config['provider']
-
-        try:
-            if provider == 'anthropic':
-                response = self.llm_client.messages.create(
-                    model=model,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    messages=[{"role": "user", "content": prompt}]
+            if not base_article:
+                # Fallback: Re-synthesize if base article not available
+                self.logger.warning(
+                    "Base article not found in previous attempt, "
+                    "falling back to full pipeline regeneration"
                 )
-                return response.content[0].text
-
-            elif provider == 'openai':
-                response = self.llm_client.chat.completions.create(
-                    model=model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=temperature,
-                    max_tokens=max_tokens
-                )
-                return response.choices[0].message.content
-
+                base_article = self.synthesizer.synthesize(topic, sources)
             else:
-                raise ValueError(f"Unknown provider: {provider}")
+                self.logger.debug("Reusing base article from previous attempt")
+
+            # Re-adapt with feedback
+            return self.adapter.adapt_to_level(base_article, level, feedback=issues)
+
+        else:  # 'full_pipeline'
+            # Re-synthesize + re-adapt
+            self.logger.info("Regenerating full pipeline (synthesis + adaptation)")
+            base_article = self.synthesizer.synthesize(topic, sources)
+
+            if self.save_base_articles:
+                self._save_base_article(base_article, topic, suffix='_regen')
+
+            return self.adapter.adapt_to_level(base_article, level, feedback=issues)
+
+    def _save_base_article(
+        self,
+        base_article: BaseArticle,
+        topic: Topic,
+        suffix: str = ''
+    ):
+        """
+        Save base article to disk for debugging/analysis
+
+        Args:
+            base_article: Base article dict from synthesizer
+            topic: Topic dict (for filename)
+            suffix: Optional suffix for filename (e.g., '_regen')
+        """
+        try:
+            # Create directory if needed
+            Path(self.base_article_path).mkdir(parents=True, exist_ok=True)
+
+            # Generate filename
+            timestamp = datetime.utcnow().strftime('%Y%m%d-%H%M%S')
+            # Sanitize topic title for filename
+            safe_title = ''.join(
+                c if c.isalnum() or c in (' ', '-', '_') else ''
+                for c in topic.title
+            )[:50]
+            safe_title = safe_title.strip().replace(' ', '-')
+            filename = f"{timestamp}-{safe_title}{suffix}.json"
+            filepath = Path(self.base_article_path) / filename
+
+            # Save as JSON
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(base_article.model_dump(), f, ensure_ascii=False, indent=2)
+
+            self.logger.debug(f"Saved base article: {filepath}")
 
         except Exception as e:
-            self.logger.error(f"LLM API call failed: {e}")
-            raise
-
-    def _parse_response(
-        self,
-        response: str,
-        topic: Dict,
-        level: str,
-        sources: List[Dict]
-    ) -> Dict:
-        """Parse LLM JSON response into article dict"""
-
-        # Extract JSON from response (handle markdown code blocks)
-        json_str = response
-
-        if '```json' in response:
-            json_str = response.split('```json')[1].split('```')[0]
-        elif '```' in response:
-            json_str = response.split('```')[1].split('```')[0]
-
-        try:
-            parsed = json.loads(json_str.strip())
-
-            # Add metadata
-            parsed['topic'] = topic
-            parsed['level'] = level
-            parsed['sources'] = [s['source'] for s in sources]
-
-            # Ensure vocabulary is present
-            if 'vocabulary' not in parsed or not parsed['vocabulary']:
-                self.logger.warning("No vocabulary in article, setting empty dict")
-                parsed['vocabulary'] = {}
-
-            # Validate required fields
-            required = ['title', 'content', 'summary', 'reading_time']
-            for field in required:
-                if field not in parsed:
-                    self.logger.error(f"Missing required field: {field}")
-                    raise ValueError(f"Missing required field: {field}")
-
-            return parsed
-
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Failed to parse LLM response as JSON: {e}")
-            self.logger.debug(f"Response was: {response[:500]}")
-
-            # Raise exception instead of returning fallback to avoid wasting regeneration attempts
-            raise ValueError(f"LLM returned invalid JSON: {e}")
-
-        except ValueError as e:
-            self.logger.error(f"Invalid article structure: {e}")
-
-            # Raise exception instead of returning fallback to avoid wasting regeneration attempts
-            raise ValueError(f"Invalid article structure: {e}")
+            # Don't fail pipeline if saving fails
+            self.logger.error(f"Failed to save base article: {e}")

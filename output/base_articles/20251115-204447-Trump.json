@@ -1,0 +1,293 @@
+{
+  "title": "Trump enfrenta desafíos internacionales y controversias legales",
+  "content": "El presidente de Estados Unidos, Donald Trump, se encuentra en el centro de una serie de situaciones complejas tanto en el ámbito internacional como en el doméstico. En el Caribe, la Operación Lanza del Sur ha intensificado la presión sobre Venezuela, con un despliegue militar que, según la administración Trump, busca combatir el narcotráfico vinculado al gobierno de Nicolás Maduro. Trump ha mantenido reuniones con el Pentágono para discutir posibles acciones, aunque no ha revelado detalles específicos sobre sus planes futuros.\n\nSimultáneamente, Trump ha protagonizado un tenso encuentro con el presidente ucraniano Volodymyr Zelensky en la Oficina Oval. Durante la reunión, Trump y su vicepresidente J. D. Vance expresaron su frustración por la falta de gratitud de Zelensky hacia el apoyo estadounidense en medio del conflicto con Rusia. Este intercambio ha generado preocupación sobre el futuro de las relaciones bilaterales, con algunos funcionarios estadounidenses sugiriendo que la relación entre ambos líderes podría ser irreparable si no se logran resolver las tensiones.\n\nEn el ámbito legal, Trump ha anunciado su intención de demandar a la BBC por la edición de un documental que, según él, dio una impresión errónea de sus declaraciones. Aunque la BBC se disculpó, se negó a pagar la compensación solicitada por Trump, quien planea emprender acciones legales por una suma significativa. Estos desafíos se suman a las controversias persistentes relacionadas con su antiguo amigo Jeffrey Epstein, cuyo caso sigue persiguiendo al presidente en momentos críticos de su mandato.\n\nA pesar de las dificultades, Trump continúa defendiendo su gestión, destacando logros económicos y su enfoque en poner a Estados Unidos en primer lugar en la política exterior. Sin embargo, las tensiones internacionales y las disputas legales podrían complicar su agenda política en los próximos meses.",
+  "summary": "Trump enfrenta tensiones internacionales y controversias legales mientras defiende su gestión.",
+  "reading_time": 3,
+  "topic": {
+    "title": "Trump",
+    "mentions": 14,
+    "sources": [
+      "CNN Español",
+      "BBC Mundo",
+      "Euronews Español",
+      "El Mundo",
+      "El País",
+      "Deutsche Welle ES",
+      "El Diario"
+    ],
+    "headlines": [
+      {
+        "id": "https://cnnespanol.cnn.com/?p=1802329",
+        "text": "Resumen de noticias del discurso de Trump ante el Congreso y reacciones a los aranceles",
+        "url": "https://cnnespanol.cnn.com/2025/03/04/trump-noticias-discurso-congreso-aranceles-trax/",
+        "source": "CNN Español",
+        "published": [
+          2025,
+          3,
+          4,
+          13,
+          5,
+          10,
+          1,
+          63,
+          0
+        ],
+        "summary": "<p>Esta cobertura en vivo finalizó.</p>\n<p>The post <a href=\"https://cnnespanol.cnn.com/2025/03/04/trump-noticias-discurso-congreso-aranceles-trax/\">Resumen de noticias del discurso de Trump ante el C"
+      },
+      {
+        "id": "74756021",
+        "text": "Trump anuncia demanda a la BBC hasta por USD 5.000 millones por documental",
+        "url": "https://www.dw.com/es/trump-anuncia-demanda-a-la-bbc-hasta-por-usd-5-000-millones-por-documental/a-74756021?maca=spa-rss-sp-all-1122-xml-mrss",
+        "source": "Deutsche Welle ES",
+        "published": [
+          2025,
+          11,
+          15,
+          2,
+          23,
+          0,
+          5,
+          319,
+          0
+        ],
+        "summary": "\"Los demandaremos por un valor de entre 1.000 y 5.000 millones de dólares, probablemente en algún momento la próxima semana\", dijo el mandatario estadounidense a periodistas."
+      },
+      {
+        "id": "https://www.eldiario.es/internacional/maga-revuelven-trump-permanece-atrapado-caso-epstein-pais-gobernar_129_12768837.html",
+        "text": "Los MAGA se revuelven mientras Trump permanece atrapado por el 'caso Epstein': \"¡Tengo un país que gobernar!\"",
+        "url": "https://www.eldiario.es/internacional/maga-revuelven-trump-permanece-atrapado-caso-epstein-pais-gobernar_129_12768837.html",
+        "source": "El Diario",
+        "published": [
+          2025,
+          11,
+          14,
+          21,
+          33,
+          40,
+          4,
+          318,
+          0
+        ],
+        "summary": "<p><img alt=\"Los MAGA se revuelven mientras Trump permanece atrapado por el &#039;caso Epstein&#039;: &quot;¡Tengo un país que gobernar!&quot;\" height=\"285\" src=\"https://static.eldiario.es/clip/578e4e"
+      },
+      {
+        "id": "https://www.bbc.com/mundo/articles/cjw951zq6p7o#2",
+        "text": "Trump dice que demandará a la BBC, que se disculpó por la edición de un documental sobre él pero se negó a pagarle una compensación",
+        "url": "https://www.bbc.com/mundo/articles/cjw951zq6p7o?at_medium=RSS&at_campaign=rss",
+        "source": "BBC Mundo",
+        "published": [
+          2025,
+          11,
+          15,
+          9,
+          26,
+          15,
+          5,
+          319,
+          0
+        ],
+        "summary": "El presidente de Estados Unidos confirmó que tiene la intención de demandar a la cadena por al menos US$1.000 millones por la edición que Panorama hizo de un discurso de 2021."
+      },
+      {
+        "id": "https://www.elmundo.es/internacional/2025/11/15/69182355e85eceb3208b458c.html",
+        "text": "Trump afirma que ya ha \"decidido\" cómo actuar en Venezuela,  pero no desvela qué hará",
+        "url": "https://www.elmundo.es/internacional/2025/11/15/69182355e85eceb3208b458c.html",
+        "source": "El Mundo",
+        "published": [
+          2025,
+          11,
+          15,
+          7,
+          16,
+          21,
+          5,
+          319,
+          0
+        ],
+        "summary": "El presidente de EEUU ha mantenido reuniones el viernes en el Pentágono  para discutir \"una serie de opciones\" para avanzar con la estrategia militar contra Venezuela&nbsp;<a href=\"https://www.elmundo"
+      },
+      {
+        "id": "http://es.euronews.com/2025/11/15/trump-ordena-otro-letal-ataque-en-el-caribe-van-80-muertos-bajo-la-operacion-lanza-del-sur",
+        "text": "Trump ordena otro letal ataque en el Caribe y se decide sobre el futuro de Venezuela",
+        "url": "http://es.euronews.com/2025/11/15/trump-ordena-otro-letal-ataque-en-el-caribe-van-80-muertos-bajo-la-operacion-lanza-del-sur",
+        "source": "Euronews Español",
+        "published": [
+          2025,
+          11,
+          15,
+          7,
+          55,
+          22,
+          5,
+          319,
+          0
+        ],
+        "summary": "La Administración Trump confirma un nuevo ataque letal en aguas del Caribe que dejó cuatro muertos el 10 de noviembre, elevando a 80 los fallecidos en la 'Operación Lanza del Sur'. El presidente estad"
+      },
+      {
+        "id": "https://cnnespanol.cnn.com/?p=1802086",
+        "text": "Resumen de noticias de la disputa entre Trump y Zelensky tras su reunión, 1 de marzo de 2025",
+        "url": "https://cnnespanol.cnn.com/2025/03/01/ultima-hora-pelea-trump-zelensky-en-vivo-trax-2/",
+        "source": "CNN Español",
+        "published": [
+          2025,
+          3,
+          1,
+          9,
+          19,
+          23,
+          5,
+          60,
+          0
+        ],
+        "summary": "<p>Una reunión entre el presidente de Estados Unidos, Donald Trump, y el presidente de Ucrania, Volodymyr Zelensky, se convirtió en una discusión acalorada en el Despacho Oval este viernes.</p>\n<p>The"
+      },
+      {
+        "id": "https://cnnespanol.cnn.com/?p=1802009",
+        "text": "Resumen de noticias de la disputa entre Trump y Zelensky tras su reunión del 28 de febrero de 2025",
+        "url": "https://cnnespanol.cnn.com/2025/02/28/ultima-hora-pelea-trump-zelensky-en-vivo-trax/",
+        "source": "CNN Español",
+        "published": [
+          2025,
+          2,
+          28,
+          19,
+          49,
+          4,
+          4,
+          59,
+          0
+        ],
+        "summary": "<p>La reunión en la Oficina Oval entre Donald Trump y Volodymyr Zelensky, derivó en una discusión a gritos, en la que el presidente estadounidense le dijo al líder de Ucrania “haz un trato o nos vamos"
+      },
+      {
+        "id": "https://elpais.com/america/2025-11-15/el-chavismo-se-atrinchera-mientras-espera-en-vilo-el-proximo-movimiento-de-trump.html",
+        "text": "El chavismo se atrinchera mientras espera en vilo el próximo movimiento de Trump",
+        "url": "https://elpais.com/america/2025-11-15/el-chavismo-se-atrinchera-mientras-espera-en-vilo-el-proximo-movimiento-de-trump.html",
+        "source": "El País",
+        "published": [
+          2025,
+          11,
+          15,
+          20,
+          21,
+          28,
+          5,
+          319,
+          0
+        ],
+        "summary": "Las declaraciones del presidente estadounidense sobre su estrategia en el Caribe avivan la incertidumbre sobre una escalada militar en la región"
+      },
+      {
+        "id": "https://elpais.com/internacional/2025-11-15/de-epstein-a-las-acusaciones-de-traicion-al-america-first-el-movimiento-maga-se-rebela-contra-trump.html",
+        "text": "De Epstein a las acusaciones de traición al ‘America First’: el movimiento MAGA se rebela contra Trump",
+        "url": "https://elpais.com/internacional/2025-11-15/de-epstein-a-las-acusaciones-de-traicion-al-america-first-el-movimiento-maga-se-rebela-contra-trump.html",
+        "source": "El País",
+        "published": [
+          2025,
+          11,
+          15,
+          4,
+          30,
+          1,
+          5,
+          319,
+          0
+        ],
+        "summary": "El divorcio entre el presidente de EE UU y Marjorie Taylor Greene, que solía ser una de sus grandes aliadas en el Capitolio, certifica el resquebrajamiento del apoyo al republicano entre sus más fiele"
+      },
+      {
+        "id": "https://www.eldiario.es/internacional/miles-personas-manifiestan-madrid-solidaridad-pueblo-saharaui-trump-pedro-sanchez-frenar-determinacion-libres_1_12770824.html",
+        "text": "Miles de personas se manifiestan en solidaridad con el pueblo saharaui: “Ni Trump ni Sánchez pueden frenar nuestra determinación para ser libres”",
+        "url": "https://www.eldiario.es/internacional/miles-personas-manifiestan-madrid-solidaridad-pueblo-saharaui-trump-pedro-sanchez-frenar-determinacion-libres_1_12770824.html",
+        "source": "El Diario",
+        "published": [
+          2025,
+          11,
+          15,
+          14,
+          51,
+          4,
+          5,
+          319,
+          0
+        ],
+        "summary": "<p><img alt=\"Miles de personas se manifiestan en solidaridad con el pueblo saharaui: “Ni Trump ni Sánchez pueden frenar nuestra determinación para ser libres”\" height=\"675\" src=\"https://static.eldiari"
+      },
+      {
+        "id": "https://elpais.com/internacional/2025-11-15/trump-prepara-a-sus-fuerzas-para-la-nueva-fase-de-su-campana-militar-en-el-caribe.html",
+        "text": "Trump prepara a sus fuerzas para la nueva fase de su campaña militar en el Caribe",
+        "url": "https://elpais.com/internacional/2025-11-15/trump-prepara-a-sus-fuerzas-para-la-nueva-fase-de-su-campana-militar-en-el-caribe.html",
+        "source": "El País",
+        "published": [
+          2025,
+          11,
+          15,
+          20,
+          18,
+          34,
+          5,
+          319,
+          0
+        ],
+        "summary": "El presidente de Estados Unidos y Maduro parecen abocados a un duelo en el que el republicano se juega su credibilidad y el venezolano, su continuidad en el cargo"
+      },
+      {
+        "id": "https://www.eldiario.es/internacional/trump-reacciona-nuevos-mensajes-comprometedores-epstein-lanzando-investigacion-bill-clinton-democratas_1_12770037.html",
+        "text": "Trump responde a los nuevos mensajes comprometedores de Epstein lanzando una investigación contra Bill Clinton y otros demócratas",
+        "url": "https://www.eldiario.es/internacional/trump-reacciona-nuevos-mensajes-comprometedores-epstein-lanzando-investigacion-bill-clinton-democratas_1_12770037.html",
+        "source": "El Diario",
+        "published": [
+          2025,
+          11,
+          15,
+          5,
+          11,
+          27,
+          5,
+          319,
+          0
+        ],
+        "summary": "<p><img alt=\"Trump responde a los nuevos mensajes comprometedores de Epstein lanzando una investigación contra Bill Clinton y otros demócratas\" height=\"675\" src=\"https://static.eldiario.es/clip/66ab5f"
+      },
+      {
+        "id": "https://cnnespanol.cnn.com/?p=1781217",
+        "text": "Una ley poco conocida de 1798 podría ser clave para los planes de deportación de Trump",
+        "url": "https://cnnespanol.cnn.com/2025/02/26/ley-enemigos-exranjeros-1798-planes-deportacion-trump-trax/",
+        "source": "CNN Español",
+        "published": [
+          2025,
+          2,
+          27,
+          1,
+          20,
+          18,
+          3,
+          58,
+          0
+        ],
+        "summary": "<p>Trump ha afirmado que la Ley de Enemigos Extrenjeros de 1798 le otorgará a su administración \"una tremenda autoridad\" y permitirá a los funcionarios \"remover a todos los miembros de pandillas conoc"
+      }
+    ],
+    "keywords": [
+      "Trump",
+      "Epstein",
+      "el Caribe",
+      "BBC",
+      "El presidente de Estados Unidos",
+      "Venezuela",
+      "Zelensky",
+      "Donald Trump",
+      "Ucrania",
+      "Volodymyr Zelensky"
+    ],
+    "score": 41
+  },
+  "sources": [
+    "www.elmundo.es",
+    "cnnespanol.cnn.com",
+    "cnnespanol.cnn.com",
+    "www.eldiario.es",
+    "www.bbc.com"
+  ]
+}
