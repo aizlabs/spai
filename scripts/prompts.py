@@ -132,8 +132,8 @@ Technical:
 • "energías renovables" - renewable energy - energía del sol, viento y agua
 
 General:
-• "Traicionar a" - significa hacer algo malo contra una persona que confías.
-• "Tomar decisiones" - significa pensar y elegir qué hacer.
+• "Traicionar a" - betray - significa hacer algo malo contra una persona que confías.
+• "Tomar decisiones" - make decisions - significa pensar y elegir qué hacer.
 
 3.4 GLOSSING LIMITS
     - Minimum: 8 glosses (for simple articles)
