@@ -102,14 +102,14 @@ def test_content_fetcher():
         print(f"\nTopic {i}: {topic_name}")
 
         # Check minimum sources
-        if len(sources) >= 3:
-            print(f"  ✓ Minimum sources: {len(sources)}/3")
+        if len(result_sources) >= 3:
+            print(f"  ✓ Minimum sources: {len(result_sources)}/3")
         else:
-            print(f"  ✗ Minimum sources: {len(sources)}/3")
+            print(f"  ✗ Minimum sources: {len(result_sources)}/3")
             all_pass = False
 
         # Check word counts
-        for j, source in enumerate(sources, 1):
+        for j, source in enumerate(result_sources, 1):
             wc = source.word_count
             if 100 <= wc <= 300:
                 print(f"  ✓ Source {j} word count: {wc} words")
@@ -118,7 +118,7 @@ def test_content_fetcher():
                 all_pass = False
 
         # Check required fields (all should be present in Pydantic model)
-        for j, source in enumerate(sources, 1):
+        for j, source in enumerate(result_sources, 1):
             if source.source and source.text and source.word_count:
                 print(f"  ✓ Source {j} has all required fields")
             else:
@@ -126,7 +126,7 @@ def test_content_fetcher():
                 all_pass = False
 
         # Check text content
-        for j, source in enumerate(sources, 1):
+        for j, source in enumerate(result_sources, 1):
             text = source.text
             if text and len(text) > 50:
                 print(f"  ✓ Source {j} has valid text content")
