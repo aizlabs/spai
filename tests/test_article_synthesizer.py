@@ -18,7 +18,6 @@ class TestArticleSynthesizerInit:
         synthesizer = ArticleSynthesizer(base_config, mock_logger)
 
         assert synthesizer.config == base_config
-        assert synthesizer.llm_config == base_config.llm.model_dump()
         mock_logger.getChild.assert_called_with('ArticleSynthesizer')
         mock_openai.assert_called_once_with(api_key=base_config.llm.openai_api_key)
 
@@ -30,7 +29,7 @@ class TestArticleSynthesizerInit:
 
         synthesizer = ArticleSynthesizer(base_config, mock_logger)
 
-        assert synthesizer.llm_config['provider'] == 'anthropic'
+        assert synthesizer.config.llm.provider == 'anthropic'
         mock_anthropic.assert_called_once_with(api_key='test-key')
 
     def test_init_missing_api_key_openai(self, base_config, mock_logger):
@@ -82,9 +81,9 @@ class TestArticleSynthesizerSynthesize:
         # Verify LLM was called
         mock_call_llm.assert_called_once()
         # The prompt is generated internally, so we can't easily check its content here
-        # We can check the model and temperature from llm_config
-        assert synthesizer.llm_config['models']['generation'] == base_config.llm.models.generation
-        assert synthesizer.llm_config['temperature'] == base_config.llm.temperature
+        # We can check the model and temperature from config
+        assert synthesizer.config.llm.models.generation == base_config.llm.models.generation
+        assert synthesizer.config.llm.temperature == base_config.llm.temperature
 
     @patch('scripts.article_synthesizer.ArticleSynthesizer._call_llm')
     def test_synthesize_with_markdown_json(self, mock_call_llm, base_config, mock_logger,

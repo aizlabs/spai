@@ -8,6 +8,7 @@ Optimized with parallel fetching for better performance.
 import requests
 import trafilatura
 from typing import List, Dict, Optional
+from scripts.models import SourceArticle, Topic
 from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
@@ -16,28 +17,38 @@ import logging
 class ContentFetcher:
     """Fetches and cleans article content from URLs"""
 
-    def __init__(self, config: Dict, logger: logging.Logger):
+    def __init__(self, config, logger: logging.Logger):
         self.config = config
         self.logger = logger.getChild('ContentFetcher')
-        self.timeout = config['sources'].get('fetch_timeout', 10)
-        self.max_words_per_source = config['sources'].get('max_words_per_source', 300)
-        self.min_words_per_source = config['sources'].get('min_words_per_source', 100)
-        self.max_sources = config['sources'].get('max_sources_per_topic', 5)
+        
+        # Handle both Pydantic model and dict
+        if hasattr(config, 'sources'):
+            sources_config = config.sources
+            self.timeout = sources_config.fetch_timeout
+            self.max_words_per_source = sources_config.max_words_per_source
+            self.min_words_per_source = sources_config.min_words_per_source
+            self.max_sources = sources_config.max_sources_per_topic
+        else:
+            sources_config = config.get('sources', {})
+            self.timeout = sources_config.get('fetch_timeout', 10)
+            self.max_words_per_source = sources_config.get('max_words_per_source', 300)
+            self.min_words_per_source = sources_config.get('min_words_per_source', 100)
+            self.max_sources = sources_config.get('max_sources_per_topic', 5)
 
-    def fetch_topic_sources(self, topic: Dict) -> List[Dict]:
+    def fetch_topic_sources(self, topic: Topic) -> List[SourceArticle]:
         """
         Fetch clean article text for a topic with parallel fetching
 
         Args:
-            topic: Topic dict with headlines
+            topic: Topic object with urls field
 
         Returns:
-            List of source content dicts (3-5 sources)
+            List of SourceArticle objects (3-5 sources)
         """
         sources = []
-        urls = [h['url'] for h in topic['headlines'][:8]]  # Try up to 8 sources
+        urls = topic.urls[:8]  # Try up to 8 sources
 
-        self.logger.info(f"Fetching sources for: {topic['title']}")
+        self.logger.info(f"Fetching sources for: {topic.title}")
 
         # Parallel fetching with ThreadPoolExecutor
         executor = ThreadPoolExecutor(max_workers=8)
@@ -76,11 +87,21 @@ class ContentFetcher:
 
         # Log summary
         if len(sources) < 3:
-            self.logger.warning(f"Insufficient sources for {topic['title']}: {len(sources)}/3 minimum")
+            self.logger.warning(f"Insufficient sources for {topic.title}: {len(sources)}/3 minimum")
         else:
             self.logger.info(f"Successfully fetched {len(sources)} sources")
 
-        return sources
+        # Convert dicts to SourceArticle objects
+        source_articles = []
+        for s in sources:
+            source_articles.append(SourceArticle(
+                source=s['source'],
+                text=s['text'],
+                word_count=s['word_count'],
+                url=s.get('url')
+            ))
+        
+        return source_articles
 
     def _fetch_article(self, url: str) -> Optional[Dict]:
         """

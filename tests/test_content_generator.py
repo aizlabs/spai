@@ -20,7 +20,6 @@ class TestContentGeneratorInit:
         """Test initialization with default settings"""
         generator = ContentGenerator(base_config, mock_logger)
 
-        assert generator.two_step_enabled is True
         assert generator.save_base_articles is False
         assert generator.regeneration_strategy == 'adaptation_only'
         assert generator.base_article_path == './output/base_articles/'

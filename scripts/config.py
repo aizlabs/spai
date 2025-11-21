@@ -37,6 +37,7 @@ class SourceConfig(BaseModel):
     max_words_per_source: int = Field(..., ge=50)
     min_words_per_source: int = Field(..., ge=10)
     max_sources_per_topic: int = Field(..., ge=1)
+    fetch_timeout: int = Field(default=10, ge=1)
 
 
 class AppConfig(BaseModel):
@@ -47,7 +48,10 @@ class AppConfig(BaseModel):
     quality_gate: QualityGateConfig
     sources: SourceConfig
     output: Dict[str, str] = Field(default_factory=dict)
-    alerts: Dict[str, str] = Field(default_factory=dict)
+    alerts: Dict[str, Any] = Field(default_factory=dict)
+    logging: Dict[str, Any] = Field(default_factory=dict)
+    discovery: Dict[str, Any] = Field(default_factory=dict)
+    ranking: Dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode='after')
     def validate_llm_keys(self) -> 'AppConfig':
@@ -142,9 +146,10 @@ def apply_env_overrides(config_dict: Dict) -> Dict:
         config_dict['alerts']['email'] = os.getenv('ALERT_EMAIL')
 
     # Override articles per run
-    if os.getenv('ARTICLES_PER_RUN'):
+    articles_per_run = os.getenv('ARTICLES_PER_RUN')
+    if articles_per_run:
         config_dict.setdefault('generation', {})
-        config_dict['generation']['articles_per_run'] = int(os.getenv('ARTICLES_PER_RUN'))
+        config_dict['generation']['articles_per_run'] = int(articles_per_run)
 
     return config_dict
 

@@ -60,6 +60,7 @@ spai/
 │
 ├── logs/                # Local logs (gitignored)
 ├── pyproject.toml       # Python project config
+├── mypy.ini             # mypy type checking configuration
 ├── .python-version      # Python version (3.11)
 └── .env                 # Environment variables (gitignored)
 ```
@@ -94,8 +95,8 @@ uv run spai-discover
 # Test content fetcher
 uv run spai-fetch
 
-# Run full pipeline (when implemented)
-python scripts/main.py
+# Run full pipeline
+uv run spai-pipeline
 
 # View logs in real-time
 tail -f logs/local.log
@@ -110,7 +111,7 @@ python scripts/diagnose_sources.py
 python -c "
 from scripts.config import load_config
 config = load_config('local')
-for i, s in enumerate(config['sources_list'], 1):
+for i, s in enumerate(config.sources_list, 1):
     print(f'{i:2}. {s[\"name\"]:25} ({s[\"type\"]})')
 "
 
@@ -127,6 +128,32 @@ topics = discoverer.discover(limit=3)
 print(f'✓ Found {len(topics)} topics')
 "
 ```
+
+### Type Checking with mypy
+
+The project uses **mypy** for static type checking. All code should pass mypy validation.
+
+```bash
+# Install dev dependencies (includes mypy)
+uv sync --extra dev
+
+# Run type checking
+uv run mypy scripts/ --config-file mypy.ini
+
+# Run with error codes for detailed output
+uv run mypy scripts/ --config-file mypy.ini --show-error-codes
+```
+
+**Status:**
+- ✅ mypy is configured in `mypy.ini`
+- ✅ Currently **0 type errors** across all files
+- ⚠️ **Manual invocation required** - not integrated into CI/pre-commit hooks yet
+- 📝 Run before committing to catch type issues early
+
+**Configuration:**
+- Config file: `mypy.ini`
+- Type stubs: `scripts/py.typed` marker file
+- Settings: Moderate strictness (allows untyped defs, but checks typed code)
 
 ---
 
@@ -262,26 +289,16 @@ python scripts/diagnose_sources.py
 tail -100 logs/local.log
 ```
 
+### Type Checking Issues
+```bash
+# Run mypy to see all type errors
+uv run mypy scripts/ --config-file mypy.ini --show-error-codes
+
+# Common fixes:
+# - Add type hints to function parameters and return types
+# - Use Pydantic models instead of dicts
+# - Add type: ignore comments only when necessary (with specific error codes)
+# - Use Union types for variables that can be multiple types (e.g., Union[Anthropic, OpenAI])
+```
+
 ---
-
-## Status
-
-✅ **Phase 1: MVP Core - COMPLETE**
-- Topic Discovery Engine (100% working)
-- Content Fetcher (parallel processing)
-- Content Generator (OpenAI GPT-4o)
-- Quality Gate (LLM judge with regeneration)
-- Publisher (Jekyll markdown)
-- Main Pipeline (end-to-end orchestration)
-
-✅ **Phase 2: Automation & Launch - COMPLETE**
-- GitHub Actions workflow (3x daily automation)
-- Jekyll site with Minimal Mistakes theme
-- Custom layouts for A2/B1 articles
-- Homepage with level filtering
-- About, Levels, Privacy, Contact pages
-- Custom CSS for level badges
-- GitHub Pages setup guides
-- Initial 20 articles generated
-
-**Next:** Phase 3 - Growth & Marketing

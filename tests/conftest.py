@@ -83,12 +83,13 @@ def mock_logger():
 
 @pytest.fixture
 def sample_topic() -> Topic:
-    """Sample topic dict"""
+    """Sample topic object"""
     return Topic(
         title='España reduce emisiones de CO2',
         sources=['El País', 'BBC Mundo', 'El Mundo'],
         mentions=5,
-        score=25.0
+        score=25.0,
+        urls=['https://elpais.com/test', 'https://bbc.com/test', 'https://elmundo.es/test']
     )
 
 

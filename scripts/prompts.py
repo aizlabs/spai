@@ -53,7 +53,7 @@ You are a Spanish language education specialist tasked with adapting news articl
 === STEP 1: VOCABULARY ASSESSMENT ===
 
 1.1 Identify ALL words/phrases outside the 1,500 most frequent Spanish words
-1.2 Categorize identified terms:
+1.2 Categorize identified words/phrases:
     - Category A: Essential for understanding the main story
     - Category B: Important but secondary information
     - Category C: Can be eliminated or simplified without loss
@@ -61,6 +61,7 @@ You are a Spanish language education specialist tasked with adapting news articl
 1.4 Select the TOP 10-15 terms for glossing (prioritize Category A)
 1.5 Mark selected terms with **bold** formatting in the text
 1.6 Keep glossed terms in original form (do not simplify these)
+1.7 Do not gloss proper names and named entities, such as geographical locations. Those should be explained naturally in text.
 
 === STEP 2: STRUCTURAL MODIFICATIONS ===
 
@@ -110,6 +111,7 @@ You are a Spanish language education specialist tasked with adapting news articl
     - Include cultural context when needed
     - Use present tense for all definitions
     - Be functional, not dictionary-style
+    - Do not gloss proper names and well known named entities like geographical locaions.
 
 3.3 GLOSS CATEGORIES AND EXAMPLES
 
@@ -129,11 +131,15 @@ Technical:
 • "cambio climático" - climate change - cuando la temperatura del planeta sube
 • "energías renovables" - renewable energy - energía del sol, viento y agua
 
+General:
+• "Traicionar a" - betray - significa hacer algo malo contra una persona que confías.
+• "Tomar decisiones" - make decisions - significa pensar y elegir qué hacer.
+
 3.4 GLOSSING LIMITS
-    - Minimum: 5 glosses (for simple articles)
-    - Target: 10-12 glosses
-    - Maximum: 15 glosses (absolute limit)
-    - If more than 15 terms need glossing, prioritize by importance
+    - Minimum: 8 glosses (for simple articles)
+    - Target: 10-15 glosses,  the more the better.
+    - Maximum: 20 glosses (absolute limit)
+    - If more than 20 terms need glossing, prioritize by importance
 
 === STEP 4: CONTENT ORGANIZATION ===
 
@@ -299,20 +305,21 @@ def validate_level(level: str) -> None:
 
 def prepare_source_context(sources: List[SourceArticle]) -> str:
     """
-    Prepare source text for prompt
+    Prepare source text for prompt with XML-like structure
 
     Args:
-        sources: List of source dicts with 'source' and 'text' keys
+        sources: List of SourceArticle objects with 'source' and 'text' keys
 
     Returns:
-        Formatted source context string
+        Formatted source context string with XML-like tags
     """
     context = []
 
     for i, source in enumerate(sources[:5], 1):
-        context.append(f"""Source {i} ({source.source}):
+        source_name = f" ({source.source})" if source.source else ""
+        context.append(f"""<source_{i}{source_name}>
 {source.text}
-""")
+</source_{i}>""")
 
     return '\n\n'.join(context)
 
@@ -425,7 +432,7 @@ Previous Content (first 200 words):
 {first_200}...
 
 SPECIFIC ISSUES TO FIX:
-{chr(10).join(f"- {issue}" for issue in issues)}
+{chr(10).join("- " + issue for issue in issues)}
 
 Generate a NEW, IMPROVED version that specifically addresses these issues.
 Make sure to fix the problems mentioned above.
@@ -585,9 +592,6 @@ def get_synthesis_prompt(topic: Topic, sources: List[SourceArticle]) -> str:
 
 TOPIC: {topic.title}
 
-SOURCES TO SYNTHESIZE:
-{source_context}
-
 TASK: Write an ORIGINAL article in Spanish that:
 1. Synthesizes facts from all sources into a coherent narrative
 2. Uses natural, native-level Spanish (no simplification)
@@ -614,6 +618,9 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
 }}
 
 Remember: This is native-level Spanish. Write naturally and accurately without any simplification.
+
+SOURCES TO SYNTHESIZE:
+{source_context}
 """
 
     return prompt
@@ -639,27 +646,21 @@ def get_a2_adaptation_prompt(
     """
     feedback_section = ""
     if feedback:
+        issues_list = chr(10).join("- " + issue for issue in feedback)
         feedback_section = f"""
 ⚠️ PREVIOUS ATTEMPT HAD ISSUES - FIX THEM:
-{chr(10).join(f"- {issue}" for issue in feedback)}
+{issues_list}
 
 Make sure to specifically address these issues in your adaptation.
 """
 
     prompt = f"""{A2_NEWS_PROCESSING_INSTRUCTIONS}
 
-=== ARTICLE TO ADAPT ===
 
-Title: {base_article.title}
-
-Content:
-{base_article.content}
-
-{feedback_section}
 
 === YOUR TASK ===
 
-Adapt the above NATIVE-LEVEL article to A2 CEFR level following ALL steps (1-6) in the instructions above.
+Adapt the below NATIVE-LEVEL article to A2 CEFR level following ALL steps (1-6) in the instructions above.
 
 Key points:
 - This is already a well-written, factually accurate article
@@ -682,7 +683,16 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
   "reading_time": 2
 }}
 
-IMPORTANT: Follow the A2 processing instructions exactly. Verify all requirements in Step 5 before outputting.
+IMPORTANT: Follow the above A2 processing instructions exactly. Verify all requirements in Step 5 before outputting.
+
+=== ARTICLE TO ADAPT ===
+
+Title: {base_article.title}
+
+Content:
+{base_article.content}
+
+{feedback_section}
 """
 
     return prompt
@@ -708,9 +718,10 @@ def get_b1_adaptation_prompt(
     """
     feedback_section = ""
     if feedback:
+        issues_list = chr(10).join("- " + issue for issue in feedback)
         feedback_section = f"""
 ⚠️ PREVIOUS ATTEMPT HAD ISSUES - FIX THEM:
-{chr(10).join(f"- {issue}" for issue in feedback)}
+{issues_list}
 
 Make sure to specifically address these issues in your adaptation.
 """

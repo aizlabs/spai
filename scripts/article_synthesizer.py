@@ -8,7 +8,7 @@ and natural Spanish expression.
 
 import json
 import logging
-from typing import Dict, List
+from typing import Dict, List, Union, cast
 
 from openai import OpenAI
 from anthropic import Anthropic
@@ -23,23 +23,22 @@ class ArticleSynthesizer:
     def __init__(self, config: AppConfig, logger: logging.Logger):
         self.config = config
         self.logger = logger.getChild('ArticleSynthesizer')
-        self.llm_config = config.llm.model_dump()
 
         # Initialize LLM client
-        provider = self.llm_config.get('provider')
+        provider = config.llm.provider
 
         if provider == 'anthropic':
-            if not self.llm_config.get('anthropic_api_key'):
+            if not config.llm.anthropic_api_key:
                 raise ValueError("ANTHROPIC_API_KEY is required for Anthropic provider")
 
-            self.llm_client = Anthropic(api_key=self.llm_config.get('anthropic_api_key'))
+            self.llm_client: Union[Anthropic, OpenAI] = Anthropic(api_key=config.llm.anthropic_api_key)
             self.logger.info("Initialized Anthropic client for synthesis")
 
         elif provider == 'openai':
-            if not self.llm_config.get('openai_api_key'):
+            if not config.llm.openai_api_key:
                 raise ValueError("OPENAI_API_KEY is required for OpenAI provider")
 
-            self.llm_client = OpenAI(api_key=self.llm_config.get('openai_api_key'))
+            self.llm_client = OpenAI(api_key=config.llm.openai_api_key)
             self.logger.info("Initialized OpenAI client for synthesis")
 
         else:
@@ -78,28 +77,41 @@ class ArticleSynthesizer:
 
     def _call_llm(self, prompt: str, temperature: float = 0.3) -> str:
         """Call LLM with prompt for synthesis"""
-        model = self.llm_config['models']['generation']
-        max_tokens = self.llm_config.get('max_tokens', 4096)
-        provider = self.llm_config['provider']
+        model = self.config.llm.models.generation
+        max_tokens = self.config.llm.max_tokens
+        provider = self.config.llm.provider
 
         try:
             if provider == 'anthropic':
-                response = self.llm_client.messages.create(
+                client = cast(Anthropic, self.llm_client)
+                response = client.messages.create(
                     model=model,
                     max_tokens=max_tokens,
                     temperature=temperature,
                     messages=[{"role": "user", "content": prompt}]
                 )
-                return response.content[0].text
+                # Extract text from first content block (should be TextBlock)
+                if response.content and len(response.content) > 0:
+                    first_block = response.content[0]
+                    if hasattr(first_block, 'text'):
+                        return first_block.text
+                    else:
+                        raise ValueError(f"Unexpected content block type: {type(first_block)}")
+                else:
+                    raise ValueError("Empty response from Anthropic API")
 
             elif provider == 'openai':
-                response = self.llm_client.chat.completions.create(
+                client = cast(OpenAI, self.llm_client)  # type: ignore[assignment]
+                response = client.chat.completions.create(  # type: ignore[attr-defined]
                     model=model,
                     messages=[{"role": "user", "content": prompt}],
                     temperature=temperature,
                     max_tokens=max_tokens
                 )
-                return response.choices[0].message.content
+                content = response.choices[0].message.content
+                if content is None:
+                    raise ValueError("Empty response from OpenAI API")
+                return content  # type: ignore[no-any-return]
 
             else:
                 raise ValueError(f"Unknown provider: {provider}")

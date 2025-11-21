@@ -20,18 +20,19 @@ import sys
 import time
 from pathlib import Path
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Optional, Tuple
 
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from config import load_config
+from config import load_config  # type: ignore[attr-defined]
 from logger import setup_logger
 from topic_discovery import TopicDiscoverer
 from content_fetcher import ContentFetcher
 from content_generator import ContentGenerator
 from quality_gate import QualityGate
 from publisher import Publisher
+from models import AdaptedArticle, QualityResult, Topic, SourceArticle
 
 
 def detect_environment() -> str:
@@ -63,18 +64,17 @@ def main():
     # Initialize logging
     logger = setup_logger(config, run_id)
 
-    print("=" * 60)
-    print("AutoSpanishBlog - Content Generation Pipeline")
-    print("=" * 60)
-    print(f"Run ID: {run_id}")
-    print(f"Environment: {environment}")
-    print(f"Dry Run: {dry_run}")
-    print(f"Provider: {config['llm']['provider']}")
-    print(f"Articles per run: {config['generation']['articles_per_run']}")
-    print(f"Levels: {config['generation']['levels']}")
-    print("=" * 60)
-    print()
-
+    logger.info("=" * 60)
+    logger.info("AutoSpanishBlog - Content Generation Pipeline")
+    logger.info("=" * 60)
+    logger.info(f"Run ID: {run_id}")
+    logger.info(f"Environment: {environment}")
+    logger.info(f"Dry Run: {dry_run}")
+    logger.info(f"Provider: {config.llm.provider}")
+    logger.info(f"Articles per run: {config.generation.articles_per_run}")
+    logger.info(f"Levels: {config.generation.levels}")
+    logger.info("=" * 60)
+    logger.info("")
     logger.info(f"Pipeline started - {run_id}")
 
     # Statistics
@@ -95,74 +95,80 @@ def main():
         quality_gate = QualityGate(config, logger)
         publisher = Publisher(config, logger, dry_run=dry_run)
 
-        print("✓ All components initialized")
-        print()
+        logger.info("✓ All components initialized")
+        logger.info("")
 
         # Phase 1: Topic Discovery
-        print("-" * 60)
-        print("Phase 1: Topic Discovery")
-        print("-" * 60)
+        logger.info("-" * 60)
+        logger.info("Phase 1: Topic Discovery")
+        logger.info("-" * 60)
 
         topics = discoverer.discover(limit=10)
-        print(f"✓ Discovered {len(topics)} topics")
-        print()
+        logger.info(f"✓ Discovered {len(topics)} topics")
+        logger.info("")
 
         if not topics:
             raise Exception("No topics discovered")
 
         # Phase 2-5: Process each topic
-        target_articles = config['generation']['articles_per_run']
-        levels = config['generation']['levels']
+        target_articles = config.generation.articles_per_run
+        levels = config.generation.levels
+        target_reached = False
 
         for topic in topics:
             if stats['published'] >= target_articles:
-                print(f"\n✓ Target reached: {target_articles} articles published")
+                logger.info(f"✓ Target reached: {target_articles} articles published")
                 break
 
-            print("=" * 60)
-            print(f"Topic: {topic['title']}")
-            print(f"Sources: {len(topic['sources'])} | Mentions: {topic['mentions']}")
-            print("=" * 60)
-            print()
+            logger.info("=" * 60)
+            logger.info(f"Topic: {topic.title}")
+            logger.info(f"Sources: {len(topic.sources)} | Mentions: {topic.mentions}")
+            logger.info("=" * 60)
+            logger.info("")
 
             # Phase 2: Fetch Sources
-            print("Phase 2: Fetching article sources...")
-            sources = fetcher.fetch_topic_sources(topic)
+            logger.info("Phase 2: Fetching article sources...")
+            source_articles = fetcher.fetch_topic_sources(topic)  # Returns SourceArticle objects
 
-            if len(sources) < 3:
-                print(f"⚠ Insufficient sources ({len(sources)}/3), skipping topic")
-                print()
+            if len(source_articles) < 3:
+                logger.warning(f"⚠ Insufficient sources ({len(source_articles)}/3), skipping topic")
+                logger.info("")
                 continue
 
-            print(f"✓ Fetched {len(sources)} sources")
-            for i, s in enumerate(sources, 1):
-                print(f"  {i}. {s['source']:25} ({s['word_count']} words)")
-            print()
+            logger.info(f"✓ Fetched {len(source_articles)} sources")
+            for i, s in enumerate(source_articles, 1):
+                logger.info(f"  {i}. {s.source:25} ({s.word_count} words)")
+            logger.info("")
 
             # Generate articles for each level
             for level in levels:
+                if target_reached:
+                    break
+
                 stats['attempted'] += 1
 
-                print("-" * 60)
-                print(f"Generating {level} article...")
-                print("-" * 60)
+                logger.info("-" * 60)
+                logger.info(f"Generating {level} article...")
+                logger.info("-" * 60)
 
                 # Phase 3: Generate Article
-                article = generator.generate_article(topic, sources, level)
-                word_count = len(article['content'].split())
+                article = generator.generate_article(topic, source_articles, level)
+                word_count = len(article.content.split())
 
-                print(f"✓ Generated: {article['title']}")
-                print(f"  Word count: {word_count}")
-                print(f"  Vocabulary: {len(article.get('vocabulary', {}))} words")
-                print()
+                logger.info(f"✓ Generated: {article.title}")
+                logger.info(f"  Word count: {word_count}")
+                logger.info(f"  Vocabulary: {len(article.vocabulary)} words")
+                logger.info("")
 
                 # Phase 4: Quality Gate (with regeneration)
-                print("Phase 4: Quality check...")
+                logger.info("Phase 4: Quality check...")
+                final_article: Optional[AdaptedArticle]
+                quality_result: QualityResult
                 final_article, quality_result = quality_gate.check_and_improve(
                     article,
                     generator,
                     topic,
-                    sources
+                    source_articles
                 )
 
                 if final_article:
@@ -170,58 +176,69 @@ def main():
                     stats['total_quality_score'] += quality_result.score
                     stats['regenerations'] += (quality_result.attempts - 1)
 
-                    print(f"✅ Quality check passed!")
-                    print(f"  Score: {quality_result.score:.1f}/10")
-                    print(f"  Attempts: {quality_result.attempts}")
+                    logger.info(f"✅ Quality check passed!")
+                    logger.info(f"  Score: {quality_result.score:.1f}/10")
+                    logger.info(f"  Attempts: {quality_result.attempts}")
                     if quality_result.strengths:
-                        print(f"  Strengths: {', '.join(quality_result.strengths[:2])}")
-                    print()
+                        logger.info(f"  Strengths: {', '.join(quality_result.strengths[:2])}")
+                    logger.info("")
 
                     # Phase 5: Publish
-                    print("Phase 5: Publishing...")
-                    published = publisher.save_article(final_article)
+                    logger.info("Phase 5: Publishing...")
+                    is_published = publisher.save_article(final_article)
 
-                    if published:
+                    if is_published:
                         stats['published'] += 1
-                        print(f"✅ Published successfully!")
+                        logger.info(f"✅ Published successfully!")
 
                         # Check if target reached after each publication
                         if stats['published'] >= target_articles:
-                            print(f"\n✓ Target reached: {target_articles} articles published")
+                            logger.info(f"✓ Target reached: {target_articles} articles published")
+                            target_reached = True
                             break
                     else:
-                        print(f"❌ Publishing failed")
+                        logger.error(f"❌ Publishing failed")
 
                 else:
                     # Quality failed
                     stats['rejected'] += 1
-                    print(f"❌ Quality check failed")
-                    print(f"  Score: {quality_result.score:.1f}/10 (min: {config['quality_gate']['min_score']})")
-                    print(f"  Attempts: {quality_result.attempts}")
+                    logger.warning(f"❌ Quality check failed")
+                    logger.warning(f"  Score: {quality_result.score:.1f}/10 (min: {config.quality_gate.min_score})")
+                    logger.warning(f"  Attempts: {quality_result.attempts}")
                     if quality_result.issues:
-                        print(f"  Issues:")
+                        logger.warning(f"  Issues:")
                         for issue in quality_result.issues[:3]:
-                            print(f"    - {issue}")
+                            logger.warning(f"    - {issue}")
 
-                print()
+                logger.info("")
+
+            # Break out of topic loop if target reached
+            if target_reached:
+                break
 
         # Pipeline completed successfully
         duration = time.time() - start_time
         avg_quality = stats['total_quality_score'] / stats['published'] if stats['published'] > 0 else 0
 
-        print("=" * 60)
-        print("Pipeline Completed Successfully")
-        print("=" * 60)
-        print()
-        print(f"✨ Summary:")
-        print(f"   Articles attempted:  {stats['attempted']}")
-        print(f"   Articles published:  {stats['published']}")
-        print(f"   Articles rejected:   {stats['rejected']}")
-        print(f"   Success rate:        {stats['published']/stats['attempted']*100:.0f}%" if stats['attempted'] > 0 else "   Success rate:        N/A")
-        print(f"   Regenerations:       {stats['regenerations']}")
-        print(f"   Avg quality score:   {avg_quality:.1f}/10" if stats['published'] > 0 else "   Avg quality score:   N/A")
-        print(f"   Duration:            {duration:.1f}s")
-        print("=" * 60)
+        logger.info("=" * 60)
+        logger.info("Pipeline Completed Successfully")
+        logger.info("=" * 60)
+        logger.info("")
+        logger.info(f"✨ Summary:")
+        logger.info(f"   Articles attempted:  {stats['attempted']}")
+        logger.info(f"   Articles published:  {stats['published']}")
+        logger.info(f"   Articles rejected:   {stats['rejected']}")
+        if stats['attempted'] > 0:
+            logger.info(f"   Success rate:        {stats['published']/stats['attempted']*100:.0f}%")
+        else:
+            logger.info("   Success rate:        N/A")
+        logger.info(f"   Regenerations:       {stats['regenerations']}")
+        if stats['published'] > 0:
+            logger.info(f"   Avg quality score:   {avg_quality:.1f}/10")
+        else:
+            logger.info("   Avg quality score:   N/A")
+        logger.info(f"   Duration:            {duration:.1f}s")
+        logger.info("=" * 60)
 
         logger.info(f"Pipeline completed - Published: {stats['published']}/{stats['attempted']}")
 
@@ -230,13 +247,13 @@ def main():
     except Exception as e:
         duration = time.time() - start_time
 
-        print()
-        print("=" * 60)
-        print("Pipeline Failed")
-        print("=" * 60)
-        print(f"Error: {str(e)}")
-        print(f"Duration: {duration:.1f}s")
-        print("=" * 60)
+        logger.error("")
+        logger.error("=" * 60)
+        logger.error("Pipeline Failed")
+        logger.error("=" * 60)
+        logger.error(f"Error: {str(e)}")
+        logger.error(f"Duration: {duration:.1f}s")
+        logger.error("=" * 60)
 
         logger.error(f"Pipeline failed: {str(e)}", exc_info=True)
 

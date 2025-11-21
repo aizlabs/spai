@@ -12,7 +12,7 @@ from pathlib import Path
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from config import load_config
+from config import load_config  # type: ignore[attr-defined]
 from logger import setup_logger
 from topic_discovery import TopicDiscoverer
 
@@ -29,7 +29,7 @@ def test_topic_discovery():
     try:
         config = load_config('local')
         print(f"✓ Config loaded successfully")
-        print(f"  Sources configured: {len(config.get('sources_list', []))}")
+        print(f"  Sources configured: {len(config.sources_list)}")
     except Exception as e:
         print(f"✗ Failed to load config: {e}")
         return False

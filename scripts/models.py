@@ -18,10 +18,11 @@ from pydantic import BaseModel, Field, field_validator
 class Topic(BaseModel):
     """Topic from discovery phase"""
     title: str = Field(..., min_length=1, description="Topic title")
-    sources: List[str] = Field(..., min_items=1, description="Source names")
+    sources: List[str] = Field(..., min_length=1, description="Source names")
     mentions: int = Field(..., ge=1, description="Number of mentions across sources")
     score: float = Field(..., ge=0, description="Ranking score")
     keywords: Optional[List[str]] = Field(default=None, description="Optional keywords")
+    urls: List[str] = Field(default_factory=list, description="URLs for fetching article content")
 
     class Config:
         frozen = False  # Allow mutation during pipeline

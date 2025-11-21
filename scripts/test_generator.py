@@ -12,7 +12,7 @@ from pathlib import Path
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from config import load_config
+from config import load_config  # type: ignore[attr-defined]
 from logger import setup_logger
 from topic_discovery import TopicDiscoverer
 from content_fetcher import ContentFetcher
@@ -31,9 +31,9 @@ def test_content_generator():
     try:
         config = load_config('local')
         print(f"✓ Config loaded successfully")
-        print(f"  LLM Provider: {config['llm']['provider']}")
-        print(f"  Generation Model: {config['llm']['models']['generation']}")
-        print(f"  Target levels: {config['generation']['levels']}")
+        print(f"  LLM Provider: {config.llm.provider}")
+        print(f"  Generation Model: {config.llm.models.generation}")
+        print(f"  Target levels: {config.generation.levels}")
     except Exception as e:
         print(f"✗ Failed to load config: {e}")
         return False
@@ -62,9 +62,9 @@ def test_content_generator():
             return False
 
         topic = topics[0]
-        print(f"✓ Found topic: {topic['title']}")
-        print(f"  Sources: {len(topic['sources'])}")
-        print(f"  Headlines: {len(topic['headlines'])}")
+        print(f"✓ Found topic: {topic.title}")
+        print(f"  Sources: {len(topic.sources)}")
+        print(f"  URLs: {len(topic.urls)}")
     except Exception as e:
         print(f"✗ Discovery failed: {e}")
         import traceback
@@ -88,7 +88,7 @@ def test_content_generator():
             print(f"✓ Fetched {len(sources)} sources")
 
         for i, source in enumerate(sources, 1):
-            print(f"  {i}. {source['source']:25} ({source['word_count']} words)")
+            print(f"  {i}. {source.source:25} ({source.word_count} words)")
     except Exception as e:
         print(f"✗ Fetching failed: {e}")
         import traceback
@@ -105,7 +105,7 @@ def test_content_generator():
     try:
         generator = ContentGenerator(config, logger)
         print(f"✓ ContentGenerator initialized")
-        print(f"  Provider: {config['llm']['provider']}")
+        print(f"  Provider: {config.llm.provider}")
     except Exception as e:
         print(f"✗ Failed to initialize generator: {e}")
         import traceback
@@ -119,7 +119,7 @@ def test_content_generator():
     print()
 
     # Generate article
-    level = config['generation']['levels'][0]  # Use first configured level
+    level = config.generation.levels[0]  # Use first configured level
 
     try:
         print(f"Generating {level} article...")
@@ -130,26 +130,26 @@ def test_content_generator():
 
         print(f"✓ Article generated successfully!")
         print()
-        print(f"Title: {article['title']}")
-        print(f"Level: {article['level']}")
-        print(f"Word count: {len(article['content'].split())} words")
-        print(f"Vocabulary words: {len(article.get('vocabulary', {}))}")
-        print(f"Reading time: {article.get('reading_time', 'N/A')} minutes")
-        print(f"Sources: {', '.join(article.get('sources', []))}")
+        print(f"Title: {article.title}")
+        print(f"Level: {article.level}")
+        print(f"Word count: {len(article.content.split())} words")
+        print(f"Vocabulary words: {len(article.vocabulary)}")
+        print(f"Reading time: {article.reading_time} minutes")
+        print(f"Sources: {', '.join(article.sources)}")
         print()
 
         # Display first 200 characters of content
         print("Content preview:")
         print("-" * 60)
-        content_preview = article['content'][:200]
+        content_preview = article.content[:200]
         print(content_preview + "...")
         print("-" * 60)
         print()
 
         # Display vocabulary
-        if article.get('vocabulary'):
+        if article.vocabulary:
             print("Vocabulary (first 5):")
-            vocab_items = list(article['vocabulary'].items())[:5]
+            vocab_items = list(article.vocabulary.items())[:5]
             for word, translation in vocab_items:
                 print(f"  - {word}: {translation}")
             print()
@@ -168,18 +168,12 @@ def test_content_generator():
 
     passed = True
 
-    # Check required fields
-    required_fields = ['title', 'content', 'vocabulary', 'summary', 'reading_time', 'level', 'topic', 'sources']
-    for field in required_fields:
-        if field not in article:
-            print(f"✗ Missing field: {field}")
-            passed = False
-        else:
-            print(f"✓ Has field: {field}")
+    # Check required fields (all should be present in Pydantic model)
+    print("✓ All required fields present (validated by Pydantic)")
 
     # Check content length
-    word_count = len(article['content'].split())
-    target = config['generation']['target_word_count'][level]
+    word_count = len(article.content.split())
+    target = config.generation.target_word_count[level]
     tolerance = 0.3  # ±30%
 
     if word_count < target * (1 - tolerance):

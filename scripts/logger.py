@@ -106,12 +106,12 @@ class ColoredFormatter(logging.Formatter):
         return f"[{timestamp}] {colored_level} {self.BOLD}{record.name:20s}{self.RESET} | {msg}"
 
 
-def setup_logger(config: Dict[str, Any], run_id: str) -> logging.Logger:
+def setup_logger(config, run_id: str) -> logging.Logger:
     """
     Set up logging based on configuration
     
     Args:
-        config: Configuration dictionary
+        config: AppConfig instance or configuration dictionary
         run_id: Unique run identifier
     
     Returns:
@@ -119,8 +119,15 @@ def setup_logger(config: Dict[str, Any], run_id: str) -> logging.Logger:
     """
     logger = logging.getLogger('autospanish')
     
-    # Get logging config
-    log_config = config.get('logging', {})
+    # Get logging config (handle both Pydantic model and dict)
+    if hasattr(config, 'logging'):
+        log_config = config.logging
+    elif isinstance(config, dict):
+        log_config = config.get('logging', {})
+    else:
+        log_config = {}
+    
+    # Access values (log_config is always a dict)
     level = getattr(logging, log_config.get('level', 'INFO'))
     format_type = log_config.get('format', 'console')
     log_file = log_config.get('file', 'logs/app.log')

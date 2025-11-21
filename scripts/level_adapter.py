@@ -9,9 +9,12 @@ Uses different strategies per level:
 
 import json
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union, cast
 
-from scripts.models import BaseArticle, AdaptedArticle
+from openai import OpenAI
+from anthropic import Anthropic
+
+from scripts.models import BaseArticle, AdaptedArticle, Topic
 from scripts.config import AppConfig
 
 
@@ -36,8 +39,7 @@ class LevelAdapter:
             if not api_key:
                 raise ValueError("Missing ANTHROPIC_API_KEY in config/environment")
 
-            from anthropic import Anthropic
-            self.llm_client = Anthropic(api_key=api_key)
+            self.llm_client: Union[Anthropic, OpenAI] = Anthropic(api_key=api_key)
             self.logger.info("Initialized Anthropic client for level adaptation")
 
         elif provider == 'openai':
@@ -45,7 +47,6 @@ class LevelAdapter:
             if not api_key:
                 raise ValueError("Missing OPENAI_API_KEY in config/environment")
 
-            from openai import OpenAI
             self.llm_client = OpenAI(api_key=api_key)
             self.logger.info("Initialized OpenAI client for level adaptation")
 
@@ -156,22 +157,35 @@ class LevelAdapter:
 
         try:
             if provider == 'anthropic':
-                response = self.llm_client.messages.create(
+                client = cast(Anthropic, self.llm_client)
+                response = client.messages.create(
                     model=model,
                     max_tokens=max_tokens,
                     temperature=temperature,
                     messages=[{"role": "user", "content": prompt}]
                 )
-                return response.content[0].text
+                # Extract text from first content block (should be TextBlock)
+                if response.content and len(response.content) > 0:
+                    first_block = response.content[0]
+                    if hasattr(first_block, 'text'):
+                        return first_block.text
+                    else:
+                        raise ValueError(f"Unexpected content block type: {type(first_block)}")
+                else:
+                    raise ValueError("Empty response from Anthropic API")
 
             elif provider == 'openai':
-                response = self.llm_client.chat.completions.create(
+                client = cast(OpenAI, self.llm_client)  # type: ignore[assignment]
+                response = client.chat.completions.create(  # type: ignore[attr-defined]
                     model=model,
                     messages=[{"role": "user", "content": prompt}],
                     temperature=temperature,
                     max_tokens=max_tokens
                 )
-                return response.choices[0].message.content
+                content = response.choices[0].message.content
+                if content is None:
+                    raise ValueError("Empty response from OpenAI API")
+                return content  # type: ignore[no-any-return]
 
             else:
                 raise ValueError(f"Unknown provider: {provider}")

@@ -35,12 +35,11 @@ class ContentGenerator:
 
         # Two-step settings
         two_step_config = self.generation_config.two_step_synthesis
-        self.two_step_enabled = two_step_config.enabled
         self.save_base_articles = two_step_config.save_base_article
         self.base_article_path = two_step_config.base_article_path
         self.regeneration_strategy = two_step_config.regeneration_strategy
 
-        self.logger.info(f"ContentGenerator initialized (two_step: {self.two_step_enabled})")
+        self.logger.info("ContentGenerator initialized (two-step synthesis enabled)")
         if self.save_base_articles:
             self.logger.info(f"Base articles will be saved to: {self.base_article_path}")
 
@@ -64,14 +63,6 @@ class ContentGenerator:
             - level, topic, sources (metadata)
             - base_article (stored for regeneration)
         """
-        if not self.two_step_enabled:
-            # Fallback: Use legacy single-step generation
-            # (Could implement legacy path if needed, but for now just log warning)
-            self.logger.warning(
-                "two_step_synthesis is disabled but ContentGenerator only supports two-step. "
-                "Proceeding with two-step generation."
-            )
-
         # Step 1: Synthesize native-level base article
         self.logger.info(f"Starting two-step generation for {level}: {topic.title}")
         base_article = self.synthesizer.synthesize(topic, sources)

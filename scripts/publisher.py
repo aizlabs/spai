@@ -12,7 +12,6 @@ import re
 
 from scripts.models import AdaptedArticle
 from scripts.config import AppConfig
-from scripts.config import AppConfig
 
 
 class Publisher:

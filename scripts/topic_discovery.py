@@ -14,6 +14,7 @@ import requests
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
+from scripts.models import Topic
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import quote
 import logging
@@ -23,19 +24,28 @@ import re
 class TopicDiscoverer:
     """Discovers topics from multiple Spanish sources"""
     
-    def __init__(self, config: Dict, logger: logging.Logger):
+    def __init__(self, config, logger: logging.Logger):
         self.config = config
         self.logger = logger.getChild('TopicDiscoverer')
-        self.sources = config.get('sources_list', [])
-        self.min_sources = config.get('discovery', {}).get('min_sources', 3)
-
+        
+        # Handle both Pydantic model and dict
+        if hasattr(config, 'sources_list'):
+            self.sources = config.sources_list
+            discovery_config = config.discovery if hasattr(config, 'discovery') else {}
+            ranking_config = config.ranking if hasattr(config, 'ranking') else {}
+        else:
+            self.sources = config.get('sources_list', [])
+            discovery_config = config.get('discovery', {})
+            ranking_config = config.get('ranking', {})
+        
+        self.min_sources = discovery_config.get('min_sources', 3) if isinstance(discovery_config, dict) else getattr(discovery_config, 'min_sources', 3)
+        
         # Ranking configuration
-        ranking_config = config.get('ranking', {})
-        self.source_weight = ranking_config.get('source_weight', 3)
-        self.mention_weight = ranking_config.get('mention_weight', 2)
-        self.mention_cap = ranking_config.get('mention_cap', 10)
-        self.cultural_bonus = ranking_config.get('cultural_bonus', 5)
-        self.avoid_penalty = ranking_config.get('avoid_penalty', -10)
+        self.source_weight = ranking_config.get('source_weight', 3) if isinstance(ranking_config, dict) else getattr(ranking_config, 'source_weight', 3)
+        self.mention_weight = ranking_config.get('mention_weight', 2) if isinstance(ranking_config, dict) else getattr(ranking_config, 'mention_weight', 2)
+        self.mention_cap = ranking_config.get('mention_cap', 10) if isinstance(ranking_config, dict) else getattr(ranking_config, 'mention_cap', 10)
+        self.cultural_bonus = ranking_config.get('cultural_bonus', 5) if isinstance(ranking_config, dict) else getattr(ranking_config, 'cultural_bonus', 5)
+        self.avoid_penalty = ranking_config.get('avoid_penalty', -10) if isinstance(ranking_config, dict) else getattr(ranking_config, 'avoid_penalty', -10)
 
         # Load SpaCy Spanish model
         try:
@@ -57,11 +67,11 @@ class TopicDiscoverer:
             'blockchain', 'criptomoneda', 'algoritmo'
         }
     
-    def discover(self, limit: int = 10) -> List[Dict]:
+    def discover(self, limit: int = 10) -> List[Topic]:
         """
         Main entry point: discover topics
 
-        Returns: List of ranked topics
+        Returns: List of ranked Topic objects
         """
         self.logger.info(f"Starting topic discovery from {len(self.sources)} sources")
 
@@ -106,9 +116,23 @@ class TopicDiscoverer:
         self.logger.info(f"Found {len(topics)} candidate topics")
         
         # Step 4: Rank topics
-        ranked = self._rank_topics(topics)
+        ranked_topics = self._rank_topics(topics)
         
-        return ranked[:limit]
+        # Convert to Topic objects
+        topic_objects = []
+        for topic_dict in ranked_topics[:limit]:
+            # Extract URLs from headlines
+            urls = [h['url'] for h in topic_dict.get('headlines', [])]
+            topic_objects.append(Topic(
+                title=topic_dict['title'],
+                sources=topic_dict['sources'],
+                mentions=topic_dict['mentions'],
+                score=topic_dict['score'],
+                keywords=topic_dict.get('keywords'),
+                urls=urls
+            ))
+        
+        return topic_objects
     
     def _fetch_source(self, source: Dict) -> List[Dict]:
         """Fetch headlines from one source"""
@@ -264,7 +288,8 @@ class TopicDiscoverer:
                     'mentions': len(headlines),  # Now accurate count
                     'sources': list(sources),
                     'headlines': headlines,
-                    'keywords': self._extract_keywords(headlines)
+                    'keywords': self._extract_keywords(headlines),
+                    'score': 0.0  # Will be set by _rank_topics
                 })
         
         return topics

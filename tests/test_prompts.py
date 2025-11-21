@@ -48,17 +48,21 @@ class TestPrepareSourceContext:
 
         result = prepare_source_context(sources)
 
-        assert 'Source 1 (El País):' in result
+        assert '<source_1 (El País)>' in result
+        assert '</source_1>' in result
         assert sample_sources[0].text in result
 
     def test_prepare_multiple_sources(self, sample_sources):
         """Test preparing multiple sources"""
         result = prepare_source_context(sample_sources)
 
-        # Should have all 3 sources
-        assert 'Source 1 (El País):' in result
-        assert 'Source 2 (BBC Mundo):' in result
-        assert 'Source 3 (El Mundo):' in result
+        # Should have all 3 sources with XML tags
+        assert '<source_1 (El País)>' in result
+        assert '</source_1>' in result
+        assert '<source_2 (BBC Mundo)>' in result
+        assert '</source_2>' in result
+        assert '<source_3 (El Mundo)>' in result
+        assert '</source_3>' in result
 
         # Should contain all texts
         assert sample_sources[0].text in result
@@ -73,9 +77,9 @@ class TestPrepareSourceContext:
         result = prepare_source_context(many_sources)
 
         # Should only have first 5
-        assert 'Source 1' in result
-        assert 'Source 5' in result
-        assert 'Source 6' not in result
+        assert '<source_1' in result
+        assert '<source_5' in result
+        assert '<source_6' not in result
 
     def test_prepare_empty_sources(self):
         """Test preparing empty source list"""
@@ -94,8 +98,9 @@ class TestGetSynthesisPrompt:
         # Should contain topic
         assert sample_topic.title in prompt
 
-        # Should contain sources
-        assert 'Source 1 (El País):' in prompt
+        # Should contain sources in XML format
+        assert '<source_1 (El País)>' in prompt
+        assert '</source_1>' in prompt
 
         # Should have task description
         assert 'ORIGINAL article' in prompt
