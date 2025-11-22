@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - 'output/**'
+  workflow_run:
+    workflows: ["Generate Spanish Learning Articles"]
+    types:
+      - completed
+    branches: [main]
   workflow_dispatch:
 
 # Grant GITHUB_TOKEN permissions for Pages deployment
