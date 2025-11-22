@@ -25,6 +25,7 @@ highlighter: rouge
 permalink: /articles/:title/
 paginate: 12
 paginate_path: /page:num/
+future: true  # Show future-dated posts (safeguard for timezone issues)
 
 # Collections
 collections:

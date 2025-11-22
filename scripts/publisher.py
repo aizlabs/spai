@@ -142,9 +142,11 @@ class Publisher:
         escaped_sources = self._escape_yaml_string(', '.join(article.sources))
 
         # YAML frontmatter
+        # Use Jekyll-compatible date format (without microseconds)
+        date_str = timestamp.strftime("%Y-%m-%d %H:%M:%S")
         frontmatter = f"""---
 title: "{escaped_title}"
-date: {timestamp.isoformat()}
+date: {date_str}
 level: {article.level}
 topics: {self._format_topics(article)}
 sources: "{escaped_sources}"
