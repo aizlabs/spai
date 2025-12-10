@@ -280,6 +280,69 @@ Good Sentence Breaking:
 ✅ Simplified: "El ministro llegó ayer de Bruselas. Participó en una reunión sobre **cambio climático**. Dijo que España va a gastar más dinero en **energías renovables**."
 """
 
+# B1 Adaptation Instructions with Staged Workflow
+B1_ADAPTATION_INSTRUCTIONS = """
+You are a Spanish language education specialist tasked with adapting news articles to B1 CEFR level while maintaining their informational value. Keep authentic news style but make the language accessible to solid intermediate learners.
+
+=== B1 ADAPTATION GUIDELINES ===
+
+STEP 1: VOCABULARY ASSESSMENT
+1.1 Identify words/phrases outside the 3,000 most frequent Spanish words.
+1.2 Selection priorities (choose 8-12 for glossing):
+    - Essential for understanding the main story
+    - Cultural or institutional terms that lack easy cognates
+    - Specialized/technical terms that may block comprehension
+1.3 Mark selected terms with **bold** formatting in the text.
+1.4 Keep glossed terms in original form (do not simplify these).
+1.5 Do not gloss proper names or widely known named entities; explain them naturally in context when needed.
+
+STEP 2: STRUCTURE AND GRAMMAR TUNING
+2.1 Sentence shaping
+    - Target average length: 12-20 words; absolute maximum: 25 words
+    - One main idea per sentence; split clauses that stack multiple actions
+    - Use varied connectors: aunque, mientras, sin embargo, ya que, por lo tanto, además
+2.2 Tense and mood guidance
+    - Mix presente, pretérito indefinido, imperfecto, and futuro (próximo or simple used sparingly)
+    - Maintain chronological flow when narrating events
+    - Subjunctive only in common expressions (es importante que, para que, es posible que)
+    - Avoid pluscuamperfecto, conditional perfect, and heavy passive voice; convert to active voice where possible
+2.3 Complexity reduction
+    - Replace nested subordinate clauses with clearer sentences
+    - Convert passive to active when it keeps meaning intact
+    - Prefer concrete, direct constructions over abstract phrasing
+
+STEP 3: GLOSS GENERATION
+3.1 Format for each gloss
+[Spanish term] - [English translation] - [Spanish B1 explanation]
+3.2 Gloss rules
+    - Spanish explanations use B1-level vocabulary
+    - Maximum 20 words per Spanish explanation
+    - Multi-word expressions glossed as complete units
+    - Include cultural context when needed; keep functional and practical
+3.3 Examples
+- "infraestructura" - infrastructure - conjunto de carreteras, puentes y servicios que permiten que una ciudad funcione
+- "sequía" - drought - tiempo largo sin lluvia que afecta al agua y a los cultivos
+- "presupuesto" - budget - cantidad de dinero que un gobierno o empresa planea gastar
+
+STEP 4: CONTENT ORGANIZATION AND VOICE
+- Title: Clear and engaging (8-10 words)
+- Lead paragraph: WHO, WHAT, WHEN, WHERE
+- Body: 3-4 paragraphs with clear topic sentences
+- Use connectors to show cause, contrast, and sequence
+- Preserve all key facts and maintain chronological order
+- Tone: informative and accessible; do not oversimplify general vocabulary
+
+STEP 5: QUALITY VERIFICATION BEFORE OUTPUT
+□ Word count is ~300 words (acceptable range 270-330)
+□ 8-12 vocabulary terms are glossed, marked with **bold**, and kept in original form
+□ Sentences average 12-20 words; none exceed 25 words
+□ Mixed tenses appear naturally; subjunctive limited to common expressions
+□ Passive voice avoided unless meaning requires it
+□ Gloss explanations use B1 vocabulary and stay under 20 words
+□ Facts, chronology, and nuance from the base article are preserved
+□ Connectors and paragraph structure create clear flow
+"""
+
 
 def validate_level(level: str) -> None:
     """
@@ -726,7 +789,7 @@ def get_b1_adaptation_prompt(
 Make sure to specifically address these issues in your adaptation.
 """
 
-    prompt = f"""You are a Spanish language education specialist tasked with adapting news articles to B1 CEFR level while maintaining their informational value.
+    prompt = f"""{B1_ADAPTATION_INSTRUCTIONS}
 
 === BASE ARTICLE ===
 
@@ -737,40 +800,14 @@ Content:
 
 {feedback_section}
 
-=== B1 ADAPTATION GUIDELINES ===
+=== YOUR TASK ===
+Adapt the above native-level article to B1 CEFR level following ALL steps in the B1 Adaptation Guidelines.
 
-VOCABULARY ASSESSMENT:
-1. Identify words/phrases outside the 3,000 most frequent Spanish words
-2. Select 8-12 terms for glossing (prioritize specialized/technical terms)
-3. Mark selected terms with **bold** formatting in the text
-4. Keep glossed terms in original form (do not simplify these)
-
-GRAMMAR & STRUCTURE:
-- Allow mixed tenses: presente, pretérito, imperfecto, futuro
-- Subjunctive allowed in common expressions (espero que, es importante que)
-- Target sentence length: 12-20 words average
-- Maximum sentence length: 25 words
-- Use varied connectors: aunque, mientras, sin embargo, ya que, por lo tanto
-
-SIMPLIFICATION (LIGHT):
-- Convert very complex constructions to simpler alternatives
-- Avoid: pluscuamperfecto, conditional perfect, complex passive voice
-- Prefer: active voice, direct constructions
-- Maintain chronological flow
-
-VOCABULARY GLOSSES:
-Format: [Spanish term] - [English translation] - [Spanish B1 explanation]
-- Spanish explanations use B1-level vocabulary
-- Maximum 20 words per Spanish explanation
-- Include cultural context when needed
-- Be functional and practical
-
-CONTENT ORGANIZATION:
-- Title: Clear and engaging (8-10 words)
-- Lead paragraph: WHO, WHAT, WHEN, WHERE
-- Body: 3-4 paragraphs with clear topic sentences
-- Target: ~300 words total
-- One main idea per paragraph
+Key goals:
+- Preserve the article's facts and chronology
+- Make specialized terminology accessible through glossing (8-12 terms)
+- Keep authentic tone while keeping sentences clear and within length limits
+- Target word count: ~300 words (acceptable range 270-330)
 
 OUTPUT FORMAT (return ONLY valid JSON, no markdown):
 {{
@@ -784,16 +821,14 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
   "reading_time": 3
 }}
 
-QUALITY VERIFICATION:
-Before finalizing, verify:
-□ 8-12 vocabulary terms are glossed and marked with **bold**
-□ No sentence exceeds 25 words
-□ Mixed tenses used appropriately (not just presente)
-□ Main facts from base article are preserved
-□ Content is engaging for B1 learners
-□ Vocabulary glosses use B1-appropriate Spanish
+QUALITY VERIFICATION (must check BEFORE outputting JSON):
+□ All checklist items in STEP 5 are satisfied
+□ Gloss count is 8-12 with **bold** formatting
+□ Word count within range and sentences under 25 words
+□ Mixed tenses and appropriate connectors are present
+□ Facts and nuance from the base article are preserved
 
-Remember: B1 learners have solid intermediate skills. Don't over-simplify, but do make specialized terminology accessible through glossing.
+Remember: B1 learners have solid intermediate skills. Maintain authenticity while ensuring clarity and support through glosses.
 """
 
     return prompt
