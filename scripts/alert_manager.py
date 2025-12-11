@@ -31,9 +31,11 @@ class AlertManager:
         self.smtp_port: int = int(port_value) if port_value else 25
         self.username: Optional[str] = alerts_config.get("username") or env_defaults["username"]
         self.password: Optional[str] = alerts_config.get("password") or env_defaults["password"]
-        tls_value = alerts_config.get("use_tls")
-        if tls_value is None and env_defaults["use_tls"] is not None:
-            tls_value = str(env_defaults["use_tls"]).lower() in {"1", "true", "yes", "on"}
+        env_tls = env_defaults["use_tls"]
+        if env_tls is not None:
+            tls_value = str(env_tls).lower() in {"1", "true", "yes", "on"}
+        else:
+            tls_value = alerts_config.get("use_tls")
         self.use_tls: bool = bool(tls_value)
 
         # Default to sending alerts in CI when a recipient is provided, even if config isn't explicitly set.
