@@ -26,8 +26,11 @@ class AlertManager:
 
         self.recipient: Optional[str] = alerts_config.get("email") or env_defaults["email"]
         self.sender: str = alerts_config.get("sender") or env_defaults["sender"] or self.recipient or "alerts@autospanishblog"
-        self.smtp_host: str = alerts_config.get("smtp_host") or env_defaults["smtp_host"] or "localhost"
-        port_value = alerts_config.get("smtp_port") or env_defaults["smtp_port"]
+
+        host_value = env_defaults["smtp_host"] if env_defaults["smtp_host"] is not None else alerts_config.get("smtp_host")
+        self.smtp_host: str = host_value or "localhost"
+
+        port_value = env_defaults["smtp_port"] if env_defaults["smtp_port"] is not None else alerts_config.get("smtp_port")
         self.smtp_port: int = int(port_value) if port_value else 25
         self.username: Optional[str] = alerts_config.get("username") or env_defaults["username"]
         self.password: Optional[str] = alerts_config.get("password") or env_defaults["password"]
