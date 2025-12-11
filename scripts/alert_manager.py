@@ -1,5 +1,6 @@
 """Alerting utilities for pipeline failures."""
 
+import os
 import smtplib
 import traceback
 from email.message import EmailMessage
@@ -13,14 +14,31 @@ class AlertManager:
 
     def __init__(self, config: AppConfig, logger) -> None:
         alerts_config = config.alerts or {}
-        self.enabled: bool = alerts_config.get("enabled", False)
-        self.recipient: Optional[str] = alerts_config.get("email")
-        self.sender: str = alerts_config.get("sender", self.recipient or "alerts@autospanishblog")
-        self.smtp_host: str = alerts_config.get("smtp_host", "localhost")
-        self.smtp_port: int = int(alerts_config.get("smtp_port", 25))
-        self.username: Optional[str] = alerts_config.get("username")
-        self.password: Optional[str] = alerts_config.get("password")
-        self.use_tls: bool = alerts_config.get("use_tls", False)
+        env_defaults = {
+            "email": os.getenv("ALERT_EMAIL"),
+            "sender": os.getenv("ALERT_SENDER"),
+            "smtp_host": os.getenv("ALERT_SMTP_HOST"),
+            "smtp_port": os.getenv("ALERT_SMTP_PORT"),
+            "use_tls": os.getenv("ALERT_SMTP_TLS"),
+            "username": os.getenv("ALERT_SMTP_USERNAME"),
+            "password": os.getenv("ALERT_SMTP_PASSWORD"),
+        }
+
+        self.recipient: Optional[str] = alerts_config.get("email") or env_defaults["email"]
+        self.sender: str = alerts_config.get("sender") or env_defaults["sender"] or self.recipient or "alerts@autospanishblog"
+        self.smtp_host: str = alerts_config.get("smtp_host") or env_defaults["smtp_host"] or "localhost"
+        port_value = alerts_config.get("smtp_port") or env_defaults["smtp_port"]
+        self.smtp_port: int = int(port_value) if port_value else 25
+        self.username: Optional[str] = alerts_config.get("username") or env_defaults["username"]
+        self.password: Optional[str] = alerts_config.get("password") or env_defaults["password"]
+        tls_value = alerts_config.get("use_tls")
+        if tls_value is None and env_defaults["use_tls"] is not None:
+            tls_value = str(env_defaults["use_tls"]).lower() in {"1", "true", "yes", "on"}
+        self.use_tls: bool = bool(tls_value)
+
+        # Default to sending alerts in CI when a recipient is provided, even if config isn't explicitly set.
+        default_enabled = os.getenv("GITHUB_ACTIONS") == "true" and bool(self.recipient)
+        self.enabled: bool = bool(alerts_config.get("enabled", default_enabled))
         self.logger = logger
 
     def send_failure_alert(self, *, run_id: str, environment: str, stage: str, exception: Exception) -> None:
