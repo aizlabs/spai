@@ -24,21 +24,26 @@ class AlertManager:
             "password": os.getenv("ALERT_SMTP_PASSWORD"),
         }
 
-        recipient_value = env_defaults["email"] if env_defaults["email"] is not None else alerts_config.get("email")
+        def prefer_env(env_value: Optional[str], config_value: Optional[str]) -> Optional[str]:
+            """Prefer non-empty environment overrides over config defaults."""
+
+            return env_value if env_value not in (None, "") else config_value
+
+        recipient_value = prefer_env(env_defaults["email"], alerts_config.get("email"))
         self.recipient: Optional[str] = recipient_value
 
-        sender_value = env_defaults["sender"] if env_defaults["sender"] is not None else alerts_config.get("sender")
+        sender_value = prefer_env(env_defaults["sender"], alerts_config.get("sender"))
         self.sender: str = sender_value or self.recipient or "alerts@autospanishblog"
 
-        host_value = env_defaults["smtp_host"] if env_defaults["smtp_host"] is not None else alerts_config.get("smtp_host")
+        host_value = prefer_env(env_defaults["smtp_host"], alerts_config.get("smtp_host"))
         self.smtp_host: str = host_value or "localhost"
 
-        port_value = env_defaults["smtp_port"] if env_defaults["smtp_port"] is not None else alerts_config.get("smtp_port")
+        port_value = prefer_env(env_defaults["smtp_port"], alerts_config.get("smtp_port"))
         self.smtp_port: int = int(port_value) if port_value else 25
-        username_value = env_defaults["username"] if env_defaults["username"] is not None else alerts_config.get("username")
+        username_value = prefer_env(env_defaults["username"], alerts_config.get("username"))
         self.username: Optional[str] = username_value
 
-        password_value = env_defaults["password"] if env_defaults["password"] is not None else alerts_config.get("password")
+        password_value = prefer_env(env_defaults["password"], alerts_config.get("password"))
         self.password: Optional[str] = password_value
         env_tls = env_defaults["use_tls"]
         if env_tls is not None:
