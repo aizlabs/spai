@@ -24,16 +24,22 @@ class AlertManager:
             "password": os.getenv("ALERT_SMTP_PASSWORD"),
         }
 
-        self.recipient: Optional[str] = alerts_config.get("email") or env_defaults["email"]
-        self.sender: str = alerts_config.get("sender") or env_defaults["sender"] or self.recipient or "alerts@autospanishblog"
+        recipient_value = env_defaults["email"] if env_defaults["email"] is not None else alerts_config.get("email")
+        self.recipient: Optional[str] = recipient_value
+
+        sender_value = env_defaults["sender"] if env_defaults["sender"] is not None else alerts_config.get("sender")
+        self.sender: str = sender_value or self.recipient or "alerts@autospanishblog"
 
         host_value = env_defaults["smtp_host"] if env_defaults["smtp_host"] is not None else alerts_config.get("smtp_host")
         self.smtp_host: str = host_value or "localhost"
 
         port_value = env_defaults["smtp_port"] if env_defaults["smtp_port"] is not None else alerts_config.get("smtp_port")
         self.smtp_port: int = int(port_value) if port_value else 25
-        self.username: Optional[str] = alerts_config.get("username") or env_defaults["username"]
-        self.password: Optional[str] = alerts_config.get("password") or env_defaults["password"]
+        username_value = env_defaults["username"] if env_defaults["username"] is not None else alerts_config.get("username")
+        self.username: Optional[str] = username_value
+
+        password_value = env_defaults["password"] if env_defaults["password"] is not None else alerts_config.get("password")
+        self.password: Optional[str] = password_value
         env_tls = env_defaults["use_tls"]
         if env_tls is not None:
             tls_value = str(env_tls).lower() in {"1", "true", "yes", "on"}
