@@ -61,6 +61,14 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ENVIRONMENT: production
+          ALERTS_ENABLED: true
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+          ALERT_SENDER: AutoSpanishBot <noreply@github.com>
+          ALERT_SMTP_HOST: smtp.gmail.com
+          ALERT_SMTP_PORT: 587
+          ALERT_SMTP_TLS: true
+          ALERT_SMTP_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+          ALERT_SMTP_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         run: |
           uv run spai-pipeline
 

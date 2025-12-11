@@ -141,9 +141,28 @@ def apply_env_overrides(config_dict: Dict) -> Dict:
         config_dict['llm']['openai_api_key'] = openai_key
 
     # Alerts
-    if os.getenv('ALERT_EMAIL'):
+    alerts_env = {
+        'enabled': os.getenv('ALERTS_ENABLED'),
+        'email': os.getenv('ALERT_EMAIL'),
+        'sender': os.getenv('ALERT_SENDER'),
+        'smtp_host': os.getenv('ALERT_SMTP_HOST'),
+        'smtp_port': os.getenv('ALERT_SMTP_PORT'),
+        'use_tls': os.getenv('ALERT_SMTP_TLS'),
+        'username': os.getenv('ALERT_SMTP_USERNAME'),
+        'password': os.getenv('ALERT_SMTP_PASSWORD'),
+    }
+
+    if any(value is not None for value in alerts_env.values()):
         config_dict.setdefault('alerts', {})
-        config_dict['alerts']['email'] = os.getenv('ALERT_EMAIL')
+        for key, value in alerts_env.items():
+            if value is None:
+                continue
+            if key in {'enabled', 'use_tls'}:
+                config_dict['alerts'][key] = str(value).lower() in {'1', 'true', 'yes', 'on'}
+            elif key == 'smtp_port':
+                config_dict['alerts'][key] = int(value)
+            else:
+                config_dict['alerts'][key] = value
 
     # Override articles per run
     articles_per_run = os.getenv('ARTICLES_PER_RUN')

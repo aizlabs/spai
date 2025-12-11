@@ -25,14 +25,15 @@ from typing import Dict, Optional, Tuple
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
+from alert_manager import AlertManager
 from config import load_config  # type: ignore[attr-defined]
-from logger import setup_logger
-from topic_discovery import TopicDiscoverer
 from content_fetcher import ContentFetcher
 from content_generator import ContentGenerator
-from quality_gate import QualityGate
-from publisher import Publisher
+from logger import setup_logger
 from models import AdaptedArticle, QualityResult, Topic, SourceArticle
+from publisher import Publisher
+from quality_gate import QualityGate
+from topic_discovery import TopicDiscoverer
 
 
 def detect_environment() -> str:
@@ -64,6 +65,9 @@ def main():
     # Initialize logging
     logger = setup_logger(config, run_id)
 
+    # Initialize alerting
+    alert_manager = AlertManager(config, logger)
+
     logger.info("=" * 60)
     logger.info("AutoSpanishBlog - Content Generation Pipeline")
     logger.info("=" * 60)
@@ -86,8 +90,11 @@ def main():
         'total_quality_score': 0.0
     }
 
+    current_stage = "startup"
+
     try:
         # Initialize pipeline components
+        current_stage = "initialization"
         logger.info("Initializing components...")
         discoverer = TopicDiscoverer(config, logger)
         fetcher = ContentFetcher(config, logger)
@@ -99,6 +106,7 @@ def main():
         logger.info("")
 
         # Phase 1: Topic Discovery
+        current_stage = "topic_discovery"
         logger.info("-" * 60)
         logger.info("Phase 1: Topic Discovery")
         logger.info("-" * 60)
@@ -127,6 +135,7 @@ def main():
             logger.info("")
 
             # Phase 2: Fetch Sources
+            current_stage = "fetch_sources"
             logger.info("Phase 2: Fetching article sources...")
             source_articles = fetcher.fetch_topic_sources(topic)  # Returns SourceArticle objects
 
@@ -147,6 +156,7 @@ def main():
 
                 stats['attempted'] += 1
 
+                current_stage = f"generate_and_quality:{level}"
                 logger.info("-" * 60)
                 logger.info(f"Generating {level} article...")
                 logger.info("-" * 60)
@@ -184,6 +194,7 @@ def main():
                     logger.info("")
 
                     # Phase 5: Publish
+                    current_stage = f"publishing:{level}"
                     logger.info("Phase 5: Publishing...")
                     is_published = publisher.save_article(final_article)
 
@@ -256,6 +267,12 @@ def main():
         logger.error("=" * 60)
 
         logger.error(f"Pipeline failed: {str(e)}", exc_info=True)
+        alert_manager.send_failure_alert(
+            run_id=run_id,
+            environment=environment,
+            stage=current_stage,
+            exception=e,
+        )
 
         return 1
 

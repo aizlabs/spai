@@ -1,0 +1,65 @@
+"""Alerting utilities for pipeline failures."""
+
+import smtplib
+import traceback
+from email.message import EmailMessage
+from typing import Optional
+
+from config import AppConfig
+
+
+class AlertManager:
+    """Send operational alerts when the pipeline fails."""
+
+    def __init__(self, config: AppConfig, logger) -> None:
+        alerts_config = config.alerts or {}
+        self.enabled: bool = alerts_config.get("enabled", False)
+        self.recipient: Optional[str] = alerts_config.get("email")
+        self.sender: str = alerts_config.get("sender", self.recipient or "alerts@autospanishblog")
+        self.smtp_host: str = alerts_config.get("smtp_host", "localhost")
+        self.smtp_port: int = int(alerts_config.get("smtp_port", 25))
+        self.username: Optional[str] = alerts_config.get("username")
+        self.password: Optional[str] = alerts_config.get("password")
+        self.use_tls: bool = alerts_config.get("use_tls", False)
+        self.logger = logger
+
+    def send_failure_alert(self, *, run_id: str, environment: str, stage: str, exception: Exception) -> None:
+        """Send a structured failure notification to operators."""
+        if not self.enabled or not self.recipient:
+            return
+
+        subject = f"[AutoSpanishBlog] Pipeline failure ({environment}) - {run_id}"
+        traceback_text = "".join(traceback.format_exception(exception)).strip()
+        body = (
+            "Pipeline execution failed.\n\n"
+            f"Run ID: {run_id}\n"
+            f"Environment: {environment}\n"
+            f"Stage: {stage or 'unknown'}\n"
+            f"Exception: {exception}\n\n"
+            "Traceback:\n"
+            f"{traceback_text}\n"
+        )
+
+        message = EmailMessage()
+        message["From"] = self.sender
+        message["To"] = self.recipient
+        message["Subject"] = subject
+        message.set_content(body)
+
+        try:
+            with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=10) as smtp:
+                if self.use_tls:
+                    smtp.starttls()
+                if self.username and self.password:
+                    smtp.login(self.username, self.password)
+                smtp.send_message(message)
+            self.logger.info("Failure alert email sent", extra={"run_id": run_id, "stage": stage})
+        except Exception as alert_error:  # noqa: BLE001
+            self.logger.error(
+                "Failed to send failure alert",
+                extra={
+                    "run_id": run_id,
+                    "stage": stage,
+                    "error": str(alert_error),
+                },
+            )
