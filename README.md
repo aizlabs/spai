@@ -146,6 +146,15 @@ Each article synthesizes information from **3-5 different sources**:
 **Output:** 4 articles per run = 12 articles/day
 **Cost:** ~$10-12/month (LLM API calls only)
 
+### Alerting and notifications
+
+- GitHub automatically emails repository watchers and committers when a workflow fails; this requires no secrets.
+- The pipeline also supports **optional SMTP alerts** (used in CI) when you provide `ALERT_EMAIL`, `EMAIL_USERNAME`, and
+  `EMAIL_PASSWORD` as repository or organization secrets. When present, the workflow enables in-app alerts and the fallback
+  `action-send-mail` step using Gmail SMTP.
+- If those secrets are missing, the workflow now leaves alerts disabled and skips the mail action, so runs continue to
+  rely on GitHub's built-in failure notifications without needing any email credentials.
+
 ### GitHub Actions Workflow
 
 ```yaml

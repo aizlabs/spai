@@ -61,7 +61,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ENVIRONMENT: production
-          ALERTS_ENABLED: true
+          ALERTS_ENABLED: ${{ secrets.ALERT_EMAIL != '' && secrets.EMAIL_USERNAME != '' && secrets.EMAIL_PASSWORD != '' }}
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
           ALERT_SENDER: AutoSpanishBot <noreply@github.com>
           ALERT_SMTP_HOST: smtp.gmail.com
@@ -120,7 +120,7 @@ jobs:
           echo "**Time:** $(date -u +"%Y-%m-%d %H:%M UTC")" >> $GITHUB_STEP_SUMMARY
 
       - name: Notify on failure
-        if: failure()
+        if: failure() && secrets.EMAIL_USERNAME != '' && secrets.EMAIL_PASSWORD != '' && secrets.ALERT_EMAIL != ''
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
