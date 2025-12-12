@@ -55,7 +55,7 @@ class AlertManager:
         # Default to sending alerts in CI when a recipient is provided, even if config isn't explicitly set.
         default_enabled = os.getenv("GITHUB_ACTIONS") == "true" and bool(self.recipient)
         env_enabled = os.getenv("ALERTS_ENABLED")
-        if env_enabled is not None:
+        if env_enabled not in (None, ""):
             enabled_value = str(env_enabled).lower() in {"1", "true", "yes", "on"}
         elif alerts_config.get("enabled") is not None:
             enabled_value = bool(alerts_config.get("enabled"))
