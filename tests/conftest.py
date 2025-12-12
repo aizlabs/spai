@@ -45,6 +45,7 @@ def base_config() -> AppConfig:
             },
             'openai_api_key': 'test-key-123',
             'temperature': 0.3,
+            'quality_temperature': 0.1,
             'max_tokens': 4096
         },
         'quality_gate': {
