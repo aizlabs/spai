@@ -46,7 +46,7 @@ class AlertManager:
         password_value = prefer_env(env_defaults["password"], alerts_config.get("password"))
         self.password: Optional[str] = password_value
         env_tls = env_defaults["use_tls"]
-        if env_tls is not None:
+        if env_tls not in (None, ""):
             tls_value = str(env_tls).lower() in {"1", "true", "yes", "on"}
         else:
             tls_value = alerts_config.get("use_tls")
