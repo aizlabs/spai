@@ -64,9 +64,9 @@ jobs:
           ALERTS_ENABLED: ${{ secrets.ALERT_EMAIL != '' && secrets.EMAIL_USERNAME != '' && secrets.EMAIL_PASSWORD != '' }}
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
           ALERT_SENDER: AutoSpanishBot <noreply@github.com>
-          ALERT_SMTP_HOST: smtp.gmail.com
-          ALERT_SMTP_PORT: 587
-          ALERT_SMTP_TLS: true
+          ALERT_SMTP_HOST: ${{ secrets.ALERT_SMTP_HOST || 'smtp.gmail.com' }}
+          ALERT_SMTP_PORT: ${{ secrets.ALERT_SMTP_PORT || 587 }}
+          ALERT_SMTP_TLS: ${{ secrets.ALERT_SMTP_TLS || true }}
           ALERT_SMTP_USERNAME: ${{ secrets.EMAIL_USERNAME }}
           ALERT_SMTP_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         run: |
@@ -123,8 +123,8 @@ jobs:
         if: failure() && secrets.EMAIL_USERNAME != '' && secrets.EMAIL_PASSWORD != '' && secrets.ALERT_EMAIL != ''
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: smtp.gmail.com
-          server_port: 465
+          server_address: ${{ secrets.ALERT_SMTP_HOST || 'smtp.gmail.com' }}
+          server_port: ${{ secrets.ALERT_SMTP_PORT || 465 }}
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "❌ AutoSpanishBlog: Article generation failed"
