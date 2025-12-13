@@ -140,11 +140,6 @@ def apply_env_overrides(config_dict: Dict) -> Dict:
         config_dict.setdefault('llm', {})
         config_dict['llm']['openai_api_key'] = openai_key
 
-    # Alerts
-    if os.getenv('ALERT_EMAIL'):
-        config_dict.setdefault('alerts', {})
-        config_dict['alerts']['email'] = os.getenv('ALERT_EMAIL')
-
     # Override articles per run
     articles_per_run = os.getenv('ARTICLES_PER_RUN')
     if articles_per_run:
