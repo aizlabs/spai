@@ -164,7 +164,10 @@ class LLMConfig(BaseModel):
     models: LLMModelsConfig
     openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key")
     anthropic_api_key: Optional[str] = Field(default=None, description="Anthropic API key")
-    temperature: float = Field(default=0.3, ge=0, le=2, description="Temperature for generation")
+    temperature: float = Field(default=0.3, ge=0, le=1, description="Temperature for generation")
+    quality_temperature: float = Field(
+        default=0.1, ge=0, le=1, description="Temperature for quality checks"
+    )
     max_tokens: int = Field(default=4096, ge=100, le=100000, description="Max tokens")
 
 
