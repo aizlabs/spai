@@ -156,8 +156,9 @@ Each article synthesizes information from **3-5 different sources**:
   any SMTP provider by setting `ALERT_SMTP_HOST`, `ALERT_SMTP_PORT`, and `ALERT_SMTP_TLS` secrets (e.g., SendGrid, Mailgun,
   SES, or a throwaway mailbox) so you don't have to share personal Gmail credentials. App passwords or provider-issued API
   keys are recommended instead of a primary inbox password.
-- If those secrets are missing, the workflow now leaves alerts disabled and skips the mail action, so runs continue to rely
-  on GitHub's built-in failure notifications without needing any email credentials.
+- If those secrets are missing, the workflow leaves alerts disabled and skips the mail action entirely (because it uses the
+  same SMTP credentials), so runs continue to rely on GitHub's built-in failure notifications without needing any email
+  credentials.
 - Empty alert-related environment variables (for example, an accidentally blank `ALERTS_ENABLED` or `ALERT_SMTP_TLS`) are
   treated as "unset," so they don't override your configured defaults. Existing alerts that rely on config values or valid
   secrets continue to work as before.
