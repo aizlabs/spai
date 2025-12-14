@@ -126,6 +126,8 @@ jobs:
         with:
           server_address: ${{ secrets.ALERT_SMTP_HOST || 'smtp.gmail.com' }}
           server_port: ${{ secrets.ALERT_SMTP_PORT || 587 }}
+          # Port 587 expects STARTTLS; force non-implicit TLS so connection mode matches the port
+          secure: false
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "❌ AutoSpanishBlog: Article generation failed"
