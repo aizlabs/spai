@@ -18,6 +18,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    env:
+      ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+      EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      ALERT_SMTP_HOST: ${{ secrets.ALERT_SMTP_HOST || 'smtp.gmail.com' }}
+      ALERT_SMTP_PORT: ${{ secrets.ALERT_SMTP_PORT || 587 }}
+
     permissions:
       contents: write  # Needed to commit and push files
 
@@ -121,17 +128,17 @@ jobs:
 
       - name: Notify on failure
         # Run fallback email only when SMTP secrets are present; skip when missing to avoid auth failures
-        if: ${{ failure() && secrets.EMAIL_USERNAME != '' && secrets.EMAIL_PASSWORD != '' && secrets.ALERT_EMAIL != '' }}
+        if: ${{ failure() && env.EMAIL_USERNAME != '' && env.EMAIL_PASSWORD != '' && env.ALERT_EMAIL != '' }}
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: ${{ secrets.ALERT_SMTP_HOST || 'smtp.gmail.com' }}
-          server_port: ${{ secrets.ALERT_SMTP_PORT || 587 }}
+          server_address: ${{ env.ALERT_SMTP_HOST }}
+          server_port: ${{ env.ALERT_SMTP_PORT }}
           # Port 587 expects STARTTLS; force non-implicit TLS so connection mode matches the port
           secure: false
-          username: ${{ secrets.EMAIL_USERNAME }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
+          username: ${{ env.EMAIL_USERNAME }}
+          password: ${{ env.EMAIL_PASSWORD }}
           subject: "❌ AutoSpanishBlog: Article generation failed"
-          to: ${{ secrets.ALERT_EMAIL }}
+          to: ${{ env.ALERT_EMAIL }}
           from: AutoSpanishBot <noreply@github.com>
           body: |
             Article generation pipeline failed.
