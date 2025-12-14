@@ -33,7 +33,7 @@ class AlertManager:
         self.recipient: Optional[str] = recipient_value
 
         sender_value = prefer_env(env_defaults["sender"], alerts_config.get("sender"))
-        self.sender: str = sender_value or self.recipient or "alerts@autospanishblog"
+        self.sender: str = sender_value or self.recipient or "alerts@autospanishblog.com"
 
         host_value = prefer_env(env_defaults["smtp_host"], alerts_config.get("smtp_host"))
         self.smtp_host: str = host_value or "localhost"
