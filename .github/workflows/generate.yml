@@ -120,8 +120,8 @@ jobs:
           echo "**Time:** $(date -u +"%Y-%m-%d %H:%M UTC")" >> $GITHUB_STEP_SUMMARY
 
       - name: Notify on failure
-        # Only run fallback email when SMTP secrets are missing; otherwise the pipeline alert manager already sends
-        if: ${{ failure() && (secrets.EMAIL_USERNAME == '' || secrets.EMAIL_PASSWORD == '' || secrets.ALERT_EMAIL == '') }}
+        # Run fallback email only when SMTP secrets are present
+        if: ${{ failure() && secrets.EMAIL_USERNAME != '' && secrets.EMAIL_PASSWORD != '' && secrets.ALERT_EMAIL != '' }}
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: ${{ secrets.ALERT_SMTP_HOST || 'smtp.gmail.com' }}
