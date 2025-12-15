@@ -158,7 +158,8 @@ Each article synthesizes information from **3-5 different sources**:
   keys are recommended instead of a primary inbox password.
 - If those secrets are missing, the workflow leaves alerts disabled and skips the mail action entirely (because it uses the
   same SMTP credentials), so runs continue to rely on GitHub's built-in failure notifications without needing any email
-  credentials.
+  credentials. When secrets are present and `ALERTS_ENABLED` resolves true, the pipeline's AlertManager sends the failure
+  email and the GitHub Actions mail step is suppressed to avoid duplicate notifications.
 - Empty alert-related environment variables (for example, an accidentally blank `ALERTS_ENABLED` or `ALERT_SMTP_TLS`) are
   treated as "unset," so they don't override your configured defaults. Existing alerts that rely on config values or valid
   secrets continue to work as before.
