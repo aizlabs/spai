@@ -25,6 +25,7 @@ from typing import Dict, Optional, Tuple
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
+from alerts import AlertManager
 from config import load_config  # type: ignore[attr-defined]
 from logger import setup_logger
 from topic_discovery import TopicDiscoverer
@@ -63,6 +64,7 @@ def main():
 
     # Initialize logging
     logger = setup_logger(config, run_id)
+    alert_manager = AlertManager(config, logger)
 
     logger.info("=" * 60)
     logger.info("AutoSpanishBlog - Content Generation Pipeline")
@@ -108,6 +110,10 @@ def main():
         logger.info("")
 
         if not topics:
+            alert_manager.send_error(
+                "No topics discovered",
+                {"run_id": run_id, "environment": environment, "component": "discovery"},
+            )
             raise Exception("No topics discovered")
 
         # Phase 2-5: Process each topic
@@ -197,7 +203,15 @@ def main():
                             target_reached = True
                             break
                     else:
-                        logger.error(f"❌ Publishing failed")
+                        alert_manager.send_error(
+                            "Publishing failed",
+                            {
+                                "run_id": run_id,
+                                "environment": environment,
+                                "topic": topic.title,
+                                "level": level,
+                            },
+                        )
 
                 else:
                     # Quality failed
@@ -256,6 +270,16 @@ def main():
         logger.error("=" * 60)
 
         logger.error(f"Pipeline failed: {str(e)}", exc_info=True)
+
+        alert_manager.send_critical(
+            "Pipeline failure",
+            {
+                "run_id": run_id,
+                "environment": environment,
+                "duration_seconds": f"{duration:.1f}",
+                "error": str(e),
+            },
+        )
 
         return 1
 

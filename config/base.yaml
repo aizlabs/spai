@@ -83,5 +83,12 @@ metrics:
 
 # Alerts
 alerts:
-  enabled: false
-  email: your@email.com
+  enabled: false                  # Global toggle for alert delivery
+  email: your@email.com           # Recipient for alert emails (can be overridden via ALERT_EMAIL)
+  email_config:
+    from: bot@autospanish.com     # Sender address used for email alerts
+    smtp:
+      host: smtp.gmail.com        # SMTP host required for outbound mail
+      port: 587                   # SMTP port
+      username: ""                # SMTP username (required when server enforces auth)
+      password: ""                # SMTP password (required when server enforces auth)
