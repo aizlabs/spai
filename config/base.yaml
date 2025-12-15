@@ -86,3 +86,7 @@ metrics:
 alerts:
   enabled: false
   email: your@email.com
+  sender: alerts@autospanishblog.com
+  smtp_host: localhost
+  smtp_port: 25
+  use_tls: false
