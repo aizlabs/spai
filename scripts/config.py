@@ -9,12 +9,12 @@ Hierarchical configuration loading:
 
 import os
 import yaml
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from pathlib import Path
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, model_validator
 
-from scripts.models import LLMConfig, TwoStepSynthesisConfig, LLMModelsConfig
+from scripts.models import AlertsConfig, LLMConfig, TwoStepSynthesisConfig, LLMModelsConfig
 
 
 # Load .env file at module import time
@@ -48,7 +48,7 @@ class AppConfig(BaseModel):
     quality_gate: QualityGateConfig
     sources: SourceConfig
     output: Dict[str, str] = Field(default_factory=dict)
-    alerts: Dict[str, Any] = Field(default_factory=dict)
+    alerts: AlertsConfig = Field(default_factory=AlertsConfig)
     logging: Dict[str, Any] = Field(default_factory=dict)
     discovery: Dict[str, Any] = Field(default_factory=dict)
     ranking: Dict[str, Any] = Field(default_factory=dict)

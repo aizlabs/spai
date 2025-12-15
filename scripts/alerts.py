@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from scripts.config import AppConfig
+from scripts.models import AlertsConfig
 
 
 class AlertManager:
@@ -19,13 +20,13 @@ class AlertManager:
 
     def __init__(self, config: AppConfig, logger: logging.Logger):
         self.logger = logger
-        self.alerts_config = config.alerts or {}
-        self.enabled = bool(self.alerts_config.get("enabled", False))
+        self.alerts_config: AlertsConfig = config.alerts
+        self.enabled = bool(self.alerts_config.enabled)
 
         log_file = config.logging.get("file") if isinstance(config.logging, dict) else None
         default_cooldown_path = Path("output/logs/alert_cooldown.json")
         self.cooldown_file = Path(log_file).parent / "alert_cooldown.json" if log_file else default_cooldown_path
-        self.cooldown_hours = 6
+        self.cooldown_hours = self.alerts_config.cooldown_hours
         self.cooldowns = self._load_cooldowns()
 
     def _load_cooldowns(self) -> Dict[str, str]:
@@ -111,16 +112,16 @@ class AlertManager:
         return body
 
     def _send_email(self, subject: str, body: str, priority: str = "normal") -> None:
-        email_config = self.alerts_config.get("email_config", {})
-        to_email = self.alerts_config.get("email")
+        email_config = self.alerts_config.email_config
+        to_email = self.alerts_config.email
 
-        if not to_email:
+        if not to_email or not email_config:
             self.logger.warning("Alert email not configured, skipping email send")
             return
 
         try:
             message = MIMEMultipart()
-            message["From"] = email_config.get("from", "bot@autospanish.com")
+            message["From"] = email_config.from_email
             message["To"] = to_email
             message["Subject"] = subject
 
@@ -129,12 +130,12 @@ class AlertManager:
 
             message.attach(MIMEText(body, "plain"))
 
-            smtp_config = email_config.get("smtp", {})
-            server = smtplib.SMTP(smtp_config.get("host", "smtp.gmail.com"), smtp_config.get("port", 587))
+            smtp_config = email_config.smtp
+            server = smtplib.SMTP(smtp_config.host, smtp_config.port)
             server.starttls()
 
-            username = smtp_config.get("username")
-            password = smtp_config.get("password")
+            username = smtp_config.username
+            password = smtp_config.password
 
             if username and password:
                 server.login(username, password)
@@ -150,13 +151,13 @@ class AlertManager:
             )
 
     def send_telegram(self, message: str) -> None:
-        telegram_config = self.alerts_config.get("telegram", {})
+        telegram_config = self.alerts_config.telegram
 
-        if not telegram_config.get("enabled", False):
+        if not telegram_config or not telegram_config.enabled:
             return
 
-        bot_token = telegram_config.get("bot_token")
-        chat_id = telegram_config.get("chat_id")
+        bot_token = telegram_config.bot_token
+        chat_id = telegram_config.chat_id
 
         if not bot_token or not chat_id:
             return
