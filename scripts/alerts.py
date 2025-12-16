@@ -131,17 +131,16 @@ class AlertManager:
             message.attach(MIMEText(body, "plain"))
 
             smtp_config = email_config.smtp
-            server = smtplib.SMTP(smtp_config.host, smtp_config.port)
-            server.starttls()
-
             username = smtp_config.username
             password = smtp_config.password
 
-            if username and password:
-                server.login(username, password)
+            with smtplib.SMTP(smtp_config.host, smtp_config.port) as server:
+                server.starttls()
 
-            server.send_message(message)
-            server.quit()
+                if username and password:
+                    server.login(username, password)
+
+                server.send_message(message)
 
             self.logger.info("Alert email sent", extra={"subject": subject})
         except Exception as exc:  # noqa: BLE001
