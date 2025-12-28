@@ -40,9 +40,15 @@ class AlertManager:
             return {}
 
     def _save_cooldowns(self) -> None:
-        self.cooldown_file.parent.mkdir(parents=True, exist_ok=True)
-        with self.cooldown_file.open("w", encoding="utf-8") as file:
-            json.dump(self.cooldowns, file, indent=2)
+        try:
+            self.cooldown_file.parent.mkdir(parents=True, exist_ok=True)
+            with self.cooldown_file.open("w", encoding="utf-8") as file:
+                json.dump(self.cooldowns, file, indent=2)
+        except Exception as exc:  # noqa: BLE001
+            self.logger.error(
+                "Failed to persist alert cooldowns",
+                exc_info=(exc.__class__, exc, exc.__traceback__),
+            )
 
     def _check_cooldown(self, alert_key: str) -> bool:
         if alert_key not in self.cooldowns:

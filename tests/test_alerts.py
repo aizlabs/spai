@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from types import SimpleNamespace
 
 from scripts.alerts import AlertManager
@@ -46,3 +47,28 @@ def test_send_email_closes_connection_on_failure(monkeypatch):
 
     assert DummySMTP.last_instance is not None
     assert DummySMTP.last_instance.closed is True
+
+
+def test_send_error_does_not_raise_when_cooldown_save_fails(monkeypatch, tmp_path, caplog):
+    def failing_open(self, *args, **kwargs):  # noqa: ANN001, ANN002
+        raise OSError("write failure")
+
+    alerts_config = AlertsConfig(
+        enabled=True,
+        email="recipient@example.com",
+        email_config=EmailConfig(
+            from_email="sender@example.com",
+            smtp=SMTPConfig(host="smtp.example.com", port=587),
+        ),
+    )
+    config = SimpleNamespace(alerts=alerts_config, logging={"file": str(tmp_path / "alerts.log")})
+    alert_manager = AlertManager(config=config, logger=logging.getLogger("alerts-test"))
+
+    monkeypatch.setattr(AlertManager, "_send_email", lambda *_, **__: None)
+    monkeypatch.setattr(Path, "open", failing_open)
+
+    caplog.set_level(logging.ERROR)
+
+    alert_manager.send_error("Failure sending alert")
+
+    assert any("Failed to persist alert cooldowns" in record.getMessage() for record in caplog.records)
