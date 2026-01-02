@@ -25,7 +25,7 @@ from typing import Dict, Optional, Tuple
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from alert_manager import AlertManager
+from alerts import AlertManager
 from config import load_config  # type: ignore[attr-defined]
 from content_fetcher import ContentFetcher
 from content_generator import ContentGenerator
@@ -116,6 +116,10 @@ def main():
         logger.info("")
 
         if not topics:
+            alert_manager.send_error(
+                "No topics discovered",
+                {"run_id": run_id, "environment": environment, "component": "discovery"},
+            )
             raise Exception("No topics discovered")
 
         # Phase 2-5: Process each topic
@@ -208,7 +212,15 @@ def main():
                             target_reached = True
                             break
                     else:
-                        logger.error(f"❌ Publishing failed")
+                        alert_manager.send_error(
+                            "Publishing failed",
+                            {
+                                "run_id": run_id,
+                                "environment": environment,
+                                "topic": topic.title,
+                                "level": level,
+                            },
+                        )
 
                 else:
                     # Quality failed
@@ -272,6 +284,16 @@ def main():
             environment=environment,
             stage=current_stage,
             exception=e,
+        )
+
+        alert_manager.send_critical(
+            "Pipeline failure",
+            {
+                "run_id": run_id,
+                "environment": environment,
+                "duration_seconds": f"{duration:.1f}",
+                "error": str(e),
+            },
         )
 
         return 1

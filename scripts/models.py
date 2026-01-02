@@ -7,7 +7,7 @@ automatic validation, serialization, and clear type hints.
 
 from typing import Dict, List, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 # =============================================================================
@@ -169,6 +169,46 @@ class LLMConfig(BaseModel):
         default=0.1, ge=0, le=1, description="Temperature for quality checks"
     )
     max_tokens: int = Field(default=4096, ge=100, le=100000, description="Max tokens")
+
+
+class SMTPConfig(BaseModel):
+    """SMTP settings for sending email alerts."""
+
+    host: str = Field(default="smtp.gmail.com", description="SMTP host for outbound mail")
+    port: int = Field(default=587, ge=1, description="SMTP port")
+    username: Optional[str] = Field(default=None, description="SMTP username (if required)")
+    password: Optional[str] = Field(default=None, description="SMTP password (if required)")
+
+
+class EmailConfig(BaseModel):
+    """Email alert configuration."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    from_email: str = Field(
+        default="bot@autospanish.com",
+        alias="from",
+        description="Sender address used for alerts",
+    )
+    smtp: SMTPConfig = Field(default_factory=SMTPConfig)
+
+
+class TelegramConfig(BaseModel):
+    """Telegram alert configuration."""
+
+    enabled: bool = False
+    bot_token: Optional[str] = None
+    chat_id: Optional[str] = None
+
+
+class AlertsConfig(BaseModel):
+    """Alert delivery configuration."""
+
+    enabled: bool = False
+    email: Optional[str] = Field(default=None, description="Recipient email for alerts")
+    email_config: Optional[EmailConfig] = None
+    telegram: TelegramConfig = Field(default_factory=TelegramConfig)
+    cooldown_hours: int = Field(default=6, ge=0, description="Hours to suppress duplicate alerts")
 
 
 # =============================================================================
