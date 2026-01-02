@@ -64,7 +64,6 @@ def main():
 
     # Initialize logging
     logger = setup_logger(config, run_id)
-    alert_manager = AlertManager(config, logger)
 
     # Initialize alerting
     alert_manager = AlertManager(config, logger)

@@ -146,6 +146,12 @@ def apply_env_overrides(config_dict: Dict) -> Dict:
         config_dict.setdefault('generation', {})
         config_dict['generation']['articles_per_run'] = int(articles_per_run)
 
+    # Override alert email
+    alert_email = os.getenv('ALERT_EMAIL')
+    if alert_email:
+        config_dict.setdefault('alerts', {})
+        config_dict['alerts']['email'] = alert_email
+
     return config_dict
 
 
