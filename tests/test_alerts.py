@@ -72,3 +72,36 @@ def test_send_error_does_not_raise_when_cooldown_save_fails(monkeypatch, tmp_pat
     alert_manager.send_error("Failure sending alert")
 
     assert any("Failed to persist alert cooldowns" in record.getMessage() for record in caplog.records)
+
+
+def test_send_failure_alert_sends_email(monkeypatch):
+    captured = {}
+
+    def fake_send_email(*, subject, body, priority="normal"):
+        captured["subject"] = subject
+        captured["body"] = body
+        captured["priority"] = priority
+
+    alerts_config = AlertsConfig(
+        enabled=True,
+        email="recipient@example.com",
+        email_config=EmailConfig(
+            from_email="sender@example.com",
+            smtp=SMTPConfig(host="smtp.example.com", port=587),
+        ),
+    )
+    config = SimpleNamespace(alerts=alerts_config, logging={})
+    alert_manager = AlertManager(config=config, logger=logging.getLogger("alerts-test"))
+
+    monkeypatch.setattr(AlertManager, "_send_email", staticmethod(fake_send_email))
+
+    alert_manager.send_failure_alert(
+        run_id="run-123",
+        environment="production",
+        stage="synthesis",
+        exception=ValueError("bad json"),
+    )
+
+    assert captured["priority"] == "high"
+    assert "run-123" in captured["subject"]
+    assert "Traceback:" in captured["body"]
