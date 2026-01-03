@@ -118,6 +118,7 @@ def test_init_llm_client_uses_quality_temperature(monkeypatch, base_config, mock
 
     assert gate.quality_temperature == base_config.llm.quality_temperature
     assert captured_kwargs["temperature"] == base_config.llm.quality_temperature
+    assert captured_kwargs["model_kwargs"] == {"response_format": {"type": "json_object"}}
 
 
 def test_evaluate_returns_model_dump(monkeypatch, quality_gate, sample_a2_article):
