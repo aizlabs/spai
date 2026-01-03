@@ -244,8 +244,6 @@ def dict_to_base_article(data: Dict) -> BaseArticle:
     # Convert nested topic if present
     if 'topic' in data and isinstance(data['topic'], dict):
         data['topic'] = Topic(**data['topic'])
-    if 'sources' in data and isinstance(data['sources'], list):
-        data['sources'] = [SourceMetadata(**s) if isinstance(s, dict) else s for s in data['sources']]
     return BaseArticle(**data)
 
 
@@ -256,6 +254,4 @@ def dict_to_adapted_article(data: Dict) -> AdaptedArticle:
         data['topic'] = Topic(**data['topic'])
     if 'base_article' in data and data['base_article'] and isinstance(data['base_article'], dict):
         data['base_article'] = BaseArticle(**data['base_article'])
-    if 'sources' in data and isinstance(data['sources'], list):
-        data['sources'] = [SourceMetadata(**s) if isinstance(s, dict) else s for s in data['sources']]
     return AdaptedArticle(**data)
