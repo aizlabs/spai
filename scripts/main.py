@@ -66,7 +66,7 @@ def main():
     logger = setup_logger(config, run_id)
 
     # Initialize alerting
-    alert_manager = AlertManager(config, logger)
+    alerts_manager = AlertManager(config, logger)
 
     logger.info("=" * 60)
     logger.info("AutoSpanishBlog - Content Generation Pipeline")
@@ -116,7 +116,7 @@ def main():
         logger.info("")
 
         if not topics:
-            alert_manager.send_error(
+            alerts_manager.send_error(
                 "No topics discovered",
                 {"run_id": run_id, "environment": environment, "component": "discovery"},
             )
@@ -212,7 +212,7 @@ def main():
                             target_reached = True
                             break
                     else:
-                        alert_manager.send_error(
+                        alerts_manager.send_error(
                             "Publishing failed",
                             {
                                 "run_id": run_id,
@@ -279,14 +279,14 @@ def main():
         logger.error("=" * 60)
 
         logger.error(f"Pipeline failed: {str(e)}", exc_info=True)
-        alert_manager.send_failure_alert(
+        alerts_manager.send_failure_alert(
             run_id=run_id,
             environment=environment,
             stage=current_stage,
             exception=e,
         )
 
-        alert_manager.send_critical(
+        alerts_manager.send_critical(
             "Pipeline failure",
             {
                 "run_id": run_id,
