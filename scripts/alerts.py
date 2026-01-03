@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import smtplib
+import traceback
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -72,6 +73,39 @@ class AlertManager:
         self._send_email(
             subject=f"🚨 CRITICAL: AutoSpanishBlog - {message}",
             body=self._format_alert_body(message, context, "CRITICAL"),
+            priority="high",
+        )
+
+    def send_failure_alert(
+        self,
+        *,
+        run_id: str,
+        environment: str,
+        stage: str,
+        exception: Exception,
+    ) -> None:
+        """Send a structured failure notification to operators (bypasses cooldown)."""
+
+        message = "Pipeline failure"
+        context = {
+            "run_id": run_id,
+            "environment": environment,
+            "stage": stage or "unknown",
+            "exception": str(exception),
+        }
+        self.logger.error(message, extra=context)
+        if not self.enabled:
+            return
+
+        traceback_text = "".join(traceback.format_exception(exception)).strip()
+        body = (
+            self._format_alert_body(message, context, "ERROR")
+            + "\n\nTraceback:\n"
+            + traceback_text
+        )
+        self._send_email(
+            subject=f"❌ ERROR: AutoSpanishBlog - {message} ({environment}) - {run_id}",
+            body=body,
             priority="high",
         )
 
