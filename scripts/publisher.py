@@ -137,9 +137,8 @@ class Publisher:
             timestamp: datetime object for consistent timestamping
         """
 
-        # Escape title and sources for YAML
+        # Escape title for YAML
         escaped_title = self._escape_yaml_string(article.title)
-        escaped_sources = self._escape_yaml_string(', '.join(article.sources))
 
         # YAML frontmatter
         # Use Jekyll-compatible date format (without microseconds)
@@ -149,7 +148,7 @@ title: "{escaped_title}"
 date: {date_str}
 level: {article.level}
 topics: {self._format_topics(article)}
-sources: "{escaped_sources}"
+{self._format_sources(article.sources)}
 reading_time: {article.reading_time}
 ---
 
@@ -162,13 +161,7 @@ reading_time: {article.reading_time}
         vocabulary = self._format_vocabulary(article.vocabulary)
 
         # Attribution
-        sources_list = article.sources
-        attribution = f"""
-
----
-*Fuentes: {', '.join(sources_list)}*
-*Artículo educativo generado con fines de aprendizaje de idiomas.*
-"""
+        attribution = self._format_attribution(article.sources)
 
         # Combine all parts
         markdown = frontmatter + content + vocabulary + attribution
@@ -205,3 +198,52 @@ reading_time: {article.reading_time}
             vocab_lines.append(f"- **{spanish}** - {english}")
 
         return '\n'.join(vocab_lines)
+
+    def _format_sources(self, sources) -> str:
+        """Format structured sources for YAML frontmatter"""
+        if not sources:
+            return 'sources: []'
+
+        def get_name_and_url(source):
+            if hasattr(source, 'name'):
+                return source.name, getattr(source, 'url', None)
+            if isinstance(source, dict):
+                return source.get('name') or source.get('source', ''), source.get('url')
+            return str(source), None
+
+        lines = ['sources:']
+        for source in sources:
+            name, url = get_name_and_url(source)
+            escaped_name = self._escape_yaml_string(name or '')
+            lines.append(f"- name: \"{escaped_name}\"")
+            if url:
+                escaped_url = self._escape_yaml_string(url)
+                lines.append(f"  url: \"{escaped_url}\"")
+
+        return '\n'.join(lines)
+
+    def _format_attribution(self, sources) -> str:
+        """Format attribution section with optional source links"""
+        def format_source(source) -> str:
+            if hasattr(source, 'name'):
+                name = source.name
+                url = getattr(source, 'url', None)
+            elif isinstance(source, dict):
+                name = source.get('name') or source.get('source', '')
+                url = source.get('url')
+            else:
+                name = str(source)
+                url = None
+
+            if url:
+                return f"[{name}]({url})"
+            return name
+
+        formatted_sources = [format_source(s) for s in sources] if sources else []
+        sources_text = ', '.join(filter(None, formatted_sources))
+        return f"""
+
+---
+*Fuentes: {sources_text}*
+*Artículo educativo generado con fines de aprendizaje de idiomas.*
+"""

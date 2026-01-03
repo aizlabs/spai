@@ -218,7 +218,7 @@ class LevelAdapter:
 
             # Inherit metadata from base article
             parsed['topic'] = base_article.topic.model_dump() if base_article.topic else None
-            parsed['sources'] = base_article.sources
+            parsed['sources'] = [s.model_dump() for s in base_article.sources]
 
             # Store base article for regeneration
             parsed['base_article'] = base_article.model_dump()

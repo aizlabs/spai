@@ -7,6 +7,7 @@ that unit tests miss (like the Publisher AttributeError on None topic).
 
 import pytest
 import json
+from datetime import datetime
 from unittest.mock import Mock, MagicMock, patch
 from pathlib import Path
 
@@ -14,7 +15,7 @@ from scripts.article_synthesizer import ArticleSynthesizer
 from scripts.level_adapter import LevelAdapter
 from scripts.content_generator import ContentGenerator
 from scripts.publisher import Publisher
-from scripts.models import Topic, BaseArticle, AdaptedArticle
+from scripts.models import Topic, BaseArticle, AdaptedArticle, SourceMetadata
 
 
 class TestTwoStepPipelineIntegration:
@@ -48,7 +49,7 @@ class TestTwoStepPipelineIntegration:
         assert isinstance(base_article, BaseArticle)
         assert base_article.title == sample_base_article.title
         assert base_article.topic == sample_topic
-        assert base_article.sources == [s.source for s in sample_sources]
+        assert [s.name for s in base_article.sources] == [s.source for s in sample_sources]
 
         # Step 2: Adapt
         a2_article = adapter.adapt_to_level(base_article, 'A2')
@@ -62,7 +63,7 @@ class TestTwoStepPipelineIntegration:
 
         # CRITICAL: Verify metadata propagation (would have caught the bug!)
         assert a2_article.topic == sample_topic  # Not None!
-        assert a2_article.sources == [s.source for s in sample_sources]
+        assert [s.name for s in a2_article.sources] == [s.source for s in sample_sources]
 
         # Verify base article stored for regeneration
         assert a2_article.base_article == base_article
@@ -177,6 +178,26 @@ class TestPublisherIntegration:
         except AttributeError as e:
             # This would be the bug
             pytest.fail(f"Publisher crashed with AttributeError: {e}")
+
+    def test_publisher_formats_structured_sources(self, base_config, mock_logger, sample_a2_article):
+        """Publisher should include source URLs in frontmatter and attribution"""
+        publisher = Publisher(base_config, mock_logger, dry_run=True)
+
+        markdown = publisher._generate_markdown(sample_a2_article, datetime.now())
+
+        assert 'url: "https://elpais.com/test"' in markdown
+        assert '[El País](https://elpais.com/test)' in markdown
+
+    def test_publisher_handles_sources_without_url(self, base_config, mock_logger, sample_a2_article):
+        """Publisher should gracefully format sources when URL is missing"""
+        publisher = Publisher(base_config, mock_logger, dry_run=True)
+        sample_a2_article.sources = [SourceMetadata(name='Example Source')]
+
+        markdown = publisher._generate_markdown(sample_a2_article, datetime.now())
+
+        assert 'name: "Example Source"' in markdown
+        assert 'url:' not in markdown.split('name: "Example Source"', 1)[1]
+        assert '*Fuentes: Example Source*' in markdown
 
 
 class TestRegenerationIntegration:

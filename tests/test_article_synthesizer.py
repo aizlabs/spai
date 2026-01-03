@@ -76,7 +76,8 @@ class TestArticleSynthesizerSynthesize:
         assert result.summary == sample_base_article.summary
         assert result.reading_time == sample_base_article.reading_time
         assert result.topic == sample_topic
-        assert result.sources == [s.source for s in sample_sources]
+        assert [s.name for s in result.sources] == [s.source for s in sample_sources]
+        assert [s.url for s in result.sources] == [s.url for s in sample_sources]
 
         # Verify LLM was called
         mock_call_llm.assert_called_once()
@@ -99,7 +100,7 @@ class TestArticleSynthesizerSynthesize:
         assert isinstance(result, BaseArticle)
         assert result.title == sample_base_article.title
         assert result.topic == sample_topic
-        assert result.sources == [s.source for s in sample_sources]
+        assert [s.name for s in result.sources] == [s.source for s in sample_sources]
 
     @patch('scripts.article_synthesizer.ArticleSynthesizer._call_llm')
     def test_synthesize_missing_required_field(self, mock_call_llm, base_config, mock_logger,
@@ -149,6 +150,29 @@ class TestArticleSynthesizerSynthesize:
 
         assert isinstance(result.reading_time, int)
         assert result.reading_time == 3
+
+    @patch('scripts.article_synthesizer.ArticleSynthesizer._call_llm')
+    def test_synthesize_handles_missing_source_url(self, mock_call_llm, base_config, mock_logger,
+                                                   sample_topic, sample_sources):
+        """Test synthesis keeps source names when URLs are absent"""
+        # Remove URL from one source to simulate legacy/partial data
+        sample_sources[0].url = None
+
+        response = {
+            'title': 'Test',
+            'content': 'a' * 100,
+            'summary': 'b' * 10,
+            'reading_time': 4
+        }
+
+        mock_call_llm.return_value = json.dumps(response)
+
+        synthesizer = ArticleSynthesizer(base_config, mock_logger)
+        result = synthesizer.synthesize(sample_topic, sample_sources)
+
+        assert result.sources[0].name == sample_sources[0].source
+        assert result.sources[0].url is None
+        assert result.sources[1].url == sample_sources[1].url
 
     @patch('scripts.article_synthesizer.ArticleSynthesizer._call_llm')
     def test_synthesize_llm_api_error(self, mock_call_llm, base_config, mock_logger,
