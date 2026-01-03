@@ -81,7 +81,7 @@ class QualityGate:
                 model=self.llm_config['models']['quality_check'],
                 max_tokens=self.llm_config.get('max_tokens', 4096),
                 temperature=self.quality_temperature,
-                response_format={'type': 'json_object'},
+                model_kwargs={'response_format': {'type': 'json_object'}},
             )
             self.logger.info("Initialized OpenAI client for quality checks")
 
