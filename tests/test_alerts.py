@@ -41,9 +41,9 @@ def test_send_email_closes_connection_on_failure(monkeypatch):
         ),
     )
     config = SimpleNamespace(alerts=alerts_config, logging={})
-    alerts_manager = AlertManager(config=config, logger=logging.getLogger("alerts-test"))
+    alert_manager = AlertManager(config=config, logger=logging.getLogger("alerts-test"))
 
-    alerts_manager._send_email(subject="Test", body="Body", priority="high")
+    alert_manager._send_email(subject="Test", body="Body", priority="high")
 
     assert DummySMTP.last_instance is not None
     assert DummySMTP.last_instance.closed is True
@@ -62,14 +62,14 @@ def test_send_error_does_not_raise_when_cooldown_save_fails(monkeypatch, tmp_pat
         ),
     )
     config = SimpleNamespace(alerts=alerts_config, logging={"file": str(tmp_path / "alerts.log")})
-    alerts_manager = AlertManager(config=config, logger=logging.getLogger("alerts-test"))
+    alert_manager = AlertManager(config=config, logger=logging.getLogger("alerts-test"))
 
     monkeypatch.setattr(AlertManager, "_send_email", lambda *_, **__: None)
     monkeypatch.setattr(Path, "open", failing_open)
 
     caplog.set_level(logging.ERROR)
 
-    alerts_manager.send_error("Failure sending alert")
+    alert_manager.send_error("Failure sending alert")
 
     assert any("Failed to persist alert cooldowns" in record.getMessage() for record in caplog.records)
 
@@ -91,11 +91,11 @@ def test_send_failure_alert_sends_email(monkeypatch):
         ),
     )
     config = SimpleNamespace(alerts=alerts_config, logging={})
-    alerts_manager = AlertManager(config=config, logger=logging.getLogger("alerts-test"))
+    alert_manager = AlertManager(config=config, logger=logging.getLogger("alerts-test"))
 
     monkeypatch.setattr(AlertManager, "_send_email", staticmethod(fake_send_email))
 
-    alerts_manager.send_failure_alert(
+    alert_manager.send_failure_alert(
         run_id="run-123",
         environment="production",
         stage="synthesis",
