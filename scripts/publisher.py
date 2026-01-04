@@ -5,10 +5,11 @@ Saves approved articles as Jekyll markdown files with YAML frontmatter.
 """
 
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
-from typing import Dict
-import re
+from typing import Dict, List, Optional, Tuple
+from urllib.parse import urlparse
 
 from scripts.models import AdaptedArticle
 from scripts.config import AppConfig
@@ -25,6 +26,8 @@ class Publisher:
         # Output directory
         self.output_dir = Path(config.output['path'])
         self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        self.source_url_map = self._build_source_url_map()
 
         self.logger.info(f"Publisher initialized (dry_run={dry_run}, output={self.output_dir})")
 
@@ -127,6 +130,128 @@ class Publisher:
         # Escape double quotes
         text = text.replace('"', '\\"')
         return text
+
+    def _build_source_url_map(self) -> Dict[str, str]:
+        """Create lookup map of normalized source names to URLs from config."""
+        source_map: Dict[str, str] = {}
+
+        for source in self.config.sources_list:
+            name = source.get('name') if isinstance(source, dict) else None
+            url = source.get('url') if isinstance(source, dict) else None
+
+            if not name or not url:
+                continue
+
+            normalized_name = self._normalize_source_key(name)
+            normalized_url = self._normalize_url(url, include_path=True)
+
+            if normalized_name and normalized_url:
+                source_map[normalized_name] = normalized_url
+                host_key = self._normalize_host_key(normalized_url)
+                if host_key:
+                    source_map.setdefault(host_key, normalized_url)
+
+        return source_map
+
+    def _normalize_url(self, url: str, include_path: bool) -> Optional[str]:
+        """Normalize URL, inferring scheme when missing."""
+        if not url:
+            return None
+
+        cleaned_url = url.strip()
+        if not re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*://', cleaned_url):
+            cleaned_url = f"https://{cleaned_url}"
+
+        parsed = urlparse(cleaned_url)
+        if not parsed.scheme:
+            return None
+
+        host = parsed.netloc or parsed.path
+        if not host:
+            return None
+
+        path = parsed.path.rstrip('/') if include_path else ""
+
+        normalized = f"{parsed.scheme}://{host}"
+        if include_path and path:
+            normalized = f"{normalized}{path}"
+
+        return normalized
+
+    def _normalize_host_key(self, url: str) -> Optional[str]:
+        """Normalize a URL string into a host-only lookup key."""
+        parsed = urlparse(url)
+        host = parsed.netloc or parsed.path
+        if not host:
+            return None
+        return host.casefold()
+
+    def _normalize_source_key(self, source: str) -> str:
+        """Normalize source identifier for consistent de-duplication."""
+        cleaned = source.strip().rstrip('/')
+
+        if re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*://', cleaned):
+            parsed = urlparse(cleaned)
+            host = parsed.netloc or parsed.path
+            path = parsed.path.rstrip('/')
+            return f"{host}{path}".casefold()
+
+        return cleaned.casefold()
+
+    def _resolve_source_url(self, source: str) -> Optional[str]:
+        """Resolve source to a best-effort URL if available."""
+        if not source:
+            return None
+
+        cleaned_source = source.strip()
+
+        if re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*://', cleaned_source):
+            return self._normalize_url(cleaned_source, include_path=True)
+
+        if re.match(r'^[\w.-]+\.[a-zA-Z]{2,}(/.*)?$', cleaned_source):
+            return self._normalize_url(f"https://{cleaned_source}", include_path=True)
+
+        normalized_key = self._normalize_source_key(cleaned_source)
+        return self.source_url_map.get(normalized_key)
+
+    def _normalize_sources(self, sources: List[str]) -> List[Tuple[str, Optional[str]]]:
+        """Return ordered, de-duplicated list of (source, url?) tuples."""
+        normalized_sources: List[Tuple[str, Optional[str]]] = []
+        seen_keys = set()
+
+        for source in sources:
+            if not source:
+                continue
+
+            cleaned_source = source.strip()
+            if not cleaned_source:
+                continue
+
+            key = self._normalize_source_key(cleaned_source)
+            if not key:
+                continue
+
+            if key in seen_keys:
+                continue
+
+            seen_keys.add(key)
+            normalized_sources.append((cleaned_source, self._resolve_source_url(cleaned_source)))
+
+        return normalized_sources
+
+    def _render_source(self, source: str, url: Optional[str]) -> str:
+        """Render a source as markdown link when URL is available."""
+        if url:
+            escaped_source = self._escape_markdown_link_text(source)
+            return f"[{escaped_source}]({url})"
+        return source
+
+    def _escape_markdown_link_text(self, text: str) -> str:
+        """Escape markdown link text to prevent malformed links."""
+        escaped = text.replace('\\', '\\\\')
+        for char in ['[', ']', '(', ')']:
+            escaped = escaped.replace(char, f"\\{char}")
+        return escaped
 
     def _generate_markdown(self, article: AdaptedArticle, timestamp: datetime) -> str:
         """

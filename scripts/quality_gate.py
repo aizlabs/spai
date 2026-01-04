@@ -5,16 +5,34 @@ Evaluates article quality using LLM judge.
 Regenerates articles that fail, with feedback for improvement.
 """
 
-import json
 import logging
 from typing import Dict, List, Optional, Tuple, Union, cast
 
-from openai import OpenAI
-from anthropic import Anthropic
+from langchain_anthropic import ChatAnthropic
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
 
 from scripts import prompts
 from scripts.models import AdaptedArticle, Topic, SourceArticle, QualityResult
 from scripts.config import AppConfig
+
+
+class JudgeResponse(BaseModel):
+    grammar_score: float = Field(..., description="Score for grammar and language use")
+    grammar_issues: List[str] = Field(default_factory=list, description="Grammar issues found")
+    educational_score: float = Field(..., description="Score for educational value")
+    educational_notes: Optional[str] = Field(
+        default=None, description="Notes about educational aspects"
+    )
+    content_score: float = Field(..., description="Score for content quality")
+    content_issues: List[str] = Field(default_factory=list, description="Content issues")
+    level_score: float = Field(..., description="Score for level appropriateness")
+    total_score: float = Field(..., description="Total aggregated score")
+    issues: List[str] = Field(default_factory=list, description="Actionable issues to fix")
+    strengths: List[str] = Field(default_factory=list, description="Strengths identified")
+    recommendation: Optional[str] = Field(default=None, description="PASS/FAIL recommendation")
 
 
 class QualityGate:
@@ -28,9 +46,13 @@ class QualityGate:
         self.min_score = self.quality_config['min_score']
         self.max_attempts = self.quality_config['max_attempts']
         self.llm_config = config.llm.model_dump()
+        self.quality_temperature = self.llm_config.get(
+            'quality_temperature', self.llm_config.get('temperature', 0.1)
+        )
 
         # Initialize LLM client
         self._init_llm_client()
+        self._init_judge_chain()
 
     def _init_llm_client(self):
         """Initialize LLM client (Anthropic or OpenAI) based on config"""
@@ -41,7 +63,12 @@ class QualityGate:
             if not api_key:
                 raise ValueError("Missing ANTHROPIC_API_KEY in config/environment")
 
-            self.llm_client: Union[Anthropic, OpenAI] = Anthropic(api_key=api_key)
+            self.llm_client: Union[ChatAnthropic, ChatOpenAI] = ChatAnthropic(
+                api_key=api_key,
+                model=self.llm_config['models']['quality_check'],
+                max_tokens=self.llm_config.get('max_tokens', 4096),
+                temperature=self.quality_temperature,
+            )
             self.logger.info("Initialized Anthropic client for quality checks")
 
         elif provider == 'openai':
@@ -49,11 +76,32 @@ class QualityGate:
             if not api_key:
                 raise ValueError("Missing OPENAI_API_KEY in config/environment")
 
-            self.llm_client = OpenAI(api_key=api_key)
+            self.llm_client = ChatOpenAI(
+                api_key=api_key,
+                model=self.llm_config['models']['quality_check'],
+                max_tokens=self.llm_config.get('max_tokens', 4096),
+                temperature=self.quality_temperature,
+                model_kwargs={'response_format': {'type': 'json_object'}},
+            )
             self.logger.info("Initialized OpenAI client for quality checks")
 
         else:
             raise ValueError(f"Unknown LLM provider: {provider}")
+
+    def _init_judge_chain(self):
+        """Build a LangChain pipeline that enforces structured JSON responses."""
+        parser = PydanticOutputParser(pydantic_object=JudgeResponse)
+        self.format_instructions = parser.get_format_instructions()
+
+        structured_llm = cast(
+            ChatAnthropic | ChatOpenAI, self.llm_client
+        ).with_structured_output(JudgeResponse)
+
+        self.judge_prompt = ChatPromptTemplate.from_messages([
+            ("user", "{prompt}\n\n{format_instructions}"),
+        ])
+
+        self.judge_chain = self.judge_prompt | structured_llm
 
     def check_and_improve(
         self,
@@ -170,7 +218,7 @@ class QualityGate:
 
         try:
             response = self._call_llm(prompt)
-            result = self._parse_judge_response(response)
+            result = response.model_dump()
 
             # Log the evaluation
             self.logger.debug(f"Quality scores: {result}")
@@ -190,93 +238,18 @@ class QualityGate:
                 'level_score': 0
             }
 
-    def _call_llm(self, prompt: str) -> str:
+    def _call_llm(self, prompt: str) -> JudgeResponse:
         """Call LLM with prompt"""
-        # Use quality_check model (typically cheaper/faster like Haiku)
-        model = self.llm_config['models']['quality_check']
-        max_tokens = self.llm_config.get('max_tokens', 4096)
-
-        provider = self.llm_config['provider']
-
         try:
-            if provider == 'anthropic':
-                client = cast(Anthropic, self.llm_client)
-                response = client.messages.create(
-                    model=model,
-                    max_tokens=max_tokens,
-                    temperature=0.2,  # Lower temp for consistent judging
-                    messages=[{"role": "user", "content": prompt}]
-                )
-                # Extract text from first content block (should be TextBlock)
-                if response.content and len(response.content) > 0:
-                    first_block = response.content[0]
-                    if hasattr(first_block, 'text'):
-                        return first_block.text
-                    else:
-                        raise ValueError(f"Unexpected content block type: {type(first_block)}")
-                else:
-                    raise ValueError("Empty response from Anthropic API")
-
-            elif provider == 'openai':
-                client = cast(OpenAI, self.llm_client)  # type: ignore[assignment]
-                response = client.chat.completions.create(  # type: ignore[attr-defined]
-                    model=model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.2,
-                    max_tokens=max_tokens
-                )
-                content = response.choices[0].message.content
-                if content is None:
-                    raise ValueError("Empty response from OpenAI API")
-                return content  # type: ignore[no-any-return]
-
-            else:
-                raise ValueError(f"Unknown provider: {provider}")
-
+            return cast(
+                JudgeResponse,
+                self.judge_chain.invoke(
+                    {
+                        'prompt': prompt,
+                        'format_instructions': self.format_instructions,
+                    }
+                ),
+            )
         except Exception as e:
             self.logger.error(f"LLM API call failed: {e}")
             raise
-
-    def _parse_judge_response(self, response: str) -> Dict:
-        """Parse LLM judge JSON response"""
-
-        # Extract JSON from response (handle markdown code blocks)
-        json_str = response
-
-        if '```json' in response:
-            json_str = response.split('```json')[1].split('```')[0]
-        elif '```' in response:
-            json_str = response.split('```')[1].split('```')[0]
-
-        try:
-            result = json.loads(json_str.strip())
-
-            # Validate required fields
-            required = ['total_score', 'issues']
-            for field in required:
-                if field not in result:
-                    self.logger.warning(f"Missing field in judge response: {field}")
-                    result[field] = 0 if field == 'total_score' else []
-
-            # Ensure issues and strengths are lists
-            if not isinstance(result.get('issues', []), list):
-                result['issues'] = []
-            if not isinstance(result.get('strengths', []), list):
-                result['strengths'] = []
-
-            return result  # type: ignore[no-any-return]
-
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Failed to parse judge response as JSON: {e}")
-            self.logger.debug(f"Response was: {response[:500]}")
-
-            # Return failing result
-            return {
-                'total_score': 0,
-                'issues': ["Failed to parse judge response"],
-                'strengths': [],
-                'grammar_score': 0,
-                'educational_score': 0,
-                'content_score': 0,
-                'level_score': 0
-            }
