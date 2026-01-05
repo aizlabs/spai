@@ -5,11 +5,11 @@ from scripts.models import SourceMetadata
 
 
 def test_publisher_formats_sources_with_links(base_config, mock_logger, sample_a2_article, tmp_path):
-    """Test that sources with URLs are formatted as markdown links in attribution"""
+    """Test that sources with URLs are formatted as markdown links in attribution and duplicates are removed"""
     base_config.output['path'] = str(tmp_path)
     sources = [
         SourceMetadata(name='elpais.com', url='https://elpais.com'),
-        SourceMetadata(name='elpais.com', url='https://elpais.com'),  # Duplicate
+        SourceMetadata(name='elpais.com', url='https://elpais.com'),  # Duplicate - should be deduplicated
     ]
     article = sample_a2_article.model_copy(update={'sources': sources})
 
@@ -17,22 +17,22 @@ def test_publisher_formats_sources_with_links(base_config, mock_logger, sample_a
 
     markdown = publisher._generate_markdown(article, datetime(2024, 1, 1, 12, 0, 0))
 
-    # Check YAML frontmatter has structured sources
+    # Check YAML frontmatter has structured sources - should appear only once after deduplication
     assert 'sources:' in markdown
-    assert '- name: "elpais.com"' in markdown
-    assert 'url: "https://elpais.com"' in markdown
+    assert markdown.count('- name: "elpais.com"') == 1
+    assert markdown.count('url: "https://elpais.com"') == 1
     
-    # Check attribution has markdown links
-    assert "[elpais.com](https://elpais.com)" in markdown
+    # Check attribution has markdown links - should appear only once
+    assert markdown.count("[elpais.com](https://elpais.com)") == 1
     assert "*Fuentes:" in markdown
 
 
 def test_publisher_falls_back_to_plain_text_when_url_missing(base_config, mock_logger, sample_a2_article, tmp_path):
-    """Test that sources without URLs are shown as plain text"""
+    """Test that sources without URLs are shown as plain text and duplicates are removed"""
     base_config.output['path'] = str(tmp_path)
     sources = [
         SourceMetadata(name='Unknown Source'),
-        SourceMetadata(name='Unknown Source'),  # Duplicate
+        SourceMetadata(name='Unknown Source'),  # Duplicate - should be deduplicated
     ]
     article = sample_a2_article.model_copy(update={'sources': sources})
 
@@ -40,12 +40,13 @@ def test_publisher_falls_back_to_plain_text_when_url_missing(base_config, mock_l
 
     markdown = publisher._generate_markdown(article, datetime(2024, 1, 1, 12, 0, 0))
 
-    # Check YAML frontmatter
-    assert '- name: "Unknown Source"' in markdown
+    # Check YAML frontmatter - should appear only once after deduplication
+    assert markdown.count('- name: "Unknown Source"') == 1
     assert 'url:' not in markdown.split('name: "Unknown Source"', 1)[1].split('\n', 1)[0]
     
-    # Check attribution has plain text (no markdown links)
-    assert '*Fuentes: Unknown Source, Unknown Source*' in markdown
+    # Check attribution has plain text (no markdown links) - should appear only once
+    assert '*Fuentes: Unknown Source*' in markdown
+    assert '*Fuentes: Unknown Source, Unknown Source*' not in markdown
     assert 'Unknown Source](' not in markdown
 
 

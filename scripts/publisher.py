@@ -8,7 +8,7 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from scripts.models import AdaptedArticle
@@ -324,9 +324,44 @@ reading_time: {article.reading_time}
 
         return '\n'.join(vocab_lines)
 
+    def _deduplicate_sources(self, sources) -> List[Any]:
+        """Deduplicate sources using normalized keys, preserving order and first occurrence."""
+        if not sources:
+            return []
+
+        def get_name_and_url(source):
+            if hasattr(source, 'name'):
+                return source.name, getattr(source, 'url', None)
+            if isinstance(source, dict):
+                return source.get('name') or source.get('source', ''), source.get('url')
+            return str(source), None
+
+        seen_keys = set()
+        deduplicated = []
+
+        for source in sources:
+            name, url = get_name_and_url(source)
+            if not name or not name.strip():
+                continue
+
+            # Use normalized key for deduplication (same logic as old _normalize_sources)
+            key = self._normalize_source_key(name)
+            if not key or key in seen_keys:
+                continue
+
+            seen_keys.add(key)
+            deduplicated.append(source)
+
+        return deduplicated
+
     def _format_sources(self, sources) -> str:
         """Format structured sources for YAML frontmatter"""
         if not sources:
+            return 'sources: []'
+
+        # Deduplicate sources before formatting
+        deduplicated = self._deduplicate_sources(sources)
+        if not deduplicated:
             return 'sources: []'
 
         def get_name_and_url(source):
@@ -337,7 +372,7 @@ reading_time: {article.reading_time}
             return str(source), None
 
         lines = ['sources:']
-        for source in sources:
+        for source in deduplicated:
             name, url = get_name_and_url(source)
             escaped_name = self._escape_yaml_string(name or '')
             lines.append(f"- name: \"{escaped_name}\"")
@@ -349,12 +384,15 @@ reading_time: {article.reading_time}
 
     def _format_attribution(self, sources) -> str:
         """Format attribution section with optional source links"""
+        # Deduplicate sources before formatting
+        deduplicated = self._deduplicate_sources(sources) if sources else []
+
         def format_source(source) -> str:
             if hasattr(source, 'name'):
-                name = source.name
+                name = str(getattr(source, 'name', ''))
                 url = getattr(source, 'url', None)
             elif isinstance(source, dict):
-                name = source.get('name') or source.get('source', '')
+                name = str(source.get('name') or source.get('source', ''))
                 url = source.get('url')
             else:
                 name = str(source)
@@ -365,7 +403,7 @@ reading_time: {article.reading_time}
                 return f"[{escaped_name}]({url})"
             return name
 
-        formatted_sources = [format_source(s) for s in sources] if sources else []
+        formatted_sources = [format_source(s) for s in deduplicated]
         sources_text = ', '.join(filter(None, formatted_sources))
         return f"""
 
