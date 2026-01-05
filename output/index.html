@@ -9,12 +9,12 @@ excerpt: "Learn Spanish with automatically generated articles from real news sou
   <p class="lead">Aprende español leyendo artículos de actualidad adaptados a tu nivel. Contenido nuevo todos los días.</p>
 
   <div class="level-info">
-    <div class="level-box">
+    <div class="level-box" data-level="A2" role="button" tabindex="0">
       <span class="level-badge level-a2">A2</span>
       <h3>Principiante</h3>
       <p>Artículos sencillos con vocabulario básico y presente simple.</p>
     </div>
-    <div class="level-box">
+    <div class="level-box" data-level="B1" role="button" tabindex="0">
       <span class="level-badge level-b1">B1</span>
       <h3>Intermedio</h3>
       <p>Artículos más complejos con diferentes tiempos verbales.</p>
@@ -47,6 +47,7 @@ excerpt: "Learn Spanish with automatically generated articles from real news sou
     <button class="filter-btn" data-level="A2">A2</button>
     <button class="filter-btn" data-level="B1">B1</button>
   </div>
+  <p class="level-explainer" aria-live="polite"></p>
 </div>
 
 <div class="articles-grid">
@@ -103,24 +104,56 @@ excerpt: "Learn Spanish with automatically generated articles from real news sou
 document.addEventListener('DOMContentLoaded', function() {
   const filterBtns = document.querySelectorAll('.filter-btn');
   const articles = document.querySelectorAll('.article-card');
+  const levelBoxes = document.querySelectorAll('.level-box');
+  const levelExplainer = document.querySelector('.level-explainer');
+  const filterSection = document.querySelector('.filter-section');
+  const levelDescriptions = {
+    A2: 'Nivel A2: artículos cortos con presente simple y vocabulario básico (~200 palabras).',
+    B1: 'Nivel B1: artículos más largos con tiempos mixtos y vocabulario intermedio (~300 palabras).'
+  };
 
   // Level filtering
+  const applyFilter = level => {
+    filterBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.level === level);
+    });
+
+    articles.forEach(article => {
+      if (level === 'all' || article.dataset.level === level) {
+        article.style.display = 'flex';
+      } else {
+        article.style.display = 'none';
+      }
+    });
+
+    if (levelDescriptions[level]) {
+      levelExplainer.textContent = levelDescriptions[level];
+      levelExplainer.classList.add('active');
+    } else {
+      levelExplainer.textContent = '';
+      levelExplainer.classList.remove('active');
+    }
+  };
+
   filterBtns.forEach(btn => {
     btn.addEventListener('click', function() {
-      // Update active button
-      filterBtns.forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
+      applyFilter(this.dataset.level);
+    });
+  });
 
-      const level = this.dataset.level;
+  levelBoxes.forEach(box => {
+    const activateLevel = () => {
+      const level = box.dataset.level;
+      applyFilter(level);
+      filterSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
 
-      // Filter articles
-      articles.forEach(article => {
-        if (level === 'all' || article.dataset.level === level) {
-          article.style.display = 'flex';
-        } else {
-          article.style.display = 'none';
-        }
-      });
+    box.addEventListener('click', activateLevel);
+    box.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        activateLevel();
+      }
     });
   });
 
