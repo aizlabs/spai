@@ -361,7 +361,8 @@ reading_time: {article.reading_time}
                 url = None
 
             if url:
-                return f"[{name}]({url})"
+                escaped_name = self._escape_markdown_link_text(name)
+                return f"[{escaped_name}]({url})"
             return name
 
         formatted_sources = [format_source(s) for s in sources] if sources else []
