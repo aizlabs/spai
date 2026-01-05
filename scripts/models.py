@@ -5,7 +5,7 @@ These models ensure data integrity throughout the pipeline and provide
 automatic validation, serialization, and clear type hints.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -24,8 +24,7 @@ class Topic(BaseModel):
     keywords: Optional[List[str]] = Field(default=None, description="Optional keywords")
     urls: List[str] = Field(default_factory=list, description="URLs for fetching article content")
 
-    class Config:
-        frozen = False  # Allow mutation during pipeline
+    model_config = ConfigDict(frozen=False)  # Allow mutation during pipeline
 
 
 class SourceArticle(BaseModel):
@@ -35,8 +34,16 @@ class SourceArticle(BaseModel):
     word_count: int = Field(..., ge=0, description="Word count")
     url: Optional[str] = Field(default=None, description="Optional source URL")
 
-    class Config:
-        frozen = False
+    model_config = ConfigDict(frozen=False)
+
+
+class SourceMetadata(BaseModel):
+    """Structured source metadata for articles"""
+
+    name: str = Field(..., min_length=1, description="Source name")
+    url: Optional[str] = Field(default=None, description="Optional source URL")
+
+    model_config = ConfigDict(frozen=False)
 
 
 # =============================================================================
@@ -53,7 +60,7 @@ class BaseArticle(BaseModel):
 
     # Metadata from synthesis
     topic: Optional[Topic] = Field(default=None, description="Source topic")
-    sources: List[str] = Field(default_factory=list, description="Source names used")
+    sources: List[SourceMetadata] = Field(default_factory=list, description="Source metadata used")
 
     @field_validator('reading_time', mode='before')
     @classmethod
@@ -66,8 +73,36 @@ class BaseArticle(BaseModel):
                 return 3  # Default fallback
         return v
 
-    class Config:
-        frozen = False
+    @field_validator('sources', mode='before')
+    @classmethod
+    def coerce_sources(cls, v):
+        """Normalize legacy or mixed source inputs into structured metadata.
+
+        Accepts older payloads (e.g., list of strings) and mixed dicts from
+        serialized `SourceArticle` data, and coerces them into `{name, url}`
+        mappings so Pydantic can build `SourceMetadata` consistently.
+        """
+        if v is None:
+            return []
+
+        def to_metadata(item: Union[str, Dict, 'SourceMetadata']):
+            if isinstance(item, str):
+                return {'name': item}
+            if isinstance(item, dict) and 'source' in item and 'text' in item:
+                # Handle accidental SourceArticle dicts
+                name = item.get('source') or item.get('name')
+                url = item.get('url')
+                return {'name': name, 'url': url}
+            if isinstance(item, dict):
+                return item
+            return item
+
+        if isinstance(v, list):
+            return [to_metadata(item) for item in v]
+
+        return v
+
+    model_config = ConfigDict(frozen=False)
 
 
 class VocabularyItem(BaseModel):
@@ -90,7 +125,7 @@ class AdaptedArticle(BaseModel):
     # Level and metadata
     level: str = Field(..., pattern="^(A2|B1)$", description="CEFR level")
     topic: Optional[Topic] = Field(default=None, description="Source topic")
-    sources: List[str] = Field(default_factory=list, description="Source names")
+    sources: List[SourceMetadata] = Field(default_factory=list, description="Source metadata")
 
     # Base article stored for regeneration
     base_article: Optional[BaseArticle] = Field(default=None, description="Base article for regeneration")
@@ -107,8 +142,35 @@ class AdaptedArticle(BaseModel):
                 return 2  # Fallback
         return v
 
-    class Config:
-        frozen = False
+    @field_validator('sources', mode='before')
+    @classmethod
+    def coerce_sources(cls, v):
+        """Normalize legacy or mixed source inputs into structured metadata.
+
+        Accepts older payloads (e.g., list of strings) and mixed dicts from
+        serialized `SourceArticle` data, and coerces them into `{name, url}`
+        mappings so Pydantic can build `SourceMetadata` consistently.
+        """
+        if v is None:
+            return []
+
+        def to_metadata(item: Union[str, Dict, 'SourceMetadata']):
+            if isinstance(item, str):
+                return {'name': item}
+            if isinstance(item, dict) and 'source' in item and 'text' in item:
+                name = item.get('source') or item.get('name')
+                url = item.get('url')
+                return {'name': name, 'url': url}
+            if isinstance(item, dict):
+                return item
+            return item
+
+        if isinstance(v, list):
+            return [to_metadata(item) for item in v]
+
+        return v
+
+    model_config = ConfigDict(frozen=False)
 
 
 # =============================================================================
@@ -130,8 +192,7 @@ class QualityResult(BaseModel):
     content_score: Optional[float] = Field(default=None, ge=0, le=2)
     level_score: Optional[float] = Field(default=None, ge=0, le=1)
 
-    class Config:
-        frozen = False
+    model_config = ConfigDict(frozen=False)
 
 
 # =============================================================================

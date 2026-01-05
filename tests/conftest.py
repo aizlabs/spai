@@ -8,7 +8,16 @@ from unittest.mock import Mock, MagicMock
 from pathlib import Path
 
 from typing import List
-from scripts.models import Topic, SourceArticle, BaseArticle, AdaptedArticle, LLMConfig, TwoStepSynthesisConfig, LLMModelsConfig
+from scripts.models import (
+    Topic,
+    SourceArticle,
+    BaseArticle,
+    AdaptedArticle,
+    SourceMetadata,
+    LLMConfig,
+    TwoStepSynthesisConfig,
+    LLMModelsConfig,
+)
 from scripts.config import AppConfig
 
 
@@ -125,13 +134,19 @@ def sample_sources() -> List[SourceArticle]:
     ]
 
 
+@pytest.fixture
+def sample_source_metadata(sample_sources: List[SourceArticle]) -> List[SourceMetadata]:
+    """Structured source metadata derived from sample sources"""
+    return [SourceMetadata(name=s.source, url=s.url) for s in sample_sources]
+
+
 # =============================================================================
 # Article Fixtures
 # =============================================================================
 
 
 @pytest.fixture
-def sample_base_article(sample_topic: Topic) -> BaseArticle:
+def sample_base_article(sample_topic: Topic, sample_source_metadata: List[SourceMetadata]) -> BaseArticle:
     """Sample base article (native Spanish) - matches real ArticleSynthesizer output"""
     return BaseArticle(
         title='España logra reducir sus emisiones de CO2 en un 15% este año',
@@ -149,7 +164,7 @@ def sample_base_article(sample_topic: Topic) -> BaseArticle:
         reading_time=3,
         # Metadata added by ArticleSynthesizer (these fields are CRITICAL for downstream components)
         topic=sample_topic,
-        sources=['El País', 'BBC Mundo', 'El Mundo']
+        sources=sample_source_metadata
     )
 
 

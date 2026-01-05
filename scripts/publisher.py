@@ -8,7 +8,7 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from scripts.models import AdaptedArticle
@@ -262,13 +262,8 @@ class Publisher:
             timestamp: datetime object for consistent timestamping
         """
 
-        sources = article.sources or []
-        normalized_sources = self._normalize_sources(sources)
-        rendered_sources = [self._render_source(source, url) for source, url in normalized_sources]
-
-        # Escape title and sources for YAML
+        # Escape title for YAML
         escaped_title = self._escape_yaml_string(article.title)
-        escaped_sources = self._escape_yaml_string(', '.join(rendered_sources))
 
         # YAML frontmatter
         # Use Jekyll-compatible date format (without microseconds)
@@ -278,7 +273,7 @@ title: "{escaped_title}"
 date: {date_str}
 level: {article.level}
 topics: {self._format_topics(article)}
-sources: "{escaped_sources}"
+{self._format_sources(article.sources)}
 reading_time: {article.reading_time}
 ---
 
@@ -291,13 +286,7 @@ reading_time: {article.reading_time}
         vocabulary = self._format_vocabulary(article.vocabulary)
 
         # Attribution
-        sources_list = rendered_sources
-        attribution = f"""
-
----
-*Fuentes: {', '.join(sources_list)}*
-*Artículo educativo generado con fines de aprendizaje de idiomas.*
-"""
+        attribution = self._format_attribution(article.sources)
 
         # Combine all parts
         markdown = frontmatter + content + vocabulary + attribution
@@ -334,3 +323,91 @@ reading_time: {article.reading_time}
             vocab_lines.append(f"- **{spanish}** - {english}")
 
         return '\n'.join(vocab_lines)
+
+    def _deduplicate_sources(self, sources) -> List[Any]:
+        """Deduplicate sources using normalized keys, preserving order and first occurrence."""
+        if not sources:
+            return []
+
+        def get_name_and_url(source):
+            if hasattr(source, 'name'):
+                return source.name, getattr(source, 'url', None)
+            if isinstance(source, dict):
+                return source.get('name') or source.get('source', ''), source.get('url')
+            return str(source), None
+
+        seen_keys = set()
+        deduplicated = []
+
+        for source in sources:
+            name, url = get_name_and_url(source)
+            if not name or not name.strip():
+                continue
+
+            # Use normalized key for deduplication (same logic as old _normalize_sources)
+            key = self._normalize_source_key(name)
+            if not key or key in seen_keys:
+                continue
+
+            seen_keys.add(key)
+            deduplicated.append(source)
+
+        return deduplicated
+
+    def _format_sources(self, sources) -> str:
+        """Format structured sources for YAML frontmatter"""
+        if not sources:
+            return 'sources: []'
+
+        # Deduplicate sources before formatting
+        deduplicated = self._deduplicate_sources(sources)
+        if not deduplicated:
+            return 'sources: []'
+
+        def get_name_and_url(source):
+            if hasattr(source, 'name'):
+                return source.name, getattr(source, 'url', None)
+            if isinstance(source, dict):
+                return source.get('name') or source.get('source', ''), source.get('url')
+            return str(source), None
+
+        lines = ['sources:']
+        for source in deduplicated:
+            name, url = get_name_and_url(source)
+            escaped_name = self._escape_yaml_string(name or '')
+            lines.append(f"- name: \"{escaped_name}\"")
+            if url:
+                escaped_url = self._escape_yaml_string(url)
+                lines.append(f"  url: \"{escaped_url}\"")
+
+        return '\n'.join(lines)
+
+    def _format_attribution(self, sources) -> str:
+        """Format attribution section with optional source links"""
+        # Deduplicate sources before formatting
+        deduplicated = self._deduplicate_sources(sources) if sources else []
+
+        def format_source(source) -> str:
+            if hasattr(source, 'name'):
+                name = str(getattr(source, 'name', ''))
+                url = getattr(source, 'url', None)
+            elif isinstance(source, dict):
+                name = str(source.get('name') or source.get('source', ''))
+                url = source.get('url')
+            else:
+                name = str(source)
+                url = None
+
+            if url:
+                escaped_name = self._escape_markdown_link_text(name)
+                return f"[{escaped_name}]({url})"
+            return name
+
+        formatted_sources = [format_source(s) for s in deduplicated]
+        sources_text = ', '.join(filter(None, formatted_sources))
+        return f"""
+
+---
+*Fuentes: {sources_text}*
+*Artículo educativo generado con fines de aprendizaje de idiomas.*
+"""

@@ -141,7 +141,10 @@ class ArticleSynthesizer:
 
             # Add metadata
             parsed['topic'] = topic.model_dump()  # Convert Pydantic model to dict for BaseArticle constructor
-            parsed['sources'] = [s.source for s in sources]
+            parsed['sources'] = [
+                {'name': s.source, 'url': s.url} if s.url else {'name': s.source}
+                for s in sources
+            ]
 
             # Create BaseArticle instance, Pydantic handles validation and type coercion
             return BaseArticle(**parsed)
