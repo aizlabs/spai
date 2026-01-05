@@ -37,6 +37,12 @@
   padding: 0 !important;
 }
 
+/* Hide theme's default Recent Posts block on the homepage. */
+.layout--home .archive__subtitle,
+.layout--home .entries-list {
+  display: none !important;
+}
+
 /* Remove any left margins/padding that create empty space */
 @media (min-width: 64em) {
   .page {
