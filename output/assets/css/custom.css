@@ -148,6 +148,7 @@
   padding: 2em;
   border-radius: 1em;
   transition: transform 0.3s ease;
+  cursor: pointer;
 }
 
 .level-box:hover {
@@ -305,6 +306,20 @@
   background: #007bff;
   border-color: #007bff;
   color: #ffffff;
+}
+
+.level-explainer {
+  margin-top: 1em;
+  font-weight: 600;
+  color: #495057;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.level-explainer.active {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ==========================================================================
