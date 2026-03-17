@@ -68,6 +68,7 @@ class AlertManager:
 
         self.logger.critical(message, extra=context or {})
         if not self.enabled:
+            self.logger.warning("Alert delivery is disabled; not sending email.")
             return
 
         self._send_email(
@@ -95,6 +96,7 @@ class AlertManager:
         }
         self.logger.error(message, extra=context)
         if not self.enabled:
+            self.logger.warning("Alert delivery is disabled; not sending email.")
             return
 
         traceback_text = "".join(traceback.format_exception(exception)).strip()
@@ -115,7 +117,10 @@ class AlertManager:
         alert_key = f"error:{message[:50]}"
         self.logger.error(message, extra=context or {})
 
-        if not self.enabled or self._check_cooldown(alert_key):
+        if not self.enabled:
+            self.logger.warning("Alert delivery is disabled; not sending email.")
+            return
+        if self._check_cooldown(alert_key):
             return
 
         self._send_email(
@@ -159,6 +164,7 @@ class AlertManager:
             self.logger.warning("Alert email not configured, skipping email send")
             return
 
+        self.logger.info("Sending alert email to %s", to_email)
         try:
             message = MIMEMultipart()
             message["From"] = email_config.from_email
