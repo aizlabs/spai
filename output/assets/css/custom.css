@@ -449,7 +449,7 @@
    Article Content
    ========================================================================== */
 
-.page__content .article-meta {
+.page__inner-wrap > header .article-meta {
   display: flex;
   gap: 1.5em;
   margin: 1.5em 0;
