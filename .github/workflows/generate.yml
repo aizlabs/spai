@@ -71,7 +71,7 @@ jobs:
           ENVIRONMENT: production
           ALERTS_ENABLED: ${{ env.ALERTS_ENABLED }}
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
-          ALERT_SENDER: AutoSpanishBot <noreply@github.com>
+          ALERT_SENDER: ${{ secrets.ALERT_SENDER }}
           ALERT_SMTP_HOST: ${{ secrets.ALERT_SMTP_HOST || 'smtp.gmail.com' }}
           ALERT_SMTP_PORT: ${{ secrets.ALERT_SMTP_PORT || 587 }}
           ALERT_SMTP_TLS: ${{ secrets.ALERT_SMTP_TLS || true }}
