@@ -560,10 +560,6 @@
    ========================================================================== */
 
 @media (max-width: 768px) {
-  .intro-section h1 {
-    font-size: 2em;
-  }
-
   .level-info {
     grid-template-columns: 1fr;
   }
