@@ -21,6 +21,8 @@ import logging
 import re
 import html
 
+from scripts.topic_utils import is_noisy_topic_keyword
+
 
 class TopicDiscoverer:
     """Discovers topics from multiple Spanish sources"""
@@ -323,36 +325,10 @@ class TopicDiscoverer:
         # Get entities
         entities = [ent.text for ent in doc.ents if len(ent.text) > 2]
 
-        # Count and return top 10
+        # Count and return top 10, then filter with shared noise detector
         counter = Counter(entities)
         raw_keywords = [word for word, count in counter.most_common(10)]
-
-        def _is_noisy_keyword(keyword: str) -> bool:
-            """Heuristically detect HTML/URL artefacts that should not be topics."""
-            if not keyword:
-                return True
-
-            lower = keyword.lower()
-
-            # Obvious HTML / attribute fragments
-            if "href=" in lower or "src=" in lower or "<" in keyword or ">" in keyword:
-                return True
-
-            # Bare URLs or hostnames
-            if lower.startswith(("http://", "https://")) or "://" in lower or "www." in lower:
-                return True
-
-            # Overly long or mostly non-word garbage
-            if not (3 <= len(keyword) <= 60):
-                return True
-
-            # Require at least one letter to avoid pure symbols / numbers
-            if not re.search(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]", keyword):
-                return True
-
-            return False
-
-        cleaned_keywords = [kw for kw in raw_keywords if not _is_noisy_keyword(kw)]
+        cleaned_keywords = [kw for kw in raw_keywords if not is_noisy_topic_keyword(kw)]
         return cleaned_keywords
     
     def _rank_topics(self, topics: List[Dict]) -> List[Dict]:

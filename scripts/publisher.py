@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 
 from scripts.models import AdaptedArticle
 from scripts.config import AppConfig
+from scripts.topic_utils import is_noisy_topic_keyword
 
 
 class Publisher:
@@ -301,27 +302,7 @@ reading_time: {article.reading_time}
         # Use 'or []' to handle None keywords (model default)
         topic_data = article.topic
         raw_keywords = (topic_data.keywords or []) if topic_data else []
-
-        def _is_valid_topic_keyword(keyword: str) -> bool:
-            """Filter out URL/HTML-like artefacts before serializing topics."""
-            if not keyword:
-                return False
-
-            lower = keyword.lower()
-
-            # Drop anything that looks like a URL or host
-            if "href=" in lower or "src=" in lower:
-                return False
-            if lower.startswith(("http://", "https://")) or "://" in lower or "www." in lower:
-                return False
-
-            # Basic length bounds
-            if not (2 <= len(keyword) <= 60):
-                return False
-
-            return True
-
-        filtered_keywords = [k for k in raw_keywords if _is_valid_topic_keyword(k)]
+        filtered_keywords = [k for k in raw_keywords if not is_noisy_topic_keyword(k)]
 
         if filtered_keywords:
             # Take first 3 keywords, lowercased

@@ -3,6 +3,7 @@ from datetime import datetime
 from scripts.topic_discovery import TopicDiscoverer
 from scripts.publisher import Publisher
 from scripts.models import Topic, AdaptedArticle
+from scripts.topic_utils import is_noisy_topic_keyword
 
 
 def test_extract_keywords_ignores_html_href(base_config, mock_logger):
@@ -47,4 +48,17 @@ def test_publisher_filters_href_from_topics(base_config, mock_logger, sample_a2_
     assert 'href="https://www.elmundo.es' not in markdown
     # But should still include the valid topic keyword
     assert 'topics: ["madrid"]' in markdown
+
+
+def test_shared_noise_filter_flags_href_and_urls():
+    """Shared helper should consistently classify HTML/URL artefacts as noisy."""
+    noisy_candidates = [
+        'href="https://www.elmundo.es',
+        "https://example.com",
+        "www.example.com",
+        "<a href='https://example.com'>",
+    ]
+    for kw in noisy_candidates:
+        assert is_noisy_topic_keyword(kw)
+
 
