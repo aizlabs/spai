@@ -300,11 +300,32 @@ reading_time: {article.reading_time}
         # Try to infer topics from article topic data
         # Use 'or {}' to handle None case (when topic is explicitly None)
         topic_data = article.topic
-        keywords = topic_data.keywords if topic_data else []
+        raw_keywords = topic_data.keywords if topic_data else []
 
-        if keywords:
+        def _is_valid_topic_keyword(keyword: str) -> bool:
+            """Filter out URL/HTML-like artefacts before serializing topics."""
+            if not keyword:
+                return False
+
+            lower = keyword.lower()
+
+            # Drop anything that looks like a URL or host
+            if "href=" in lower or "src=" in lower:
+                return False
+            if lower.startswith(("http://", "https://")) or "://" in lower or "www." in lower:
+                return False
+
+            # Basic length bounds
+            if not (2 <= len(keyword) <= 60):
+                return False
+
+            return True
+
+        filtered_keywords = [k for k in raw_keywords if _is_valid_topic_keyword(k)]
+
+        if filtered_keywords:
             # Take first 3 keywords, lowercased
-            topics = [k.lower() for k in keywords[:3]]
+            topics = [k.lower() for k in filtered_keywords[:3]]
             # Use JSON serialization for proper YAML compatibility
             # This handles apostrophes, quotes, and special characters correctly
             return json.dumps(topics)
