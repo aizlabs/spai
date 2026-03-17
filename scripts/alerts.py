@@ -205,6 +205,19 @@ class AlertManager:
             return
 
         self.logger.info("Sending alert email to %s", to_email)
+        smtp_config = email_config.smtp
+        username = smtp_config.username
+        password = smtp_config.password
+
+        smtp_log_context = {
+            "smtp_host": smtp_config.host,
+            "smtp_port": smtp_config.port,
+            "smtp_username": username,
+            "from_email": email_config.from_email,
+            "to_email": to_email,
+            "alerts_enabled": self.enabled,
+        }
+
         try:
             message = MIMEMultipart()
             message["From"] = email_config.from_email
@@ -216,9 +229,7 @@ class AlertManager:
 
             message.attach(MIMEText(body, "plain"))
 
-            smtp_config = email_config.smtp
-            username = smtp_config.username
-            password = smtp_config.password
+            self.logger.info("Alert email SMTP config", extra=smtp_log_context)
 
             with smtplib.SMTP(smtp_config.host, smtp_config.port) as server:
                 server.starttls()
@@ -228,10 +239,11 @@ class AlertManager:
 
                 server.send_message(message)
 
-            self.logger.info("Alert email sent", extra={"subject": subject})
+            self.logger.info("Alert email sent", extra={"subject": subject, **smtp_log_context})
         except Exception as exc:  # noqa: BLE001
             self.logger.error(
                 "Failed to send alert email",
+                extra=smtp_log_context,
                 exc_info=(exc.__class__, exc, exc.__traceback__),
             )
 
