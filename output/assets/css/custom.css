@@ -563,6 +563,10 @@
    ========================================================================== */
 
 @media (max-width: 768px) {
+  .site-title::after {
+    content: "";
+  }
+
   .level-info {
     grid-template-columns: 1fr;
   }
