@@ -267,7 +267,7 @@ def main():
 
         logger.info(f"Pipeline completed - Published: {stats['published']}/{stats['attempted']}")
 
-        if stats['published'] > 0:
+        if stats['published'] > 0 and not dry_run:
             alert_manager.send_success_summary(
                 run_id=run_id,
                 duration_seconds=duration,
