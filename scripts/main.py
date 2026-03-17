@@ -20,7 +20,7 @@ import sys
 import time
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -89,6 +89,7 @@ def main():
         'regenerations': 0,
         'total_quality_score': 0.0
     }
+    published_articles: List[Tuple[str, str]] = []  # (title, level) for each published article
 
     current_stage = "startup"
 
@@ -204,6 +205,7 @@ def main():
 
                     if is_published:
                         stats['published'] += 1
+                        published_articles.append((final_article.title, level))
                         logger.info(f"✅ Published successfully!")
 
                         # Check if target reached after each publication
@@ -264,6 +266,17 @@ def main():
         logger.info("=" * 60)
 
         logger.info(f"Pipeline completed - Published: {stats['published']}/{stats['attempted']}")
+
+        if stats['published'] > 0:
+            alert_manager.send_success_summary(
+                run_id=run_id,
+                duration_seconds=duration,
+                attempted=stats['attempted'],
+                published=stats['published'],
+                rejected=stats['rejected'],
+                regenerations=stats['regenerations'],
+                published_articles=published_articles,
+            )
 
         return 0
 

@@ -22,7 +22,9 @@ Go to: **Settings** → **Secrets and variables** → **Actions** → **New repo
 
 When **all three** of `ALERT_EMAIL`, `EMAIL_USERNAME`, and `EMAIL_PASSWORD` are set, the **pipeline's AlertManager** sends
 failure emails (not only the workflow step). The workflow's "Notify on failure" step is then skipped to avoid duplicate
-notifications. If you don't set these up, the workflow will still run but won't send email notifications.
+notifications. When alerts are enabled, the pipeline also sends a short success email after a run that published at least
+one article (summary of count, levels, attempts, and titles). If you don't set these up, the workflow will still run but
+won't send email notifications.
 
 #### EMAIL_USERNAME
 - **Name:** `EMAIL_USERNAME`
