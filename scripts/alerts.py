@@ -264,7 +264,7 @@ class AlertManager:
             import requests
 
             url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-            data = {"chat_id": chat_id, "text": message, "parse_mode": "Markdown"}
+            data = {"chat_id": chat_id, "text": message}
 
             response = requests.post(url, json=data, timeout=10)
             response.raise_for_status()
