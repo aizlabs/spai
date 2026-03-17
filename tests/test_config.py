@@ -56,11 +56,11 @@ def test_alerts_enabled_true_case_insensitive(monkeypatch):
         monkeypatch.delenv("ALERTS_ENABLED", raising=False)
 
 
-def test_alerts_enabled_false_unchanged(monkeypatch):
-    """ALERTS_ENABLED=false does not override alerts.enabled."""
+def test_alerts_enabled_false_overrides_yaml(monkeypatch):
+    """ALERTS_ENABLED=false sets alerts.enabled to False, overriding YAML that had enabled: true."""
     monkeypatch.setenv("ALERTS_ENABLED", "false")
     try:
-        config = {"alerts": _base_alerts_dict()}
+        config = {"alerts": {**_base_alerts_dict(), "enabled": True}}
         apply_env_overrides(config)
         assert config["alerts"]["enabled"] is False
     finally:
@@ -159,3 +159,36 @@ def test_alerts_section_created_when_missing(monkeypatch):
         assert config["alerts"]["email"] == "new@example.com"
     finally:
         monkeypatch.delenv("ALERT_EMAIL", raising=False)
+
+
+def test_email_config_null_normalized_when_smtp_env_set(monkeypatch):
+    """When alerts.email_config is null but an SMTP env var is set, it is normalized to a dict so overrides do not raise."""
+    monkeypatch.setenv("ALERT_SMTP_HOST", "smtp.example.com")
+    try:
+        config = {
+            "alerts": {
+                "enabled": False,
+                "email": "you@example.com",
+                "cooldown_hours": 6,
+                "email_config": None,
+            },
+        }
+        apply_env_overrides(config)
+        assert config["alerts"]["email_config"] is not None
+        assert config["alerts"]["email_config"]["smtp"]["host"] == "smtp.example.com"
+    finally:
+        monkeypatch.delenv("ALERT_SMTP_HOST", raising=False)
+
+
+def test_email_config_unchanged_when_no_smtp_env(monkeypatch):
+    """When no SMTP-related env vars are set, email_config is not created or overwritten (guard in alerts.py preserved)."""
+    monkeypatch.delenv("ALERT_SENDER", raising=False)
+    monkeypatch.delenv("ALERT_SMTP_HOST", raising=False)
+    monkeypatch.delenv("ALERT_SMTP_PORT", raising=False)
+    monkeypatch.delenv("ALERT_SMTP_USERNAME", raising=False)
+    monkeypatch.delenv("ALERT_SMTP_PASSWORD", raising=False)
+    monkeypatch.delenv("EMAIL_USERNAME", raising=False)
+    monkeypatch.delenv("EMAIL_PASSWORD", raising=False)
+    config = {"alerts": {"enabled": False, "email": "y@example.com", "cooldown_hours": 6}}
+    apply_env_overrides(config)
+    assert "email_config" not in config["alerts"]
