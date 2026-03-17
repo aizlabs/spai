@@ -16,7 +16,7 @@ class FakeAdaptationResponse(BaseModel):
 
     title: str
     content: str
-    vocabulary: dict = {}
+    vocabulary: list = []
     summary: str
     reading_time: int
 
@@ -42,6 +42,11 @@ class TestLevelAdapterA2:
         """Test successful A2 adaptation"""
         # Setup mock
         response_article_dict = sample_a2_article.model_dump()
+        # Convert vocabulary dict to list of term/gloss pairs to match AdaptationResponse schema
+        vocab_dict = response_article_dict.get('vocabulary') or {}
+        response_article_dict['vocabulary'] = [
+            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
+        ]
         del response_article_dict['base_article']
         del response_article_dict['topic']
         del response_article_dict['sources']
@@ -70,6 +75,10 @@ class TestLevelAdapterA2:
                                         sample_base_article, sample_a2_article):
         """Test A2 adaptation with quality feedback"""
         response_article_dict = sample_a2_article.model_dump()
+        vocab_dict = response_article_dict.get('vocabulary') or {}
+        response_article_dict['vocabulary'] = [
+            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
+        ]
         del response_article_dict['base_article']
         del response_article_dict['topic']
         del response_article_dict['sources']
@@ -118,6 +127,10 @@ class TestLevelAdapterB1:
         """Test successful B1 adaptation"""
         # Setup mock
         response_article_dict = sample_b1_article.model_dump()
+        vocab_dict = response_article_dict.get('vocabulary') or {}
+        response_article_dict['vocabulary'] = [
+            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
+        ]
         del response_article_dict['base_article']
         del response_article_dict['topic']
         del response_article_dict['sources']
@@ -144,6 +157,10 @@ class TestLevelAdapterB1:
                                         sample_base_article, sample_b1_article):
         """Test B1 adaptation with quality feedback"""
         response_article_dict = sample_b1_article.model_dump()
+        vocab_dict = response_article_dict.get('vocabulary') or {}
+        response_article_dict['vocabulary'] = [
+            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
+        ]
         del response_article_dict['base_article']
         del response_article_dict['topic']
         del response_article_dict['sources']
@@ -172,6 +189,10 @@ class TestLevelAdapterGeneric:
                                 sample_base_article, sample_a2_article):
         """Test adapt_to_level routes to A2 correctly"""
         response_article_dict = sample_a2_article.model_dump()
+        vocab_dict = response_article_dict.get('vocabulary') or {}
+        response_article_dict['vocabulary'] = [
+            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
+        ]
         del response_article_dict['base_article']
         del response_article_dict['topic']
         del response_article_dict['sources']
@@ -190,6 +211,10 @@ class TestLevelAdapterGeneric:
                                 sample_base_article, sample_b1_article):
         """Test adapt_to_level routes to B1 correctly"""
         response_article_dict = sample_b1_article.model_dump()
+        vocab_dict = response_article_dict.get('vocabulary') or {}
+        response_article_dict['vocabulary'] = [
+            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
+        ]
         del response_article_dict['base_article']
         del response_article_dict['topic']
         del response_article_dict['sources']
@@ -231,7 +256,7 @@ class TestLevelAdapterParsing:
         resp = FakeAdaptationResponse(
             title="Test",
             content="a" * 100,
-            vocabulary={},
+            vocabulary=[],
             summary="Summary text",
             reading_time=2,
         )
@@ -258,6 +283,10 @@ class TestLevelAdapterModelSelection:
         base_config.llm.models.adaptation = 'gpt-4o-mini'
 
         response_article_dict = sample_a2_article.model_dump()
+        vocab_dict = response_article_dict.get('vocabulary') or {}
+        response_article_dict['vocabulary'] = [
+            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
+        ]
         del response_article_dict['base_article']
         del response_article_dict['topic']
         del response_article_dict['sources']
@@ -293,6 +322,10 @@ class TestLevelAdapterModelSelection:
         mock_create_chat_model.return_value = MagicMock()
 
         response_article_dict = sample_a2_article.model_dump()
+        vocab_dict = response_article_dict.get('vocabulary') or {}
+        response_article_dict['vocabulary'] = [
+            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
+        ]
         del response_article_dict['base_article']
         del response_article_dict['topic']
         del response_article_dict['sources']
@@ -315,6 +348,10 @@ class TestLevelAdapterEdgeCases:
                                                  sample_base_article_minimal, sample_a2_article):
         """Test adaptation handles missing topic metadata gracefully"""
         response_article_dict = sample_a2_article.model_dump()
+        vocab_dict = response_article_dict.get('vocabulary') or {}
+        response_article_dict['vocabulary'] = [
+            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
+        ]
         del response_article_dict['base_article']
         del response_article_dict['topic']
         del response_article_dict['sources']
@@ -344,6 +381,10 @@ class TestLevelAdapterEdgeCases:
         )
 
         response_article_dict = sample_a2_article.model_dump()
+        vocab_dict = response_article_dict.get('vocabulary') or {}
+        response_article_dict['vocabulary'] = [
+            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
+        ]
         del response_article_dict['base_article']
         del response_article_dict['topic']
         del response_article_dict['sources']
@@ -364,6 +405,10 @@ class TestLevelAdapterEdgeCases:
                                                sample_base_article, sample_a2_article):
         """Test base_article is preserved for regeneration"""
         response_article_dict = sample_a2_article.model_dump()
+        vocab_dict = response_article_dict.get('vocabulary') or {}
+        response_article_dict['vocabulary'] = [
+            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
+        ]
         del response_article_dict['base_article']
         del response_article_dict['topic']
         del response_article_dict['sources']
@@ -383,6 +428,10 @@ class TestLevelAdapterEdgeCases:
                                              sample_base_article, sample_a2_article):
         """Test metadata is correctly inherited from base article"""
         response_article_dict = sample_a2_article.model_dump()
+        vocab_dict = response_article_dict.get('vocabulary') or {}
+        response_article_dict['vocabulary'] = [
+            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
+        ]
         del response_article_dict['base_article']
         del response_article_dict['topic']
         del response_article_dict['sources']

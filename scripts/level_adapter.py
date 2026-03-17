@@ -128,12 +128,16 @@ class LevelAdapter:
         )
         chat_model = create_chat_model(self.llm_config, model_name, self.temperature)
 
+        class VocabularyItem(BaseModel):
+            term: str = Field(..., description="Vocabulary term in Spanish")
+            gloss: str = Field(..., description="Translation or explanation for the term")
+
         class AdaptationResponse(BaseModel):
             title: str = Field(..., description="Level-appropriate title")
             content: str = Field(..., description="Level-adapted content")
-            vocabulary: Dict[str, str] = Field(
-                default_factory=dict,
-                description="Vocabulary glossary mapping term -> translation/explanation",
+            vocabulary: List[VocabularyItem] = Field(
+                default_factory=list,
+                description="Vocabulary glossary as a list of term/gloss pairs",
             )
             summary: str = Field(..., description="Level-appropriate summary")
             reading_time: int = Field(..., description="Estimated reading time in minutes")
@@ -165,9 +169,22 @@ class LevelAdapter:
         try:
             parsed = response.model_dump()
 
+            raw_vocabulary = parsed.get("vocabulary") or []
+            vocab_dict: Dict[str, str] = {}
+            for item in raw_vocabulary:
+                if isinstance(item, dict):
+                    term = item.get("term")
+                    gloss = item.get("gloss")
+                else:
+                    term = getattr(item, "term", None)
+                    gloss = getattr(item, "gloss", None)
+                if term and gloss:
+                    vocab_dict[str(term)] = str(gloss)
+            parsed["vocabulary"] = vocab_dict
+
             parsed["content"] = ensure_vocabulary_bolded(
                 parsed.get("content", ""),
-                parsed.get("vocabulary") or {},
+                vocab_dict,
             )
 
             parsed['level'] = level

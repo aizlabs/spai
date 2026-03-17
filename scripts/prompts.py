@@ -738,10 +738,16 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
 {{
   "title": "Simplified title (max 10 words)",
   "content": "A2-adapted content with **bold** glossed terms (~200 words)",
-  "vocabulary": {{
-    "term1": "English translation - Spanish A2 explanation",
-    "term2": "English translation - Spanish A2 explanation"
-  }},
+  "vocabulary": [
+    {{
+      "term": "difficult Spanish word or phrase from the article",
+      "gloss": "English translation - Spanish A2 explanation"
+    }},
+    {{
+      "term": "another important term from the article",
+      "gloss": "English translation - Spanish A2 explanation"
+    }}
+  ],
   "summary": "One sentence summary in simple Spanish",
   "reading_time": 2
 }}
@@ -813,10 +819,16 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
 {{
   "title": "Engaging title in Spanish (8-10 words)",
   "content": "B1-adapted content with **bold** glossed terms (~300 words)",
-  "vocabulary": {{
-    "term1": "English translation - Spanish B1 explanation",
-    "term2": "English translation - Spanish B1 explanation"
-  }},
+  "vocabulary": [
+    {{
+      "term": "difficult Spanish word or phrase from the article",
+      "gloss": "English translation - Spanish B1 explanation"
+    }},
+    {{
+      "term": "another important term from the article",
+      "gloss": "English translation - Spanish B1 explanation"
+    }}
+  ],
   "summary": "One sentence summary in Spanish",
   "reading_time": 3
 }}
