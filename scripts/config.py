@@ -194,6 +194,30 @@ def apply_env_overrides(config_dict: Dict) -> Dict:
         if _smtp_pass:
             email_config['smtp']['password'] = _smtp_pass
 
+    # Override Telegram alert config from env.
+    # If both required values are present, enable Telegram alerts automatically.
+    _telegram_bot_token = os.getenv('ALERT_TELEGRAM_BOT_TOKEN')
+    _telegram_chat_id = os.getenv('ALERT_TELEGRAM_CHAT_ID')
+    if _telegram_bot_token or _telegram_chat_id:
+        config_dict.setdefault('alerts', {})
+        alerts = config_dict['alerts']
+        if alerts.get('telegram') is None:
+            alerts['telegram'] = {}
+        telegram_config = alerts['telegram']
+
+        if _telegram_bot_token:
+            telegram_config['bot_token'] = _telegram_bot_token
+        if _telegram_chat_id:
+            telegram_config['chat_id'] = _telegram_chat_id
+
+        has_complete_telegram_config = bool(_telegram_bot_token and _telegram_chat_id)
+        if has_complete_telegram_config:
+            telegram_config['enabled'] = True
+
+            # Auto-enable alert delivery for CI secret-only Telegram setup unless explicitly disabled.
+            if not (alerts_enabled is not None and str(alerts_enabled).strip().lower() == 'false'):
+                alerts['enabled'] = True
+
     return config_dict
 
 
