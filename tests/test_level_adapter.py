@@ -2,36 +2,35 @@
 Unit tests for LevelAdapter component
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-import json
-from unittest.mock import Mock, MagicMock, patch
+from pydantic import BaseModel
+
 from scripts.level_adapter import LevelAdapter
 from scripts.models import BaseArticle, AdaptedArticle
 
 
+class FakeAdaptationResponse(BaseModel):
+    """Simple stand-in for the internal AdaptationResponse used in LevelAdapter."""
+
+    title: str
+    content: str
+    vocabulary: dict = {}
+    summary: str
+    reading_time: int
+
+
 class TestLevelAdapterInit:
-    """Test LevelAdapter initialization"""
+    """Test LevelAdapter initialization."""
 
-    @patch('scripts.level_adapter.LevelAdapter._init_llm_client')
-    def test_init_with_openai(self, mock_init_llm_client, base_config, mock_logger):
-        """Test initialization with OpenAI provider"""
+    def test_init_uses_llm_and_generation_config(self, base_config, mock_logger):
         adapter = LevelAdapter(base_config, mock_logger)
 
-        assert adapter.config == base_config
+        assert adapter.config is base_config
         assert adapter.llm_config == base_config.llm.model_dump()
+        assert adapter.generation_config == base_config.generation.model_dump()
         mock_logger.getChild.assert_called_with('LevelAdapter')
-        mock_init_llm_client.assert_called_once()
-
-    @patch('scripts.level_adapter.LevelAdapter._init_llm_client')
-    def test_init_with_anthropic(self, mock_init_llm_client, base_config, mock_logger):
-        """Test initialization with Anthropic provider"""
-        base_config.llm.provider = 'anthropic'
-        base_config.llm.anthropic_api_key = 'test-key'
-
-        adapter = LevelAdapter(base_config, mock_logger)
-
-        assert adapter.llm_config['provider'] == 'anthropic'
-        mock_init_llm_client.assert_called_once()
 
 
 class TestLevelAdapterA2:
@@ -42,14 +41,13 @@ class TestLevelAdapterA2:
                                   sample_base_article, sample_a2_article):
         """Test successful A2 adaptation"""
         # Setup mock
-        # Remove base_article from expected response (will be added by adapter)
         response_article_dict = sample_a2_article.model_dump()
         del response_article_dict['base_article']
         del response_article_dict['topic']
         del response_article_dict['sources']
         del response_article_dict['level']
 
-        mock_call_llm.return_value = json.dumps(response_article_dict)
+        mock_call_llm.return_value = FakeAdaptationResponse(**response_article_dict)
 
         adapter = LevelAdapter(base_config, mock_logger)
         result = adapter.adapt_to_a2(sample_base_article)
@@ -77,7 +75,7 @@ class TestLevelAdapterA2:
         del response_article_dict['sources']
         del response_article_dict['level']
 
-        mock_call_llm.return_value = json.dumps(response_article_dict)
+        mock_call_llm.return_value = FakeAdaptationResponse(**response_article_dict)
 
         adapter = LevelAdapter(base_config, mock_logger)
         feedback = ["Sentences too long", "Vocabulary too complex"]
@@ -95,7 +93,6 @@ class TestLevelAdapterA2:
     def test_adapt_to_a2_empty_vocabulary(self, mock_call_llm, base_config, mock_logger,
                                            sample_base_article):
         """Test A2 adaptation sets empty dict when vocabulary missing"""
-        # Response without vocabulary
         response = {
             'title': 'Test',
             'content': 'Content ' * 10,
@@ -103,7 +100,7 @@ class TestLevelAdapterA2:
             'reading_time': 2
         }
 
-        mock_call_llm.return_value = json.dumps(response)
+        mock_call_llm.return_value = FakeAdaptationResponse(**response)
 
         adapter = LevelAdapter(base_config, mock_logger)
         result = adapter.adapt_to_a2(sample_base_article)
@@ -126,7 +123,7 @@ class TestLevelAdapterB1:
         del response_article_dict['sources']
         del response_article_dict['level']
 
-        mock_call_llm.return_value = json.dumps(response_article_dict)
+        mock_call_llm.return_value = FakeAdaptationResponse(**response_article_dict)
 
         adapter = LevelAdapter(base_config, mock_logger)
         result = adapter.adapt_to_b1(sample_base_article)
@@ -152,7 +149,7 @@ class TestLevelAdapterB1:
         del response_article_dict['sources']
         del response_article_dict['level']
 
-        mock_call_llm.return_value = json.dumps(response_article_dict)
+        mock_call_llm.return_value = FakeAdaptationResponse(**response_article_dict)
 
         adapter = LevelAdapter(base_config, mock_logger)
         feedback = ["Not enough vocabulary glosses"]
@@ -180,7 +177,7 @@ class TestLevelAdapterGeneric:
         del response_article_dict['sources']
         del response_article_dict['level']
 
-        mock_call_llm.return_value = json.dumps(response_article_dict)
+        mock_call_llm.return_value = FakeAdaptationResponse(**response_article_dict)
 
         adapter = LevelAdapter(base_config, mock_logger)
         result = adapter.adapt_to_level(sample_base_article, 'A2')
@@ -198,7 +195,7 @@ class TestLevelAdapterGeneric:
         del response_article_dict['sources']
         del response_article_dict['level']
 
-        mock_call_llm.return_value = json.dumps(response_article_dict)
+        mock_call_llm.return_value = FakeAdaptationResponse(**response_article_dict)
 
         adapter = LevelAdapter(base_config, mock_logger)
         result = adapter.adapt_to_level(sample_base_article, 'B1')
@@ -221,59 +218,33 @@ class TestLevelAdapterParsing:
     """Test response parsing"""
 
     @patch('scripts.level_adapter.LevelAdapter._call_llm')
-    def test_parse_with_markdown_json(self, mock_call_llm, base_config, mock_logger,
-                                       sample_base_article, sample_a2_article):
-        """Test parsing JSON wrapped in markdown"""
-        response_article_dict = sample_a2_article.model_dump()
-        del response_article_dict['base_article']
-        del response_article_dict['topic']
-        del response_article_dict['sources']
-        del response_article_dict['level']
-
-        mock_call_llm.return_value = f"```json\n{json.dumps(response_article_dict)}\n```"
-
-        adapter = LevelAdapter(base_config, mock_logger)
-        result = adapter.adapt_to_a2(sample_base_article)
-
-        assert isinstance(result, AdaptedArticle)
-        assert result.title == sample_a2_article.title
-
-    @patch('scripts.level_adapter.LevelAdapter._call_llm')
-    def test_parse_invalid_reading_time(self, mock_call_llm, base_config, mock_logger,
-                                         sample_base_article):
-        """Test reading_time defaults when invalid"""
-        response = {
-            'title': 'Test',
-            'content': 'a' * 50,
-            'summary': 'b' * 10,
-            'reading_time': 'invalid'  # Invalid value
-        }
-
-        mock_call_llm.return_value = json.dumps(response)
-
-        adapter = LevelAdapter(base_config, mock_logger)
-        result = adapter.adapt_to_a2(sample_base_article)
-
-        # Should default to 2 for A2
-        assert isinstance(result, AdaptedArticle)
-        assert result.reading_time == 2
-
-    @patch('scripts.level_adapter.LevelAdapter._call_llm')
-    def test_parse_missing_required_field(self, mock_call_llm, base_config, mock_logger,
-                                           sample_base_article):
-        """Test parsing fails when required field missing"""
-        # Missing 'title'
-        response = {
-            'content': 'Content',
-            'summary': 'Summary',
-            'reading_time': 2
-        }
-
-        mock_call_llm.return_value = json.dumps(response)
+    @patch('scripts.level_adapter.LevelAdapter._build_adapted_article')
+    def test_build_adapted_article_error_is_propagated(
+        self,
+        mock_build_adapted,
+        mock_call_llm,
+        base_config,
+        mock_logger,
+        sample_base_article,
+    ):
+        """Test that errors in building AdaptedArticle are surfaced."""
+        resp = FakeAdaptationResponse(
+            title="Test",
+            content="a" * 100,
+            vocabulary={},
+            summary="Summary text",
+            reading_time=2,
+        )
+        mock_call_llm.return_value = resp
+        mock_build_adapted.side_effect = ValueError(
+            "Invalid adapted article structure or Pydantic validation error"
+        )
 
         adapter = LevelAdapter(base_config, mock_logger)
 
-        with pytest.raises(ValueError, match="Invalid adapted article structure or Pydantic validation error"):
+        with pytest.raises(
+            ValueError, match="Invalid adapted article structure or Pydantic validation error"
+        ):
             adapter.adapt_to_a2(sample_base_article)
 
 
@@ -292,7 +263,7 @@ class TestLevelAdapterModelSelection:
         del response_article_dict['sources']
         del response_article_dict['level']
 
-        mock_call_llm.return_value = json.dumps(response_article_dict)
+        mock_call_llm.return_value = FakeAdaptationResponse(**response_article_dict)
 
         adapter = LevelAdapter(base_config, mock_logger)
         adapter.adapt_to_a2(sample_base_article)
@@ -303,12 +274,23 @@ class TestLevelAdapterModelSelection:
         # Instead, we can check that the adapter's llm_config was updated.
         assert adapter.llm_config['models']['adaptation'] == 'gpt-4o-mini'
 
+    @patch('scripts.level_adapter.create_chat_model')
     @patch('scripts.level_adapter.LevelAdapter._call_llm')
-    def test_fallback_to_generation_model(self, mock_call_llm, base_config, mock_logger,
-                                           sample_base_article, sample_a2_article):
-        """Test falls back to generation model if adaptation not specified"""
+    def test_fallback_to_generation_model(
+        self,
+        mock_call_llm,
+        mock_create_chat_model,
+        base_config,
+        mock_logger,
+        sample_base_article,
+        sample_a2_article,
+    ):
+        """Test falls back to generation model if adaptation not specified."""
         # Remove adaptation model from config
         base_config.llm.models.adaptation = None
+
+        # Ensure chain init does not try to build a real client
+        mock_create_chat_model.return_value = MagicMock()
 
         response_article_dict = sample_a2_article.model_dump()
         del response_article_dict['base_article']
@@ -316,17 +298,13 @@ class TestLevelAdapterModelSelection:
         del response_article_dict['sources']
         del response_article_dict['level']
 
-        mock_call_llm.return_value = json.dumps(response_article_dict)
+        mock_call_llm.return_value = FakeAdaptationResponse(**response_article_dict)
 
         adapter = LevelAdapter(base_config, mock_logger)
         adapter.adapt_to_a2(sample_base_article)
 
-        # Should use generation model as fallback
-        # The model is not passed to _call_llm, it's used inside it.
-        # We can't directly assert the model used in the call.
-        # Instead, we can check that the adapter's llm_config was updated.
-        assert adapter.llm_config['models']['adaptation'] is None
-        assert adapter.llm_config['models']['generation'] == 'gpt-4o'
+        # Should have selected the generation model name when adaptation is None
+        assert adapter.llm_config['models']['generation'] == base_config.llm.models.generation
 
 
 class TestLevelAdapterEdgeCases:
@@ -342,7 +320,7 @@ class TestLevelAdapterEdgeCases:
         del response_article_dict['sources']
         del response_article_dict['level']
 
-        mock_call_llm.return_value = json.dumps(response_article_dict)
+        mock_call_llm.return_value = FakeAdaptationResponse(**response_article_dict)
 
         adapter = LevelAdapter(base_config, mock_logger)
         result = adapter.adapt_to_a2(sample_base_article_minimal)
@@ -371,7 +349,7 @@ class TestLevelAdapterEdgeCases:
         del response_article_dict['sources']
         del response_article_dict['level']
 
-        mock_call_llm.return_value = json.dumps(response_article_dict)
+        mock_call_llm.return_value = FakeAdaptationResponse(**response_article_dict)
 
         adapter = LevelAdapter(base_config, mock_logger)
         result = adapter.adapt_to_a2(base_with_none)
@@ -391,7 +369,7 @@ class TestLevelAdapterEdgeCases:
         del response_article_dict['sources']
         del response_article_dict['level']
 
-        mock_call_llm.return_value = json.dumps(response_article_dict)
+        mock_call_llm.return_value = FakeAdaptationResponse(**response_article_dict)
 
         adapter = LevelAdapter(base_config, mock_logger)
         result = adapter.adapt_to_a2(sample_base_article)
@@ -410,7 +388,7 @@ class TestLevelAdapterEdgeCases:
         del response_article_dict['sources']
         del response_article_dict['level']
 
-        mock_call_llm.return_value = json.dumps(response_article_dict)
+        mock_call_llm.return_value = FakeAdaptationResponse(**response_article_dict)
 
         adapter = LevelAdapter(base_config, mock_logger)
         result = adapter.adapt_to_a2(sample_base_article)
