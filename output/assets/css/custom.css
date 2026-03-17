@@ -469,6 +469,49 @@
 }
 
 /* ==========================================================================
+   Related Posts ("You May Also Enjoy")
+   ========================================================================== */
+
+/* Override Minimal Mistakes' sidebar-based layout for related posts.
+   Keep same container width as main text (via .page__inner-wrap),
+   but control layout inside the section. */
+.page__related {
+  float: none;
+  width: 100%;
+  margin-top: 3em;
+  padding-top: 1em;
+  padding-left: 1.5em;
+  border-top: 1px solid #dee2e6;
+}
+
+/* Ensure the related posts heading aligns with other section headings. */
+.page__related-title {
+  margin-bottom: 1.5em;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+/* Layout for related-post cards: two flexible columns with gaps. */
+.page__related .grid__wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.page__related .grid__item {
+  flex: 1 1 calc(50% - 2rem); /* two columns on desktop */
+  min-width: 320px;           /* avoid overly narrow text */
+  margin-left: 0;
+}
+
+@media (max-width: 768px) {
+  .page__related .grid__item {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
+
+/* ==========================================================================
    Pagination
    ========================================================================== */
 
