@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 30
 
     env:
-      ALERTS_ENABLED: ${{ secrets.ALERT_EMAIL != '' && secrets.EMAIL_USERNAME != '' && secrets.EMAIL_PASSWORD != '' }}
+      ALERTS_ENABLED: ${{ (secrets.ALERT_EMAIL != '' && secrets.EMAIL_USERNAME != '' && secrets.EMAIL_PASSWORD != '') || (secrets.ALERT_TELEGRAM_BOT_TOKEN != '' && secrets.ALERT_TELEGRAM_CHAT_ID != '') }}
       ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
       EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
       EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
