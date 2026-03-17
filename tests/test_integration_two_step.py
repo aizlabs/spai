@@ -39,6 +39,10 @@ class TestTwoStepPipelineIntegration:
         from tests.test_level_adapter import FakeAdaptationResponse
 
         response_adapter_dict = sample_a2_article.model_dump()
+        vocab_dict = response_adapter_dict.get('vocabulary') or {}
+        response_adapter_dict['vocabulary'] = [
+            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
+        ]
         del response_adapter_dict['base_article']
         del response_adapter_dict['topic']
         del response_adapter_dict['sources']
@@ -131,6 +135,10 @@ class TestPublisherIntegration:
         from tests.test_level_adapter import FakeAdaptationResponse
 
         response_adapter_dict = sample_a2_article.model_dump()
+        vocab_dict = response_adapter_dict.get('vocabulary') or {}
+        response_adapter_dict['vocabulary'] = [
+            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
+        ]
         del response_adapter_dict['base_article']
         del response_adapter_dict['topic']
         del response_adapter_dict['sources']
@@ -172,6 +180,10 @@ class TestPublisherIntegration:
         from tests.test_level_adapter import FakeAdaptationResponse
 
         response_adapter_dict = sample_a2_article.model_dump()
+        vocab_dict = response_adapter_dict.get('vocabulary') or {}
+        response_adapter_dict['vocabulary'] = [
+            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
+        ]
         del response_adapter_dict['base_article']
         del response_adapter_dict['topic']
         del response_adapter_dict['sources']
