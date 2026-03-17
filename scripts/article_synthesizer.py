@@ -6,15 +6,24 @@ Spanish article. No level adjustment - focuses on factual accuracy
 and natural Spanish expression.
 """
 
-import json
 import logging
-from typing import Dict, List, Union, cast
+from typing import List
 
-from openai import OpenAI
-from anthropic import Anthropic
+from langchain_core.prompts import ChatPromptTemplate
+from pydantic import BaseModel, Field
 
 from scripts.models import Topic, SourceArticle, BaseArticle
 from scripts.config import AppConfig
+from scripts.llm_factory import create_chat_model, with_structured_output
+
+
+class SynthesisResponse(BaseModel):
+    """Raw synthesis response structure from the LLM."""
+
+    title: str = Field(..., description="Engaging headline in Spanish")
+    content: str = Field(..., description="Full article in natural Spanish")
+    summary: str = Field(..., description="One sentence summary in Spanish")
+    reading_time: int = Field(..., description="Estimated reading time in minutes")
 
 
 class ArticleSynthesizer:
@@ -24,25 +33,10 @@ class ArticleSynthesizer:
         self.config = config
         self.logger = logger.getChild('ArticleSynthesizer')
 
-        # Initialize LLM client
-        provider = config.llm.provider
-
-        if provider == 'anthropic':
-            if not config.llm.anthropic_api_key:
-                raise ValueError("ANTHROPIC_API_KEY is required for Anthropic provider")
-
-            self.llm_client: Union[Anthropic, OpenAI] = Anthropic(api_key=config.llm.anthropic_api_key)
-            self.logger.info("Initialized Anthropic client for synthesis")
-
-        elif provider == 'openai':
-            if not config.llm.openai_api_key:
-                raise ValueError("OPENAI_API_KEY is required for OpenAI provider")
-
-            self.llm_client = OpenAI(api_key=config.llm.openai_api_key)
-            self.logger.info("Initialized OpenAI client for synthesis")
-
-        else:
-            raise ValueError(f"Unknown LLM provider: {provider}")
+        # Cache LLM config as dict for the factory
+        self.llm_config = config.llm.model_dump()
+        self.temperature = self.llm_config.get('temperature', 0.3)
+        self._init_chain()
 
     def synthesize(self, topic: Topic, sources: List[SourceArticle]) -> BaseArticle:
         """
@@ -68,91 +62,49 @@ class ArticleSynthesizer:
         self.logger.info(f"Synthesizing base article for topic: {topic.title}")
 
         response = self._call_llm(prompt)
-        article = self._parse_response(response, topic, sources)
+        article = self._build_base_article(response, topic, sources)
 
         self.logger.info(f"Synthesized base article: {article.title}")
         self.logger.debug(f"Base article word count: {len(article.content.split())}")
 
         return article
 
-    def _call_llm(self, prompt: str, temperature: float = 0.3) -> str:
-        """Call LLM with prompt for synthesis"""
-        model = self.config.llm.models.generation
-        max_tokens = self.config.llm.max_tokens
-        provider = self.config.llm.provider
+    def _init_chain(self) -> None:
+        """Initialize LangChain structured-output chain for synthesis."""
+        model_name = self.llm_config['models']['generation']
+        chat_model = create_chat_model(self.llm_config, model_name, self.temperature)
+        structured_llm = with_structured_output(chat_model, SynthesisResponse)
 
+        # Simple wrapper prompt: we already build the full prompt string in prompts.py
+        self.prompt_template = ChatPromptTemplate.from_messages(
+            [("user", "{prompt}")]
+        )
+        self.chain = self.prompt_template | structured_llm
+
+    def _call_llm(self, prompt: str) -> SynthesisResponse:
+        """Call LLM with prompt for synthesis and return structured response."""
         try:
-            if provider == 'anthropic':
-                client = cast(Anthropic, self.llm_client)
-                response = client.messages.create(
-                    model=model,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    messages=[{"role": "user", "content": prompt}]
-                )
-                # Extract text from first content block (should be TextBlock)
-                if response.content and len(response.content) > 0:
-                    first_block = response.content[0]
-                    if hasattr(first_block, 'text'):
-                        return first_block.text
-                    else:
-                        raise ValueError(f"Unexpected content block type: {type(first_block)}")
-                else:
-                    raise ValueError("Empty response from Anthropic API")
-
-            elif provider == 'openai':
-                client = cast(OpenAI, self.llm_client)  # type: ignore[assignment]
-                response = client.chat.completions.create(  # type: ignore[attr-defined]
-                    model=model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=temperature,
-                    max_tokens=max_tokens
-                )
-                content = response.choices[0].message.content
-                if content is None:
-                    raise ValueError("Empty response from OpenAI API")
-                return content  # type: ignore[no-any-return]
-
-            else:
-                raise ValueError(f"Unknown provider: {provider}")
-
+            return self.chain.invoke({"prompt": prompt})
         except Exception as e:
             self.logger.error(f"LLM API call failed during synthesis: {e}")
             raise
 
-    def _parse_response(
+    def _build_base_article(
         self,
-        response: str,
+        response: SynthesisResponse,
         topic: Topic,
         sources: List[SourceArticle]
     ) -> BaseArticle:
-        """Parse LLM JSON response into base article dict"""
-
-        # Extract JSON from response (handle markdown code blocks)
-        json_str = response
-
-        if '```json' in response:
-            json_str = response.split('```json')[1].split('```')[0]
-        elif '```' in response:
-            json_str = response.split('```')[1].split('```')[0]
-
+        """Convert structured synthesis response into BaseArticle with metadata."""
         try:
-            parsed = json.loads(json_str.strip())
-
-            # Add metadata
-            parsed['topic'] = topic.model_dump()  # Convert Pydantic model to dict for BaseArticle constructor
-            parsed['sources'] = [
+            data = response.model_dump()
+            data['topic'] = topic.model_dump()
+            data['sources'] = [
                 {'name': s.source, 'url': s.url} if s.url else {'name': s.source}
                 for s in sources
             ]
-
-            # Create BaseArticle instance, Pydantic handles validation and type coercion
-            return BaseArticle(**parsed)
-
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Failed to parse synthesis response as JSON: {e}")
-            self.logger.debug(f"Response was: {response[:500]}")
-            raise ValueError(f"LLM returned invalid JSON during synthesis: {e}")
+            return BaseArticle(**data)
         except Exception as e:
-            self.logger.error(f"Invalid base article structure or Pydantic validation error: {e}")
-            raise ValueError(f"Invalid base article structure or Pydantic validation error: {e}")
+            self.logger.error(f"Failed to build BaseArticle from synthesis response: {e}")
+            raise
+

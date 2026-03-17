@@ -221,7 +221,11 @@ class LLMModelsConfig(BaseModel):
 
 class LLMConfig(BaseModel):
     """LLM configuration"""
-    provider: str = Field(..., pattern="^(openai|anthropic)$", description="LLM provider")
+    provider: str = Field(
+        ...,
+        # Allow additional providers in the future (e.g., mistral, qwen)
+        description="LLM provider identifier (e.g., openai, anthropic)"
+    )
     models: LLMModelsConfig
     openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key")
     anthropic_api_key: Optional[str] = Field(default=None, description="Anthropic API key")

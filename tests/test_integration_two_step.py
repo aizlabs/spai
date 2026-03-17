@@ -6,12 +6,11 @@ that unit tests miss (like the Publisher AttributeError on None topic).
 """
 
 import pytest
-import json
 from datetime import datetime
 from unittest.mock import Mock, MagicMock, patch
 from pathlib import Path
 
-from scripts.article_synthesizer import ArticleSynthesizer
+from scripts.article_synthesizer import ArticleSynthesizer, SynthesisResponse
 from scripts.level_adapter import LevelAdapter
 from scripts.content_generator import ContentGenerator
 from scripts.publisher import Publisher
@@ -27,16 +26,24 @@ class TestTwoStepPipelineIntegration:
                                          base_config, mock_logger, sample_topic, sample_sources,
                                          sample_base_article, sample_a2_article):
         """Test complete two-step flow: ArticleSynthesizer → LevelAdapter (A2)"""
-        # Setup synthesizer mock
-        mock_synth_call_llm.return_value = json.dumps(sample_base_article.model_dump())
+        # Setup synthesizer mock with structured response
+        synth_response = SynthesisResponse(
+            title=sample_base_article.title,
+            content=sample_base_article.content,
+            summary=sample_base_article.summary,
+            reading_time=sample_base_article.reading_time,
+        )
+        mock_synth_call_llm.return_value = synth_response
 
-        # Setup adapter mock
+        # Setup adapter mock using the FakeAdaptationResponse from unit tests
+        from tests.test_level_adapter import FakeAdaptationResponse
+
         response_adapter_dict = sample_a2_article.model_dump()
         del response_adapter_dict['base_article']
         del response_adapter_dict['topic']
         del response_adapter_dict['sources']
         del response_adapter_dict['level']
-        mock_adapter_call_llm.return_value = json.dumps(response_adapter_dict)
+        mock_adapter_call_llm.return_value = FakeAdaptationResponse(**response_adapter_dict)
 
         # Execute two-step pipeline
         synthesizer = ArticleSynthesizer(base_config, mock_logger)
@@ -111,16 +118,24 @@ class TestPublisherIntegration:
 
         This test would have caught the Publisher AttributeError bug!
         """
-        # Setup synthesizer
-        mock_synth_call_llm.return_value = json.dumps(sample_base_article.model_dump())
+        # Setup synthesizer (structured response)
+        synth_response = SynthesisResponse(
+            title=sample_base_article.title,
+            content=sample_base_article.content,
+            summary=sample_base_article.summary,
+            reading_time=sample_base_article.reading_time,
+        )
+        mock_synth_call_llm.return_value = synth_response
 
         # Setup adapter
+        from tests.test_level_adapter import FakeAdaptationResponse
+
         response_adapter_dict = sample_a2_article.model_dump()
         del response_adapter_dict['base_article']
         del response_adapter_dict['topic']
         del response_adapter_dict['sources']
         del response_adapter_dict['level']
-        mock_adapter_call_llm.return_value = json.dumps(response_adapter_dict)
+        mock_adapter_call_llm.return_value = FakeAdaptationResponse(**response_adapter_dict)
 
         # Execute full pipeline
         synthesizer = ArticleSynthesizer(base_config, mock_logger)
@@ -154,12 +169,14 @@ class TestPublisherIntegration:
         This is the EXACT bug scenario that occurred in production.
         """
         # Setup adapter (synthesizer not needed for this test)
+        from tests.test_level_adapter import FakeAdaptationResponse
+
         response_adapter_dict = sample_a2_article.model_dump()
         del response_adapter_dict['base_article']
         del response_adapter_dict['topic']
         del response_adapter_dict['sources']
         del response_adapter_dict['level']
-        mock_adapter_call_llm.return_value = json.dumps(response_adapter_dict)
+        mock_adapter_call_llm.return_value = FakeAdaptationResponse(**response_adapter_dict)
 
         # Execute
         adapter = LevelAdapter(base_config, mock_logger)
