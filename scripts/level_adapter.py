@@ -7,16 +7,16 @@ Uses different strategies per level:
 - B1: Light adaptation with vocabulary support
 """
 
-import json
 import logging
-from typing import Dict, List, Optional, Union, cast
+from typing import Dict, List, Optional
 
-from openai import OpenAI
-from anthropic import Anthropic
+from langchain_core.prompts import ChatPromptTemplate
+from pydantic import BaseModel, Field
 
 from scripts.models import BaseArticle, AdaptedArticle, Topic
 from scripts.config import AppConfig
 from scripts.text_utils import ensure_vocabulary_bolded
+from scripts.llm_factory import create_chat_model, with_structured_output
 
 
 class LevelAdapter:
@@ -28,31 +28,8 @@ class LevelAdapter:
         self.llm_config = config.llm.model_dump()
         self.generation_config = config.generation.model_dump()
 
-        # Initialize LLM client
-        self._init_llm_client()
-
-    def _init_llm_client(self):
-        """Initialize LLM client (Anthropic or OpenAI) based on config"""
-        provider = self.llm_config['provider']
-
-        if provider == 'anthropic':
-            api_key = self.llm_config.get('anthropic_api_key')
-            if not api_key:
-                raise ValueError("Missing ANTHROPIC_API_KEY in config/environment")
-
-            self.llm_client: Union[Anthropic, OpenAI] = Anthropic(api_key=api_key)
-            self.logger.info("Initialized Anthropic client for level adaptation")
-
-        elif provider == 'openai':
-            api_key = self.llm_config.get('openai_api_key')
-            if not api_key:
-                raise ValueError("Missing OPENAI_API_KEY in config/environment")
-
-            self.llm_client = OpenAI(api_key=api_key)
-            self.logger.info("Initialized OpenAI client for level adaptation")
-
-        else:
-            raise ValueError(f"Unknown LLM provider: {provider}")
+        self.temperature = self.llm_config.get('temperature', 0.3)
+        self._init_chains()
 
     def adapt_to_level(
         self,
@@ -105,10 +82,8 @@ class LevelAdapter:
         if feedback:
             self.logger.debug(f"A2 adaptation with feedback: {len(feedback)} issues")
 
-        response = self._call_llm(prompt)
-        article = self._parse_adaptation_response(
-            response, base_article, 'A2'
-        )
+        response = self._call_llm(prompt, level='A2')
+        article = self._build_adapted_article(response, base_article, 'A2')
 
         word_count = len(article.content.split())
         vocab_count = len(article.vocabulary)
@@ -135,10 +110,8 @@ class LevelAdapter:
         if feedback:
             self.logger.debug(f"B1 adaptation with feedback: {len(feedback)} issues")
 
-        response = self._call_llm(prompt)
-        article = self._parse_adaptation_response(
-            response, base_article, 'B1'
-        )
+        response = self._call_llm(prompt, level='B1')
+        article = self._build_adapted_article(response, base_article, 'B1')
 
         word_count = len(article.content.split())
         vocab_count = len(article.vocabulary)
@@ -146,97 +119,64 @@ class LevelAdapter:
 
         return article
 
-    def _call_llm(self, prompt: str, temperature: float = 0.3) -> str:
-        """Call LLM for level adaptation"""
+    def _init_chains(self) -> None:
+        """Initialize LangChain structured-output chains for A2 and B1 adaptation."""
         # Use adaptation model (can be cheaper than generation model)
-        model = self.llm_config['models'].get(
+        model_name = self.llm_config['models'].get(
             'adaptation',
-            self.llm_config['models']['generation']
+            self.llm_config['models']['generation'],
         )
-        max_tokens = self.llm_config.get('max_tokens', 4096)
-        provider = self.llm_config['provider']
+        chat_model = create_chat_model(self.llm_config, model_name, self.temperature)
 
+        class AdaptationResponse(BaseModel):
+            title: str = Field(..., description="Level-appropriate title")
+            content: str = Field(..., description="Level-adapted content")
+            vocabulary: Dict[str, str] = Field(
+                default_factory=dict,
+                description="Vocabulary glossary mapping term -> translation/explanation",
+            )
+            summary: str = Field(..., description="Level-appropriate summary")
+            reading_time: int = Field(..., description="Estimated reading time in minutes")
+
+        self._adaptation_model = AdaptationResponse
+        structured_llm = with_structured_output(chat_model, AdaptationResponse)
+
+        # Prompt template is shared; we inject the full prompt string from prompts.py
+        self.prompt_template = ChatPromptTemplate.from_messages(
+            [("user", "{prompt}")]
+        )
+        self.chain = self.prompt_template | structured_llm
+
+    def _call_llm(self, prompt: str, level: str) -> BaseModel:
+        """Call LLM for level adaptation and return structured response."""
         try:
-            if provider == 'anthropic':
-                client = cast(Anthropic, self.llm_client)
-                response = client.messages.create(
-                    model=model,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    messages=[{"role": "user", "content": prompt}]
-                )
-                # Extract text from first content block (should be TextBlock)
-                if response.content and len(response.content) > 0:
-                    first_block = response.content[0]
-                    if hasattr(first_block, 'text'):
-                        return first_block.text
-                    else:
-                        raise ValueError(f"Unexpected content block type: {type(first_block)}")
-                else:
-                    raise ValueError("Empty response from Anthropic API")
-
-            elif provider == 'openai':
-                client = cast(OpenAI, self.llm_client)  # type: ignore[assignment]
-                response = client.chat.completions.create(  # type: ignore[attr-defined]
-                    model=model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=temperature,
-                    max_tokens=max_tokens
-                )
-                content = response.choices[0].message.content
-                if content is None:
-                    raise ValueError("Empty response from OpenAI API")
-                return content  # type: ignore[no-any-return]
-
-            else:
-                raise ValueError(f"Unknown provider: {provider}")
-
+            return self.chain.invoke({"prompt": prompt})
         except Exception as e:
-            self.logger.error(f"LLM API call failed during level adaptation: {e}")
+            self.logger.error(f"LLM API call failed during {level} adaptation: {e}")
             raise
 
-    def _parse_adaptation_response(
+    def _build_adapted_article(
         self,
-        response: str,
+        response: BaseModel,
         base_article: BaseArticle,
         level: str
     ) -> AdaptedArticle:
-        """Parse adapted article response and merge with base metadata"""
-
-        # Extract JSON from response (handle markdown code blocks)
-        json_str = response
-
-        if '```json' in response:
-            json_str = response.split('```json')[1].split('```')[0]
-        elif '```' in response:
-            json_str = response.split('```')[1].split('```')[0]
-
+        """Convert structured adaptation response into AdaptedArticle with metadata."""
         try:
-            parsed = json.loads(json_str.strip())
+            parsed = response.model_dump()
 
-            # Ensure every vocabulary term is bolded in content (FSA post-processing)
             parsed["content"] = ensure_vocabulary_bolded(
                 parsed.get("content", ""),
                 parsed.get("vocabulary") or {},
             )
 
-            # Add level metadata
             parsed['level'] = level
-
-            # Inherit metadata from base article
             parsed['topic'] = base_article.topic.model_dump() if base_article.topic else None
             parsed['sources'] = [s.model_dump() for s in base_article.sources]
-
-            # Store base article for regeneration
             parsed['base_article'] = base_article.model_dump()
 
-            # Create AdaptedArticle instance, Pydantic handles validation and type coercion
             return AdaptedArticle(**parsed)
-
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Failed to parse adaptation response as JSON: {e}")
-            self.logger.debug(f"Response was: {response[:500]}")
-            raise ValueError(f"LLM returned invalid JSON during {level} adaptation: {e}")
         except Exception as e:
             self.logger.error(f"Invalid adapted article structure or Pydantic validation error: {e}")
             raise ValueError(f"Invalid adapted article structure or Pydantic validation error: {e}")
+
