@@ -62,6 +62,22 @@ is explicitly set.
 - **Name:** `ALERT_TELEGRAM_CHAT_ID`
 - **Value:** Telegram chat ID for your private chat, group, or channel (for example `123456789` or `-1001234567890`)
 
+### 4. Telegram Channel Publishing (Optional)
+
+These secrets are **separate from alert delivery** so article publishing can target a different Telegram channel. You may
+reuse the same bot token, but keep the publish secrets distinct from `ALERT_TELEGRAM_*` in GitHub Actions.
+
+The GitHub Pages deploy workflow publishes each newly added article to Telegram **after** the site deployment succeeds. The
+bot must already be added to the target channel as an **admin** with permission to post messages.
+
+#### TELEGRAM_PUBLISH_BOT_TOKEN
+- **Name:** `TELEGRAM_PUBLISH_BOT_TOKEN`
+- **Value:** Bot token from BotFather for the bot that should publish articles
+
+#### TELEGRAM_PUBLISH_CHAT_ID
+- **Name:** `TELEGRAM_PUBLISH_CHAT_ID`
+- **Value:** Target Telegram channel ID (for example `-1001234567890`)
+
 ## Verification
 
 After setting up secrets, you can verify they're configured by:
