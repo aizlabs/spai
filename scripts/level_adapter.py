@@ -16,6 +16,7 @@ from anthropic import Anthropic
 
 from scripts.models import BaseArticle, AdaptedArticle, Topic
 from scripts.config import AppConfig
+from scripts.text_utils import ensure_vocabulary_bolded
 
 
 class LevelAdapter:
@@ -212,6 +213,12 @@ class LevelAdapter:
 
         try:
             parsed = json.loads(json_str.strip())
+
+            # Ensure every vocabulary term is bolded in content (FSA post-processing)
+            parsed["content"] = ensure_vocabulary_bolded(
+                parsed.get("content", ""),
+                parsed.get("vocabulary") or {},
+            )
 
             # Add level metadata
             parsed['level'] = level
