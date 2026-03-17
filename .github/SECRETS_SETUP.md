@@ -20,7 +20,9 @@ Go to: **Settings** → **Secrets and variables** → **Actions** → **New repo
 
 ### 2. Email Notifications (Optional)
 
-These are used to send failure alerts. If you don't set these up, the workflow will still run but won't send email notifications.
+When **all three** of `ALERT_EMAIL`, `EMAIL_USERNAME`, and `EMAIL_PASSWORD` are set, the **pipeline's AlertManager** sends
+failure emails (not only the workflow step). The workflow's "Notify on failure" step is then skipped to avoid duplicate
+notifications. If you don't set these up, the workflow will still run but won't send email notifications.
 
 #### EMAIL_USERNAME
 - **Name:** `EMAIL_USERNAME`
@@ -38,6 +40,11 @@ These are used to send failure alerts. If you don't set these up, the workflow w
 #### ALERT_EMAIL
 - **Name:** `ALERT_EMAIL`
 - **Value:** Email address to receive alerts (can be same as EMAIL_USERNAME)
+
+#### Optional: ALERT_SMTP_HOST, ALERT_SMTP_PORT, ALERT_SENDER
+- **ALERT_SMTP_HOST:** SMTP host (default: `smtp.gmail.com`). Set for SendGrid, Mailgun, etc.
+- **ALERT_SMTP_PORT:** SMTP port (default: `587`).
+- **ALERT_SENDER:** From address for alert emails (e.g. `AutoSpanishBot <noreply@example.com>`). Used by the pipeline when set.
 
 ## Verification
 

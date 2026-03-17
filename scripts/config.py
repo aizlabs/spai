@@ -152,6 +152,42 @@ def apply_env_overrides(config_dict: Dict) -> Dict:
         config_dict.setdefault('alerts', {})
         config_dict['alerts']['email'] = alert_email
 
+    # Override alerts.enabled from ALERTS_ENABLED (CI)
+    alerts_enabled = os.getenv('ALERTS_ENABLED')
+    if alerts_enabled and str(alerts_enabled).strip().lower() == 'true':
+        config_dict.setdefault('alerts', {})
+        config_dict['alerts']['enabled'] = True
+
+    # Override alerts.email_config from env (CI / local)
+    config_dict.setdefault('alerts', {})
+    alerts = config_dict['alerts']
+    alerts.setdefault('email_config', {})
+    email_config = alerts['email_config']
+    email_config.setdefault('smtp', {})
+
+    sender = os.getenv('ALERT_SENDER')
+    if sender:
+        email_config['from'] = sender
+
+    smtp_host = os.getenv('ALERT_SMTP_HOST')
+    if smtp_host:
+        email_config['smtp']['host'] = smtp_host
+
+    smtp_port_raw = os.getenv('ALERT_SMTP_PORT')
+    if smtp_port_raw:
+        try:
+            email_config['smtp']['port'] = int(smtp_port_raw.strip())
+        except ValueError:
+            pass
+
+    smtp_user = os.getenv('ALERT_SMTP_USERNAME') or os.getenv('EMAIL_USERNAME')
+    if smtp_user:
+        email_config['smtp']['username'] = smtp_user
+
+    smtp_pass = os.getenv('ALERT_SMTP_PASSWORD') or os.getenv('EMAIL_PASSWORD')
+    if smtp_pass:
+        email_config['smtp']['password'] = smtp_pass
+
     return config_dict
 
 

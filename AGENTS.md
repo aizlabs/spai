@@ -35,7 +35,7 @@
 
 ## Security & Configuration
 - Secrets live in `.env`; never commit keys. Use `.env.example` to document new variables.
-- Config layering: `config/base.yaml` → `config/local.yaml` → environment variables. Local defaults: `quality_gate.min_score: 7.5`, `quality_gate.max_attempts: 3`, `generation.articles_per_run: 2` (prod uses 4), target words `A2: 200`, `B1: 300`.
+- Config layering: `config/base.yaml` → `config/local.yaml` → environment variables. Local defaults: `quality_gate.min_score: 7.5`, `quality_gate.max_attempts: 3`, `generation.articles_per_run: 2` (prod uses 4), target words `A2: 200`, `B1: 300`. Alert config (`alerts.enabled`, `alerts.email`, `alerts.email_config.smtp`) can be overridden by `ALERTS_ENABLED`, `ALERT_EMAIL`, `ALERT_SMTP_*`, and `EMAIL_USERNAME`/`EMAIL_PASSWORD` when set.
 - Validate `config/sources.yaml` entries before running; a bad feed URL will halt discovery.
 - Lower thresholds locally (e.g., `min_score: 6.0`) to iterate faster; revert before committing.
 - Generated content can include URLs—strip or normalize domains before publishing changes to formatting.
