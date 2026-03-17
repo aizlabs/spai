@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 from scripts.config import AppConfig
 from scripts.models import AlertsConfig
@@ -139,6 +139,46 @@ class AlertManager:
             return
 
         self._update_cooldown(alert_key)
+
+    def send_success_summary(
+        self,
+        *,
+        run_id: str,
+        duration_seconds: float,
+        attempted: int,
+        published: int,
+        rejected: int,
+        regenerations: int,
+        published_articles: Sequence[Tuple[str, str]],
+    ) -> None:
+        """Send a short success email when the pipeline published at least one article."""
+
+        if published == 0:
+            return
+
+        if not self.enabled:
+            self.logger.warning("Alert delivery is disabled; not sending email.")
+            return
+
+        levels_str = ", ".join(sorted({level for _title, level in published_articles}))
+        body_lines = [
+            "AutoSpanishBlog – generation success",
+            "",
+            f"Run: {run_id} | Duration: {duration_seconds:.0f}s",
+            f"Articles: {published} published (from {attempted} attempts, {rejected} rejected, {regenerations} regenerations)",
+            f"Levels: {levels_str}",
+            "",
+            "Titles:",
+        ]
+        for title, level in published_articles:
+            body_lines.append(f"  - [{level}] {title}")
+        body_lines.append("")
+        body_lines.append("---")
+        body_lines.append("AutoSpanishBlog Alert System")
+        body = "\n".join(body_lines)
+
+        subject = f"AutoSpanishBlog – generation success – {published} article(s)"
+        self._send_email(subject=subject, body=body, priority="normal")
 
     def _format_alert_body(self, message: str, context: Optional[Dict[str, Any]], severity: str) -> str:
         body = (
