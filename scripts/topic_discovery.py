@@ -19,6 +19,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import quote
 import logging
 import re
+import html
+
+from scripts.topic_utils import is_noisy_topic_keyword
 
 
 class TopicDiscoverer:
@@ -296,15 +299,37 @@ class TopicDiscoverer:
     
     def _extract_keywords(self, headlines: List[Dict]) -> List[str]:
         """Extract common keywords from headlines"""
-        all_text = ' '.join([h['text'] + ' ' + h.get('summary', '') for h in headlines])
+        def _strip_html(text: str) -> str:
+            """Best-effort removal of HTML tags and decoding of entities."""
+            if not text:
+                return ""
+            # Decode basic HTML entities first
+            text = html.unescape(text)
+            # Remove all tags like <a ...>, </p>, <img ...>, etc.
+            text = re.sub(r"<[^>]+>", " ", text)
+            # Collapse excessive whitespace
+            return re.sub(r"\s+", " ", text).strip()
+
+        parts = []
+        for h in headlines:
+            title = h.get("text", "")
+            summary = _strip_html(h.get("summary", ""))
+            if title:
+                parts.append(title)
+            if summary:
+                parts.append(summary)
+
+        all_text = " ".join(parts)
         doc = self.nlp(all_text)
         
         # Get entities
         entities = [ent.text for ent in doc.ents if len(ent.text) > 2]
-        
-        # Count and return top 10
+
+        # Count and return top 10, then filter with shared noise detector
         counter = Counter(entities)
-        return [word for word, count in counter.most_common(10)]
+        raw_keywords = [word for word, count in counter.most_common(10)]
+        cleaned_keywords = [kw for kw in raw_keywords if not is_noisy_topic_keyword(kw)]
+        return cleaned_keywords
     
     def _rank_topics(self, topics: List[Dict]) -> List[Dict]:
         """Rank topics by learnability"""

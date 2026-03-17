@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 
 from scripts.models import AdaptedArticle
 from scripts.config import AppConfig
+from scripts.topic_utils import is_noisy_topic_keyword
 
 
 class Publisher:
@@ -298,13 +299,14 @@ reading_time: {article.reading_time}
         import json
 
         # Try to infer topics from article topic data
-        # Use 'or {}' to handle None case (when topic is explicitly None)
+        # Use 'or []' to handle None keywords (model default)
         topic_data = article.topic
-        keywords = topic_data.keywords if topic_data else []
+        raw_keywords = (topic_data.keywords or []) if topic_data else []
+        filtered_keywords = [k for k in raw_keywords if not is_noisy_topic_keyword(k)]
 
-        if keywords:
+        if filtered_keywords:
             # Take first 3 keywords, lowercased
-            topics = [k.lower() for k in keywords[:3]]
+            topics = [k.lower() for k in filtered_keywords[:3]]
             # Use JSON serialization for proper YAML compatibility
             # This handles apostrophes, quotes, and special characters correctly
             return json.dumps(topics)
