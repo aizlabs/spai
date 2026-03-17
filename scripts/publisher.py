@@ -298,9 +298,9 @@ reading_time: {article.reading_time}
         import json
 
         # Try to infer topics from article topic data
-        # Use 'or {}' to handle None case (when topic is explicitly None)
+        # Use 'or []' to handle None keywords (model default)
         topic_data = article.topic
-        raw_keywords = topic_data.keywords if topic_data else []
+        raw_keywords = (topic_data.keywords or []) if topic_data else []
 
         def _is_valid_topic_keyword(keyword: str) -> bool:
             """Filter out URL/HTML-like artefacts before serializing topics."""
