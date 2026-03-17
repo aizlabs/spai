@@ -38,6 +38,15 @@ class TestEnsureVocabularyBoldedBasic:
             == "El **índice (IPC)** sube."
         )
 
+    def test_inflected_form_in_vocab_bolds_whole_word_only(self):
+        content = "las tasas suben"
+        vocab = {"tasas": "rates"}
+        # Glossary has "tasas"; match whole word only → bold "tasas"
+        assert (
+            ensure_vocabulary_bolded(content, vocab)
+            == "las **tasas** suben"
+        )
+
 
 class TestEnsureVocabularyBoldedEdgeCases:
     """Tricky edge cases (FSA and string match)."""
@@ -81,19 +90,17 @@ class TestEnsureVocabularyBoldedEdgeCases:
         # We are inside_bold after **, so "tasa" is not wrapped
         assert ensure_vocabulary_bolded(content, vocab) == "**tasa sube"
 
-    def test_term_as_prefix_of_longer_word_prefix_match(self):
+    def test_term_as_prefix_of_longer_word_no_match(self):
         content = "las tasas suben"
         vocab = {"tasa": "rate"}
-        # Current spec: starts with term → wrap (prefix match)
-        assert (
-            ensure_vocabulary_bolded(content, vocab)
-            == "las **tasa**s suben"
-        )
+        # Word boundary: "tasa" is prefix of "tasas", so do not bold (keep original form)
+        assert ensure_vocabulary_bolded(content, vocab) == "las tasas suben"
 
-    def test_unicode_accents_prefix_match(self):
+    def test_unicode_accents_prefix_of_longer_word_no_match(self):
         content = "años"
         vocab = {"año": "year"}
-        assert ensure_vocabulary_bolded(content, vocab) == "**año**s"
+        # Word boundary: "año" is prefix of "años", so do not bold
+        assert ensure_vocabulary_bolded(content, vocab) == "años"
 
     def test_unicode_accents_separate_word(self):
         content = "el año pasado"
