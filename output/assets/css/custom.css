@@ -586,6 +586,8 @@
   .filter-section,
   .pagination,
   .article-meta,
+  .article-card .article-meta,
+  .page__inner-wrap > header .article-meta,
   .page__share {
     display: none;
   }
