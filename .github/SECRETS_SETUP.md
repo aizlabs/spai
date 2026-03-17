@@ -48,6 +48,20 @@ won't send email notifications.
 - **ALERT_SMTP_PORT:** SMTP port (default: `587`).
 - **ALERT_SENDER:** From address for alert emails (e.g. `AutoSpanishBot <noreply@example.com>`). Used by the pipeline when set.
 
+### 3. Telegram Notifications (Optional)
+
+When **both** `ALERT_TELEGRAM_BOT_TOKEN` and `ALERT_TELEGRAM_CHAT_ID` are set, the **pipeline's AlertManager** sends the same
+success and failure alerts to Telegram. These secrets also auto-enable pipeline alert delivery, unless `ALERTS_ENABLED=false`
+is explicitly set.
+
+#### ALERT_TELEGRAM_BOT_TOKEN
+- **Name:** `ALERT_TELEGRAM_BOT_TOKEN`
+- **Value:** Bot token from BotFather (for example `123456:ABC...`)
+
+#### ALERT_TELEGRAM_CHAT_ID
+- **Name:** `ALERT_TELEGRAM_CHAT_ID`
+- **Value:** Telegram chat ID for your private chat, group, or channel (for example `123456789` or `-1001234567890`)
+
 ## Verification
 
 After setting up secrets, you can verify they're configured by:

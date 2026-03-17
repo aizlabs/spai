@@ -20,6 +20,11 @@ def _base_alerts_dict():
                 "password": "",
             },
         },
+        "telegram": {
+            "enabled": False,
+            "bot_token": None,
+            "chat_id": None,
+        },
     }
 
 
@@ -192,3 +197,51 @@ def test_email_config_unchanged_when_no_smtp_env(monkeypatch):
     config = {"alerts": {"enabled": False, "email": "y@example.com", "cooldown_hours": 6}}
     apply_env_overrides(config)
     assert "email_config" not in config["alerts"]
+
+
+def test_telegram_env_overrides_enable_telegram_and_alerts(monkeypatch):
+    """Telegram secrets enable Telegram delivery and global alerts by default."""
+    monkeypatch.setenv("ALERT_TELEGRAM_BOT_TOKEN", "bot-token")
+    monkeypatch.setenv("ALERT_TELEGRAM_CHAT_ID", "-1001234567890")
+    try:
+        config = {"alerts": _base_alerts_dict()}
+        apply_env_overrides(config)
+        telegram = config["alerts"]["telegram"]
+        assert telegram["bot_token"] == "bot-token"
+        assert telegram["chat_id"] == "-1001234567890"
+        assert telegram["enabled"] is True
+        assert config["alerts"]["enabled"] is True
+    finally:
+        monkeypatch.delenv("ALERT_TELEGRAM_BOT_TOKEN", raising=False)
+        monkeypatch.delenv("ALERT_TELEGRAM_CHAT_ID", raising=False)
+
+
+def test_telegram_env_does_not_enable_when_incomplete(monkeypatch):
+    """A partial Telegram secret set should not auto-enable Telegram delivery."""
+    monkeypatch.setenv("ALERT_TELEGRAM_BOT_TOKEN", "bot-token")
+    try:
+        config = {"alerts": _base_alerts_dict()}
+        apply_env_overrides(config)
+        telegram = config["alerts"]["telegram"]
+        assert telegram["bot_token"] == "bot-token"
+        assert telegram["enabled"] is False
+        assert config["alerts"]["enabled"] is False
+    finally:
+        monkeypatch.delenv("ALERT_TELEGRAM_BOT_TOKEN", raising=False)
+
+
+def test_telegram_env_respects_explicit_alerts_disabled(monkeypatch):
+    """ALERTS_ENABLED=false should still suppress all alert delivery."""
+    monkeypatch.setenv("ALERTS_ENABLED", "false")
+    monkeypatch.setenv("ALERT_TELEGRAM_BOT_TOKEN", "bot-token")
+    monkeypatch.setenv("ALERT_TELEGRAM_CHAT_ID", "chat-id")
+    try:
+        config = {"alerts": _base_alerts_dict()}
+        apply_env_overrides(config)
+        telegram = config["alerts"]["telegram"]
+        assert telegram["enabled"] is True
+        assert config["alerts"]["enabled"] is False
+    finally:
+        monkeypatch.delenv("ALERTS_ENABLED", raising=False)
+        monkeypatch.delenv("ALERT_TELEGRAM_BOT_TOKEN", raising=False)
+        monkeypatch.delenv("ALERT_TELEGRAM_CHAT_ID", raising=False)

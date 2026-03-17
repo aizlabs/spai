@@ -19,12 +19,14 @@ jobs:
     timeout-minutes: 30
 
     env:
-      ALERTS_ENABLED: ${{ secrets.ALERT_EMAIL != '' && secrets.EMAIL_USERNAME != '' && secrets.EMAIL_PASSWORD != '' }}
+      ALERTS_ENABLED: ${{ (secrets.ALERT_EMAIL != '' && secrets.EMAIL_USERNAME != '' && secrets.EMAIL_PASSWORD != '') || (secrets.ALERT_TELEGRAM_BOT_TOKEN != '' && secrets.ALERT_TELEGRAM_CHAT_ID != '') }}
       ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
       EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
       EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
       ALERT_SMTP_HOST: ${{ secrets.ALERT_SMTP_HOST || 'smtp.gmail.com' }}
       ALERT_SMTP_PORT: ${{ secrets.ALERT_SMTP_PORT || 587 }}
+      ALERT_TELEGRAM_BOT_TOKEN: ${{ secrets.ALERT_TELEGRAM_BOT_TOKEN }}
+      ALERT_TELEGRAM_CHAT_ID: ${{ secrets.ALERT_TELEGRAM_CHAT_ID }}
 
     permissions:
       contents: write  # Needed to commit and push files
@@ -77,6 +79,8 @@ jobs:
           ALERT_SMTP_TLS: ${{ secrets.ALERT_SMTP_TLS || true }}
           ALERT_SMTP_USERNAME: ${{ secrets.EMAIL_USERNAME }}
           ALERT_SMTP_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          ALERT_TELEGRAM_BOT_TOKEN: ${{ secrets.ALERT_TELEGRAM_BOT_TOKEN }}
+          ALERT_TELEGRAM_CHAT_ID: ${{ secrets.ALERT_TELEGRAM_CHAT_ID }}
         run: |
           uv run spai-pipeline
 

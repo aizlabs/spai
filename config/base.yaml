@@ -83,6 +83,7 @@ metrics:
   output: output/metrics/
 
 # Alerts (in CI, enabled and email_config.smtp can be overridden by ALERTS_ENABLED, ALERT_SMTP_*, EMAIL_USERNAME, EMAIL_PASSWORD)
+# Telegram alerts are configured in YAML via alerts.telegram.*
 alerts:
   enabled: false                  # Global toggle for alert delivery
   email: your@email.com           # Recipient for alert emails (can be overridden via ALERT_EMAIL)
@@ -94,3 +95,7 @@ alerts:
       port: 587                   # SMTP port
       username: ""                # SMTP username (required when server enforces auth)
       password: ""                # SMTP password (required when server enforces auth)
+  telegram:
+    enabled: false                # Send the same pipeline alerts to Telegram
+    bot_token: ""                 # Telegram bot token from BotFather
+    chat_id: ""                   # Telegram chat or channel ID to receive alerts

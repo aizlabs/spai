@@ -71,11 +71,10 @@ class AlertManager:
             self.logger.warning("Alert delivery is disabled; not sending email.")
             return
 
-        self._send_email(
-            subject=f"🚨 CRITICAL: AutoSpanishBlog - {message}",
-            body=self._format_alert_body(message, context, "CRITICAL"),
-            priority="high",
-        )
+        subject = f"🚨 CRITICAL: AutoSpanishBlog - {message}"
+        body = self._format_alert_body(message, context, "CRITICAL")
+        self._send_email(subject=subject, body=body, priority="high")
+        self._send_telegram_alert(subject=subject, body=body)
 
     def send_failure_alert(
         self,
@@ -105,11 +104,9 @@ class AlertManager:
             + "\n\nTraceback:\n"
             + traceback_text
         )
-        self._send_email(
-            subject=f"❌ ERROR: AutoSpanishBlog - {message} ({environment}) - {run_id}",
-            body=body,
-            priority="high",
-        )
+        subject = f"❌ ERROR: AutoSpanishBlog - {message} ({environment}) - {run_id}"
+        self._send_email(subject=subject, body=body, priority="high")
+        self._send_telegram_alert(subject=subject, body=body)
 
     def send_error(self, message: str, context: Optional[Dict[str, Any]] = None) -> None:
         """Send an error alert (respects cooldown)."""
@@ -123,10 +120,10 @@ class AlertManager:
         if self._check_cooldown(alert_key):
             return
 
-        self._send_email(
-            subject=f"❌ ERROR: AutoSpanishBlog - {message}",
-            body=self._format_alert_body(message, context, "ERROR"),
-        )
+        subject = f"❌ ERROR: AutoSpanishBlog - {message}"
+        body = self._format_alert_body(message, context, "ERROR")
+        self._send_email(subject=subject, body=body)
+        self._send_telegram_alert(subject=subject, body=body)
         self._update_cooldown(alert_key)
 
     def send_warning(self, message: str, context: Optional[Dict[str, Any]] = None) -> None:
@@ -179,6 +176,7 @@ class AlertManager:
 
         subject = f"AutoSpanishBlog – generation success – {published} article(s)"
         self._send_email(subject=subject, body=body, priority="normal")
+        self._send_telegram_alert(subject=subject, body=body)
 
     def _format_alert_body(self, message: str, context: Optional[Dict[str, Any]], severity: str) -> str:
         body = (
@@ -247,6 +245,9 @@ class AlertManager:
                 exc_info=(exc.__class__, exc, exc.__traceback__),
             )
 
+    def _send_telegram_alert(self, subject: str, body: str) -> None:
+        self.send_telegram(f"{subject}\n\n{body}")
+
     def send_telegram(self, message: str) -> None:
         telegram_config = self.alerts_config.telegram
 
@@ -263,7 +264,7 @@ class AlertManager:
             import requests
 
             url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-            data = {"chat_id": chat_id, "text": message, "parse_mode": "Markdown"}
+            data = {"chat_id": chat_id, "text": message}
 
             response = requests.post(url, json=data, timeout=10)
             response.raise_for_status()

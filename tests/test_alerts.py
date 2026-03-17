@@ -3,7 +3,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from scripts.alerts import AlertManager
-from scripts.models import AlertsConfig, EmailConfig, SMTPConfig
+from scripts.models import AlertsConfig, EmailConfig, SMTPConfig, TelegramConfig
 
 
 class DummySMTP:
@@ -107,6 +107,33 @@ def test_send_failure_alert_sends_email(monkeypatch):
     assert "Traceback:" in captured["body"]
 
 
+def test_send_failure_alert_sends_telegram(monkeypatch):
+    captured = {}
+
+    def fake_send_telegram(self, message):
+        captured["message"] = message
+
+    alerts_config = AlertsConfig(
+        enabled=True,
+        telegram=TelegramConfig(enabled=True, bot_token="token", chat_id="chat-id"),
+    )
+    config = SimpleNamespace(alerts=alerts_config, logging={})
+    alert_manager = AlertManager(config=config, logger=logging.getLogger("alerts-test"))
+
+    monkeypatch.setattr(AlertManager, "send_telegram", fake_send_telegram)
+
+    alert_manager.send_failure_alert(
+        run_id="run-123",
+        environment="production",
+        stage="synthesis",
+        exception=ValueError("bad json"),
+    )
+
+    assert "run-123" in captured["message"]
+    assert "Pipeline failure" in captured["message"]
+    assert "Traceback:" in captured["message"]
+
+
 def test_send_success_summary_sends_email_when_enabled(monkeypatch):
     captured = {}
 
@@ -147,6 +174,37 @@ def test_send_success_summary_sends_email_when_enabled(monkeypatch):
     assert "A2" in captured["body"] and "B1" in captured["body"]
     assert "[A2] Article One" in captured["body"]
     assert "[B1] Article Two" in captured["body"]
+
+
+def test_send_success_summary_sends_telegram_when_enabled(monkeypatch):
+    captured = {}
+
+    def fake_send_telegram(self, message):
+        captured["message"] = message
+
+    alerts_config = AlertsConfig(
+        enabled=True,
+        telegram=TelegramConfig(enabled=True, bot_token="token", chat_id="chat-id"),
+    )
+    config = SimpleNamespace(alerts=alerts_config, logging={})
+    alert_manager = AlertManager(config=config, logger=logging.getLogger("alerts-test"))
+
+    monkeypatch.setattr(AlertManager, "send_telegram", fake_send_telegram)
+
+    alert_manager.send_success_summary(
+        run_id="run-456",
+        duration_seconds=120.5,
+        attempted=3,
+        published=2,
+        rejected=1,
+        regenerations=1,
+        published_articles=[("Article One", "A2"), ("Article Two", "B1")],
+    )
+
+    assert "generation success" in captured["message"]
+    assert "run-456" in captured["message"]
+    assert "[A2] Article One" in captured["message"]
+    assert "[B1] Article Two" in captured["message"]
 
 
 def test_send_success_summary_does_not_send_when_published_zero(monkeypatch):
