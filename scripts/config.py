@@ -152,6 +152,48 @@ def apply_env_overrides(config_dict: Dict) -> Dict:
         config_dict.setdefault('alerts', {})
         config_dict['alerts']['email'] = alert_email
 
+    # Override alerts.enabled from ALERTS_ENABLED (CI)
+    alerts_enabled = os.getenv('ALERTS_ENABLED')
+    if alerts_enabled is not None and alerts_enabled != '':
+        normalized = str(alerts_enabled).strip().lower()
+        if normalized == 'true':
+            config_dict.setdefault('alerts', {})
+            config_dict['alerts']['enabled'] = True
+        elif normalized == 'false':
+            config_dict.setdefault('alerts', {})
+            config_dict['alerts']['enabled'] = False
+
+    # Override alerts.email_config from env only when at least one SMTP-related var is set.
+    # Otherwise we would inject a non-None email_config and bypass the "no email configured" guard in alerts.py.
+    _sender = os.getenv('ALERT_SENDER')
+    _smtp_host = os.getenv('ALERT_SMTP_HOST')
+    _smtp_port = os.getenv('ALERT_SMTP_PORT')
+    _smtp_user = os.getenv('ALERT_SMTP_USERNAME') or os.getenv('EMAIL_USERNAME')
+    _smtp_pass = os.getenv('ALERT_SMTP_PASSWORD') or os.getenv('EMAIL_PASSWORD')
+    if _sender or _smtp_host or _smtp_port or _smtp_user or _smtp_pass:
+        config_dict.setdefault('alerts', {})
+        alerts = config_dict['alerts']
+        if alerts.get('email_config') is None:
+            alerts['email_config'] = {}
+        email_config = alerts['email_config']
+        if email_config.get('smtp') is None:
+            email_config['smtp'] = {}
+        email_config.setdefault('smtp', {})
+
+        if _sender:
+            email_config['from'] = _sender
+        if _smtp_host:
+            email_config['smtp']['host'] = _smtp_host
+        if _smtp_port:
+            try:
+                email_config['smtp']['port'] = int(_smtp_port.strip())
+            except ValueError:
+                pass
+        if _smtp_user:
+            email_config['smtp']['username'] = _smtp_user
+        if _smtp_pass:
+            email_config['smtp']['password'] = _smtp_pass
+
     return config_dict
 
 

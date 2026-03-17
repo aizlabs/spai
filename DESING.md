@@ -1147,6 +1147,8 @@ generation:
   articles_per_run: 4
 ```
 
+In GitHub Actions, alert settings are overridden from environment variables (`ALERTS_ENABLED`, `ALERT_EMAIL`, `ALERT_SMTP_*`, `EMAIL_USERNAME`, `EMAIL_PASSWORD`), so AlertManager can send failure emails without a separate secrets YAML.
+
 ### Local Development
 
 **Setup:**
