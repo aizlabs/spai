@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 
 from scripts.config import AppConfig
 from scripts.models import AdaptedArticle
-from scripts.text_utils import normalize_vocabulary_term
+from scripts.text_utils import normalize_vocabulary_term, slugify_text
 from scripts.topic_utils import is_noisy_topic_keyword
 
 
@@ -88,34 +88,11 @@ class Publisher:
 
         # Create slug from title
         title = article.title
-        slug = self._slugify(title)[:50]  # Max 50 chars
+        slug = slugify_text(title)[:50]  # Max 50 chars
 
         level = article.level.lower()
 
         return f"{timestamp_str}-{slug}-{level}.md"
-
-    def _slugify(self, text: str) -> str:
-        """Convert text to URL-safe slug"""
-        # Remove accents and convert to ASCII
-        text = text.lower()
-
-        # Spanish character replacements
-        replacements = {
-            'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
-            'ñ': 'n', 'ü': 'u',
-            '¿': '', '¡': '', '?': '', '!': ''
-        }
-
-        for old, new in replacements.items():
-            text = text.replace(old, new)
-
-        # Replace non-alphanumeric with hyphens
-        text = re.sub(r'[^a-z0-9]+', '-', text)
-
-        # Remove leading/trailing hyphens
-        text = text.strip('-')
-
-        return text
 
     def _escape_yaml_string(self, text: str) -> str:
         """
@@ -276,6 +253,7 @@ date: {date_str}
 level: {article.level}
 topics: {self._format_topics(article)}
 {self._format_sources(article.sources)}
+{self._format_audio(article)}
 reading_time: {article.reading_time}
 ---
 
@@ -393,6 +371,29 @@ reading_time: {article.reading_time}
                 escaped_url = self._escape_yaml_string(url)
                 lines.append(f"  url: \"{escaped_url}\"")
 
+        return '\n'.join(lines)
+
+    def _format_audio(self, article: AdaptedArticle) -> str:
+        """Format website audio metadata for YAML frontmatter."""
+        if not self.config.audio.website.enabled:
+            return 'audio: null'
+
+        audio = article.audio
+        if not audio or not audio.url:
+            return 'audio: null'
+
+        lines = ['audio:']
+        lines.append(f'  url: "{self._escape_yaml_string(audio.url)}"')
+        if audio.format:
+            lines.append(f'  format: "{self._escape_yaml_string(audio.format)}"')
+        if audio.mime_type:
+            lines.append(f'  mime_type: "{self._escape_yaml_string(audio.mime_type)}"')
+        if audio.provider:
+            lines.append(f'  provider: "{self._escape_yaml_string(audio.provider)}"')
+        if audio.voice:
+            lines.append(f'  voice: "{self._escape_yaml_string(audio.voice)}"')
+        if audio.duration_seconds is not None:
+            lines.append(f'  duration_seconds: {audio.duration_seconds}')
         return '\n'.join(lines)
 
     def _format_attribution(self, sources) -> str:

@@ -18,22 +18,24 @@ Usage:
 import os
 import sys
 import time
-from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from pathlib import Path
+from typing import List, Optional, Tuple
 
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from alerts import AlertManager
-from config import load_config  # type: ignore[attr-defined]
+from audio_pipeline import AudioPipeline
 from content_fetcher import ContentFetcher
 from content_generator import ContentGenerator
 from logger import setup_logger
-from models import AdaptedArticle, QualityResult, Topic, SourceArticle
+from models import AdaptedArticle, QualityResult
 from publisher import Publisher
 from quality_gate import QualityGate
 from topic_discovery import TopicDiscoverer
+
+from config import load_config  # type: ignore[attr-defined]
 
 
 def detect_environment() -> str:
@@ -101,6 +103,7 @@ def main():
         fetcher = ContentFetcher(config, logger)
         generator = ContentGenerator(config, logger)
         quality_gate = QualityGate(config, logger)
+        audio_pipeline = AudioPipeline(config, logger)
         publisher = Publisher(config, logger, dry_run=dry_run)
 
         logger.info("✓ All components initialized")
@@ -191,22 +194,28 @@ def main():
                     stats['total_quality_score'] += quality_result.score
                     stats['regenerations'] += (quality_result.attempts - 1)
 
-                    logger.info(f"✅ Quality check passed!")
+                    logger.info("✅ Quality check passed!")
                     logger.info(f"  Score: {quality_result.score:.1f}/10")
                     logger.info(f"  Attempts: {quality_result.attempts}")
                     if quality_result.strengths:
                         logger.info(f"  Strengths: {', '.join(quality_result.strengths[:2])}")
                     logger.info("")
 
+                    # Optional website audio preparation
+                    if config.audio.enabled:
+                        logger.info("Phase 5: Preparing website audio metadata...")
+                        final_article = audio_pipeline.prepare_for_publish(final_article)
+                        logger.info("")
+
                     # Phase 5: Publish
                     current_stage = f"publishing:{level}"
-                    logger.info("Phase 5: Publishing...")
+                    logger.info("Phase 6: Publishing...")
                     is_published = publisher.save_article(final_article)
 
                     if is_published:
                         stats['published'] += 1
                         published_articles.append((final_article.title, level))
-                        logger.info(f"✅ Published successfully!")
+                        logger.info("✅ Published successfully!")
 
                         # Check if target reached after each publication
                         if stats['published'] >= target_articles:
@@ -227,11 +236,11 @@ def main():
                 else:
                     # Quality failed
                     stats['rejected'] += 1
-                    logger.warning(f"❌ Quality check failed")
+                    logger.warning("❌ Quality check failed")
                     logger.warning(f"  Score: {quality_result.score:.1f}/10 (min: {config.quality_gate.min_score})")
                     logger.warning(f"  Attempts: {quality_result.attempts}")
                     if quality_result.issues:
-                        logger.warning(f"  Issues:")
+                        logger.warning("  Issues:")
                         for issue in quality_result.issues[:3]:
                             logger.warning(f"    - {issue}")
 
@@ -249,7 +258,7 @@ def main():
         logger.info("Pipeline Completed Successfully")
         logger.info("=" * 60)
         logger.info("")
-        logger.info(f"✨ Summary:")
+        logger.info("✨ Summary:")
         logger.info(f"   Articles attempted:  {stats['attempted']}")
         logger.info(f"   Articles published:  {stats['published']}")
         logger.info(f"   Articles rejected:   {stats['rejected']}")

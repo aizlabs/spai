@@ -55,6 +55,23 @@ quality_gate:
   min_score: 7.5
   max_attempts: 3
 
+# Audio preparation (website first; Telegram and podcast later)
+audio:
+  enabled: false
+  provider: elevenlabs
+  voice: ""
+  format: mp3
+  output_path: ./output/audio
+  include_vocabulary: false
+  upload_enabled: false
+  public_base_url: https://media.spaili.com
+  s3:
+    bucket: ""
+    region: ""
+    prefix: articles
+  website:
+    enabled: true
+
 # LLM configuration
 llm:
   provider: openai  # or 'anthropic'

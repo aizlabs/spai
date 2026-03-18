@@ -1,6 +1,5 @@
 """Tests for config loading and environment overrides."""
 
-import pytest
 
 from scripts.config import apply_env_overrides
 
@@ -37,6 +36,44 @@ def test_alert_email_override(monkeypatch):
         assert config["alerts"]["email"] == "alerts@example.com"
     finally:
         monkeypatch.delenv("ALERT_EMAIL", raising=False)
+
+
+def test_audio_env_overrides(monkeypatch):
+    """Audio-related env vars populate the audio config subtree."""
+    monkeypatch.setenv("AUDIO_ENABLED", "true")
+    monkeypatch.setenv("AUDIO_PROVIDER", "elevenlabs")
+    monkeypatch.setenv("AUDIO_VOICE", "newsreader")
+    monkeypatch.setenv("AUDIO_FORMAT", "mp3")
+    monkeypatch.setenv("AUDIO_UPLOAD_ENABLED", "false")
+    monkeypatch.setenv("AUDIO_PUBLIC_BASE_URL", "https://media.spaili.com")
+    monkeypatch.setenv("AUDIO_S3_BUCKET", "spaili-audio-prod")
+    monkeypatch.setenv("AUDIO_S3_REGION", "eu-central-1")
+    monkeypatch.setenv("AUDIO_S3_PREFIX", "articles")
+    try:
+        config = {}
+        apply_env_overrides(config)
+        assert config["audio"]["enabled"] is True
+        assert config["audio"]["provider"] == "elevenlabs"
+        assert config["audio"]["voice"] == "newsreader"
+        assert config["audio"]["format"] == "mp3"
+        assert config["audio"]["upload_enabled"] is False
+        assert config["audio"]["public_base_url"] == "https://media.spaili.com"
+        assert config["audio"]["s3"]["bucket"] == "spaili-audio-prod"
+        assert config["audio"]["s3"]["region"] == "eu-central-1"
+        assert config["audio"]["s3"]["prefix"] == "articles"
+    finally:
+        for key in (
+            "AUDIO_ENABLED",
+            "AUDIO_PROVIDER",
+            "AUDIO_VOICE",
+            "AUDIO_FORMAT",
+            "AUDIO_UPLOAD_ENABLED",
+            "AUDIO_PUBLIC_BASE_URL",
+            "AUDIO_S3_BUCKET",
+            "AUDIO_S3_REGION",
+            "AUDIO_S3_PREFIX",
+        ):
+            monkeypatch.delenv(key, raising=False)
 
 
 def test_alerts_enabled_true(monkeypatch):

@@ -47,6 +47,36 @@ def normalize_vocabulary_term(term: str) -> str:
     return normalized
 
 
+def slugify_text(text: str) -> str:
+    """
+    Convert text into a stable ASCII slug used across publishing surfaces.
+
+    This preserves the repo's existing Spanish-specific replacements so
+    publisher filenames, future media keys, and other derived URLs stay aligned.
+    """
+    normalized = text.lower()
+
+    replacements = {
+        "á": "a",
+        "é": "e",
+        "í": "i",
+        "ó": "o",
+        "ú": "u",
+        "ñ": "n",
+        "ü": "u",
+        "¿": "",
+        "¡": "",
+        "?": "",
+        "!": "",
+    }
+
+    for old, new in replacements.items():
+        normalized = normalized.replace(old, new)
+
+    normalized = re.sub(r"[^a-z0-9]+", "-", normalized)
+    return normalized.strip("-")
+
+
 def vocabulary_term_present(content: str, term: str) -> bool:
     """
     Return True if term appears literally in content as a whole word or phrase.

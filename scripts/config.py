@@ -8,14 +8,19 @@ Hierarchical configuration loading:
 """
 
 import os
-import yaml
-from typing import Dict, Any, List
 from pathlib import Path
+from typing import Any, Dict, List
+
+import yaml
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, model_validator
 
-from scripts.models import AlertsConfig, LLMConfig, TwoStepSynthesisConfig, LLMModelsConfig
-
+from scripts.models import (
+    AlertsConfig,
+    AudioConfig,
+    LLMConfig,
+    TwoStepSynthesisConfig,
+)
 
 # Load .env file at module import time
 load_dotenv()
@@ -47,6 +52,7 @@ class AppConfig(BaseModel):
     llm: LLMConfig
     quality_gate: QualityGateConfig
     sources: SourceConfig
+    audio: AudioConfig = Field(default_factory=AudioConfig)
     output: Dict[str, str] = Field(default_factory=dict)
     alerts: AlertsConfig = Field(default_factory=AlertsConfig)
     logging: Dict[str, Any] = Field(default_factory=dict)
@@ -74,7 +80,7 @@ def load_yaml(filepath: Path) -> Dict[str, Any]:
     """Load YAML file"""
     if not filepath.exists():
         return {}
-    
+
     with open(filepath, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f) or {}
 
@@ -82,13 +88,13 @@ def load_yaml(filepath: Path) -> Dict[str, Any]:
 def deep_merge(base: Dict, override: Dict) -> Dict:
     """Deep merge two dictionaries"""
     result = base.copy()
-    
+
     for key, value in override.items():
         if key in result and isinstance(result[key], dict) and isinstance(value, dict):
             result[key] = deep_merge(result[key], value)
         else:
             result[key] = value
-    
+
     return result
 
 
@@ -128,6 +134,16 @@ def load_config(environment: str = 'local') -> AppConfig:
 def apply_env_overrides(config_dict: Dict) -> Dict:
     """Override config dictionary with environment variables before Pydantic validation"""
 
+    def parse_bool(value: str | None) -> bool | None:
+        if value is None or value == '':
+            return None
+        normalized = value.strip().lower()
+        if normalized in {'true', '1', 'yes', 'on'}:
+            return True
+        if normalized in {'false', '0', 'no', 'off'}:
+            return False
+        return None
+
     # LLM API keys
     anthropic_key = os.getenv('ANTHROPIC_API_KEY')
     openai_key = os.getenv('OPENAI_API_KEY')
@@ -145,6 +161,59 @@ def apply_env_overrides(config_dict: Dict) -> Dict:
     if articles_per_run:
         config_dict.setdefault('generation', {})
         config_dict['generation']['articles_per_run'] = int(articles_per_run)
+
+    audio_enabled = parse_bool(os.getenv('AUDIO_ENABLED'))
+    if audio_enabled is not None:
+        config_dict.setdefault('audio', {})
+        config_dict['audio']['enabled'] = audio_enabled
+
+    audio_upload_enabled = parse_bool(os.getenv('AUDIO_UPLOAD_ENABLED'))
+    if audio_upload_enabled is not None:
+        config_dict.setdefault('audio', {})
+        config_dict['audio']['upload_enabled'] = audio_upload_enabled
+
+    audio_provider = os.getenv('AUDIO_PROVIDER')
+    if audio_provider:
+        config_dict.setdefault('audio', {})
+        config_dict['audio']['provider'] = audio_provider
+
+    audio_voice = os.getenv('AUDIO_VOICE')
+    if audio_voice:
+        config_dict.setdefault('audio', {})
+        config_dict['audio']['voice'] = audio_voice
+
+    audio_format = os.getenv('AUDIO_FORMAT')
+    if audio_format:
+        config_dict.setdefault('audio', {})
+        config_dict['audio']['format'] = audio_format
+
+    audio_output_path = os.getenv('AUDIO_OUTPUT_PATH')
+    if audio_output_path:
+        config_dict.setdefault('audio', {})
+        config_dict['audio']['output_path'] = audio_output_path
+
+    audio_public_base_url = os.getenv('AUDIO_PUBLIC_BASE_URL')
+    if audio_public_base_url:
+        config_dict.setdefault('audio', {})
+        config_dict['audio']['public_base_url'] = audio_public_base_url
+
+    audio_s3_bucket = os.getenv('AUDIO_S3_BUCKET')
+    if audio_s3_bucket:
+        config_dict.setdefault('audio', {})
+        config_dict['audio'].setdefault('s3', {})
+        config_dict['audio']['s3']['bucket'] = audio_s3_bucket
+
+    audio_s3_region = os.getenv('AUDIO_S3_REGION') or os.getenv('AWS_REGION')
+    if audio_s3_region:
+        config_dict.setdefault('audio', {})
+        config_dict['audio'].setdefault('s3', {})
+        config_dict['audio']['s3']['region'] = audio_s3_region
+
+    audio_s3_prefix = os.getenv('AUDIO_S3_PREFIX')
+    if audio_s3_prefix:
+        config_dict.setdefault('audio', {})
+        config_dict['audio'].setdefault('s3', {})
+        config_dict['audio']['s3']['prefix'] = audio_s3_prefix
 
     # Override alert email
     alert_email = os.getenv('ALERT_EMAIL')
@@ -220,24 +289,20 @@ def apply_env_overrides(config_dict: Dict) -> Dict:
 
     return config_dict
 
-
-
-
-
 def get_config_value(config: AppConfig, path: str, default: Any = None) -> Any:
     """
     Get nested config value using dot notation
-    
+
     Example:
         get_config_value(config, 'llm.models.generation')
     """
     keys = path.split('.')
     value = config
-    
+
     for key in keys:
         if hasattr(value, key):
             value = getattr(value, key)
         else:
             return default
-    
+
     return value

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from scripts.models import SourceMetadata
+from scripts.models import AudioAsset, SourceMetadata
 from scripts.publisher import Publisher
 
 
@@ -188,3 +188,62 @@ def test_publisher_normalizes_malformed_vocabulary_terms(
 
     assert "- **medio ambiente** - environment - la naturaleza que nos rodea" in markdown
     assert "****medio ambiente****" not in markdown
+
+
+def test_publisher_includes_audio_frontmatter_when_public_url_exists(
+    base_config,
+    mock_logger,
+    sample_a2_article,
+    tmp_path,
+):
+    """Website audio metadata should be serialized into frontmatter when available."""
+    base_config.output['path'] = str(tmp_path)
+    article = sample_a2_article.model_copy(
+        update={
+            'audio': AudioAsset(
+                url='https://media.spaili.com/articles/2024/01/test/article.mp3',
+                provider='elevenlabs',
+                voice='newsreader',
+                format='mp3',
+                mime_type='audio/mpeg',
+            )
+        }
+    )
+
+    publisher = Publisher(base_config, mock_logger, dry_run=True)
+
+    markdown = publisher._generate_markdown(article, datetime(2024, 1, 1, 12, 0, 0))
+
+    assert 'audio:' in markdown
+    assert 'url: "https://media.spaili.com/articles/2024/01/test/article.mp3"' in markdown
+    assert 'provider: "elevenlabs"' in markdown
+    assert 'voice: "newsreader"' in markdown
+
+
+def test_publisher_omits_audio_frontmatter_when_website_audio_disabled(
+    base_config,
+    mock_logger,
+    sample_a2_article,
+    tmp_path,
+):
+    """Website feature flag should suppress audio metadata in published posts."""
+    base_config.output['path'] = str(tmp_path)
+    base_config.audio.website.enabled = False
+    article = sample_a2_article.model_copy(
+        update={
+            'audio': AudioAsset(
+                url='https://media.spaili.com/articles/2024/01/test/article.mp3',
+                provider='elevenlabs',
+                voice='newsreader',
+                format='mp3',
+                mime_type='audio/mpeg',
+            )
+        }
+    )
+
+    publisher = Publisher(base_config, mock_logger, dry_run=True)
+
+    markdown = publisher._generate_markdown(article, datetime(2024, 1, 1, 12, 0, 0))
+
+    assert 'audio: null' in markdown
+    assert 'https://media.spaili.com/articles/2024/01/test/article.mp3' not in markdown
