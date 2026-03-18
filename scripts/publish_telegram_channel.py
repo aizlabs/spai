@@ -237,6 +237,12 @@ def _extract_retry_after(payload: str) -> int | None:
     return None
 
 
+def _should_retry_status_code(status_code: int | None) -> bool:
+    if not isinstance(status_code, int):
+        return False
+    return status_code == 429 or 500 <= status_code < 600
+
+
 def _build_telegram_request(bot_token: str, chat_id: str, message: str) -> request.Request:
     payload = {
         "chat_id": chat_id,
@@ -275,7 +281,7 @@ def send_telegram_message(
         except error.HTTPError as exc:
             payload = exc.read().decode("utf-8", errors="replace")
             retry_after = _extract_retry_after(payload)
-            should_retry = exc.code == 429 or 500 <= exc.code < 600
+            should_retry = _should_retry_status_code(exc.code)
             if should_retry and attempt < retries:
                 sleep(retry_after if retry_after is not None else 2 ** attempt)
                 continue
@@ -296,7 +302,7 @@ def send_telegram_message(
 
         retry_after = _extract_retry_after(payload)
         status_code = parsed.get("error_code")
-        should_retry = status_code == 429 or isinstance(status_code, int) and 500 <= status_code < 600
+        should_retry = _should_retry_status_code(status_code)
         if should_retry and attempt < retries:
             sleep(retry_after if retry_after is not None else 2 ** attempt)
             continue
