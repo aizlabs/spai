@@ -375,6 +375,9 @@ reading_time: {article.reading_time}
 
     def _format_audio(self, article: AdaptedArticle) -> str:
         """Format website audio metadata for YAML frontmatter."""
+        if not self.config.audio.website.enabled:
+            return 'audio: null'
+
         audio = article.audio
         if not audio or not audio.url:
             return 'audio: null'
