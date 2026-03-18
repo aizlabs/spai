@@ -5,10 +5,14 @@ All prompts for content generation and quality evaluation in one place
 for easy iteration and A/B testing.
 """
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 
-from scripts.models import Topic, SourceArticle, BaseArticle, AdaptedArticle
-
+from scripts.models import (
+    AdaptedArticle,
+    BaseArticle,
+    SourceArticle,
+    Topic,
+)
 
 # Level-specific grammar rules
 LEVEL_GENERATION_RULES = {
@@ -176,6 +180,7 @@ Before finalizing, verify:
   - All glossed terms are marked with **bold**
   - No more than 15 terms are glossed
   - Glosses use only A2 vocabulary
+  - Vocabulary term values are plain text only, with no markdown markers
 
 □ STRUCTURE
   - No sentence exceeds 20 words
@@ -213,9 +218,9 @@ Format the final article as follows:
 
 ---
 📚 **Vocabulario / Vocabulary:**
-- **[term 1]** - [translation] - [explanation]
-- **[term 2]** - [translation] - [explanation]
-- **[term 3]** - [translation] - [explanation]
+- [term 1] - [translation] - [explanation]
+- [term 2] - [translation] - [explanation]
+- [term 3] - [translation] - [explanation]
 [...continue for all glossed terms in order of appearance]
 
 ---
@@ -319,6 +324,7 @@ STEP 3: GLOSS GENERATION
     - Maximum 20 words per Spanish explanation
     - Multi-word expressions glossed as complete units
     - Include cultural context when needed; keep functional and practical
+    - Vocabulary term values must be plain text only, with no markdown markers
 3.3 Examples
 - "infraestructura" - infrastructure - conjunto de carreteras, puentes y servicios que permiten que una ciudad funcione
 - "sequía" - drought - tiempo largo sin lluvia que afecta al agua y a los cultivos
@@ -740,11 +746,11 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
   "content": "A2-adapted content with **bold** glossed terms (~200 words)",
   "vocabulary": [
     {{
-      "term": "difficult Spanish word or phrase from the article",
+      "term": "plain text difficult Spanish word or phrase from the article, no ** markdown markers",
       "gloss": "English translation - Spanish A2 explanation"
     }},
     {{
-      "term": "another important term from the article",
+      "term": "plain text important term from the article, no ** markdown markers",
       "gloss": "English translation - Spanish A2 explanation"
     }}
   ],
@@ -821,11 +827,11 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
   "content": "B1-adapted content with **bold** glossed terms (~300 words)",
   "vocabulary": [
     {{
-      "term": "difficult Spanish word or phrase from the article",
+      "term": "plain text difficult Spanish word or phrase from the article, no ** markdown markers",
       "gloss": "English translation - Spanish B1 explanation"
     }},
     {{
-      "term": "another important term from the article",
+      "term": "plain text important term from the article, no ** markdown markers",
       "gloss": "English translation - Spanish B1 explanation"
     }}
   ],

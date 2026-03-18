@@ -1,9 +1,11 @@
 """
 Text utilities for the pipeline.
 
-Includes vocabulary bold marking (FSA-based) used after level adaptation.
+Includes vocabulary normalization, presence checks, and bold marking used after
+level adaptation.
 """
 
+import re
 from typing import Dict
 
 
@@ -27,6 +29,102 @@ def _term_at_word_boundary(content: str, start: int, term: str) -> bool:
     if end < len(content) and _is_word_char(content[end]):
         return False
     return True
+
+
+def normalize_vocabulary_term(term: str) -> str:
+    """
+    Normalize a glossary term to plain text.
+
+    Terms are trimmed and repeatedly stripped of wrapping markdown bold markers,
+    so values like "**término**" and "****término****" are stored as "término".
+    Internal punctuation and accents are preserved.
+    """
+    normalized = term.strip()
+
+    while len(normalized) >= 4 and normalized.startswith("**") and normalized.endswith("**"):
+        normalized = normalized[2:-2].strip()
+
+    return normalized
+
+
+def vocabulary_term_present(content: str, term: str) -> bool:
+    """
+    Return True if term appears literally in content as a whole word or phrase.
+
+    This exact-match check is case-insensitive and works for both plain and
+    markdown-bolded terms because the surrounding `**` markers are treated as
+    non-word characters.
+    """
+    if not term:
+        return False
+
+    folded_content = content.lower()
+    folded_term = term.lower()
+    max_start = len(folded_content) - len(folded_term)
+    for start in range(max_start + 1):
+        if _term_at_word_boundary(folded_content, start, folded_term):
+            return True
+
+    return False
+
+
+def filter_vocabulary_to_content(
+    content: str,
+    vocabulary: Dict[str, str],
+) -> tuple[Dict[str, str], list[str]]:
+    """
+    Keep only glossary entries whose terms appear literally in content.
+
+    Returns:
+        A tuple of (filtered_vocabulary, dropped_terms).
+    """
+    filtered: Dict[str, str] = {}
+    dropped: list[str] = []
+
+    for term, gloss in vocabulary.items():
+        if vocabulary_term_present(content, term):
+            filtered[term] = gloss
+        else:
+            dropped.append(term)
+
+    return filtered, dropped
+
+
+def normalize_existing_vocabulary_bolding(content: str, vocabulary: Dict[str, str]) -> str:
+    """
+    Collapse malformed repeated bold markers around known glossary terms.
+
+    This preserves the original casing from the content while converting values
+    like "****tasa****" into the standard markdown form "**tasa**" before the
+    re-bolding pass runs.
+    """
+    terms = sorted(
+        {term for term in vocabulary if term},
+        key=len,
+        reverse=True,
+    )
+    if not terms:
+        return content
+
+    term_pattern = "|".join(re.escape(term) for term in terms)
+    pattern = re.compile(rf"(\*{{4,}})({term_pattern})(\*{{4,}})", re.IGNORECASE)
+
+    def replace(match: re.Match[str]) -> str:
+        opening, term_text, closing = match.groups()
+
+        if len(opening) % 2 != 0 or len(closing) % 2 != 0:
+            return match.group(0)
+
+        start = match.start()
+        end = match.end()
+        if start > 0 and _is_word_char(content[start - 1]):
+            return match.group(0)
+        if end < len(content) and _is_word_char(content[end]):
+            return match.group(0)
+
+        return f"**{term_text}**"
+
+    return pattern.sub(replace, content)
 
 
 def ensure_vocabulary_bolded(content: str, vocabulary: Dict[str, str]) -> str:

@@ -11,8 +11,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from scripts.models import AdaptedArticle
 from scripts.config import AppConfig
+from scripts.models import AdaptedArticle
+from scripts.text_utils import normalize_vocabulary_term
 from scripts.topic_utils import is_noisy_topic_keyword
 
 
@@ -284,7 +285,7 @@ reading_time: {article.reading_time}
         content = article.content
 
         # Vocabulary section
-        vocabulary = self._format_vocabulary(article.vocabulary)
+        vocabulary = self._format_vocabulary(article.vocabulary, article.title)
 
         # Attribution
         attribution = self._format_attribution(article.sources)
@@ -314,7 +315,7 @@ reading_time: {article.reading_time}
         # Fallback: generic topic
         return '["general"]'
 
-    def _format_vocabulary(self, vocabulary: Dict[str, str]) -> str:
+    def _format_vocabulary(self, vocabulary: Dict[str, str], article_title: str) -> str:
         """Format vocabulary section"""
         if not vocabulary:
             return ""
@@ -322,7 +323,17 @@ reading_time: {article.reading_time}
         vocab_lines = ["", "## Vocabulario", ""]
 
         for spanish, english in vocabulary.items():
-            vocab_lines.append(f"- **{spanish}** - {english}")
+            normalized_spanish = normalize_vocabulary_term(spanish)
+            if not normalized_spanish:
+                continue
+            if normalized_spanish != spanish:
+                self.logger.warning(
+                    "Normalized vocabulary term during publish for article '%s': '%s' -> '%s'",
+                    article_title,
+                    spanish,
+                    normalized_spanish,
+                )
+            vocab_lines.append(f"- **{normalized_spanish}** - {english}")
 
         return '\n'.join(vocab_lines)
 
