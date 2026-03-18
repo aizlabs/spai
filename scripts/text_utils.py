@@ -50,15 +50,18 @@ def vocabulary_term_present(content: str, term: str) -> bool:
     """
     Return True if term appears literally in content as a whole word or phrase.
 
-    This exact-match check works for both plain and markdown-bolded terms because
-    the surrounding `**` markers are treated as non-word characters.
+    This exact-match check is case-insensitive and works for both plain and
+    markdown-bolded terms because the surrounding `**` markers are treated as
+    non-word characters.
     """
     if not term:
         return False
 
-    max_start = len(content) - len(term)
+    folded_content = content.lower()
+    folded_term = term.lower()
+    max_start = len(folded_content) - len(folded_term)
     for start in range(max_start + 1):
-        if _term_at_word_boundary(content, start, term):
+        if _term_at_word_boundary(folded_content, start, folded_term):
             return True
 
     return False

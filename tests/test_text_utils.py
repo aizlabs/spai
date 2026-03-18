@@ -168,6 +168,12 @@ class TestVocabularyPresenceFiltering:
     def test_term_present_as_bold_text(self):
         assert vocabulary_term_present("la **tasa** sube", "tasa") is True
 
+    def test_term_present_is_case_insensitive_for_sentence_initial_words(self):
+        assert vocabulary_term_present("Gobierno anuncia cambios.", "gobierno") is True
+
+    def test_term_present_is_case_insensitive_for_acronyms(self):
+        assert vocabulary_term_present("La UE busca un acuerdo.", "ue") is True
+
     def test_term_not_present_is_false(self):
         assert vocabulary_term_present("la inflación sube", "tasa") is False
 
@@ -187,3 +193,17 @@ class TestVocabularyPresenceFiltering:
 
         assert filtered == {"energía eólica": "wind energy"}
         assert dropped == ["SEPE"]
+
+    def test_filter_keeps_terms_when_article_only_differs_by_case(self):
+        vocabulary = {
+            "gobierno": "government",
+            "ue": "European Union",
+        }
+
+        filtered, dropped = filter_vocabulary_to_content(
+            "Gobierno y UE presentan el plan.",
+            vocabulary,
+        )
+
+        assert filtered == vocabulary
+        assert dropped == []
