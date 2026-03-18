@@ -68,9 +68,9 @@ def test_audio_pipeline_sets_public_url_when_upload_enabled(
     )
 
     assert prepared_article.audio is not None
-    assert (
-        prepared_article.audio.url
-        == "https://media.spaili.com/articles/2024/01/20240102-120000-espana-tiene-menos-contaminacion-a2/article.mp3"
+    assert prepared_article.audio.url is None
+    assert prepared_article.audio.storage_key == (
+        "articles/2024/01/20240102-120000-espana-tiene-menos-contaminacion-a2/article.mp3"
     )
 
 

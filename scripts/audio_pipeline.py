@@ -60,9 +60,8 @@ class AudioPipeline:
         script_path.write_text(script.narration, encoding="utf-8")
 
         storage_key = self._build_storage_key(timestamp, artifact_id)
-        public_url = self._build_public_url(storage_key)
         asset = AudioAsset(
-            url=public_url if self.audio_config.upload_enabled and public_url else None,
+            url=None,
             storage_key=storage_key,
             provider=self.audio_config.provider,
             voice=self.audio_config.voice,
@@ -114,12 +113,6 @@ class AudioPipeline:
             ]
             if part
         )
-
-    def _build_public_url(self, storage_key: str) -> Optional[str]:
-        if not self.audio_config.public_base_url:
-            return None
-        base_url = self.audio_config.public_base_url.rstrip("/")
-        return f"{base_url}/{storage_key}"
 
     def _mime_type_for_format(self, format_name: str) -> str:
         return {
