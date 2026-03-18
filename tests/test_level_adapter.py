@@ -2,13 +2,15 @@
 Unit tests for LevelAdapter component
 """
 
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import BaseModel
 
 from scripts.level_adapter import LevelAdapter
-from scripts.models import BaseArticle, AdaptedArticle
+from scripts.models import AdaptedArticle, BaseArticle
+from scripts.publisher import Publisher
 
 
 class FakeAdaptationResponse(BaseModel):
@@ -446,3 +448,126 @@ class TestLevelAdapterEdgeCases:
         assert isinstance(result, AdaptedArticle)
         assert result.topic == sample_base_article.topic
         assert result.sources == sample_base_article.sources
+
+    @patch('scripts.level_adapter.LevelAdapter._call_llm')
+    def test_normalizes_vocabulary_terms_and_warns(
+        self,
+        mock_call_llm,
+        base_config,
+        mock_logger,
+        sample_base_article,
+    ):
+        response = {
+            'title': 'Test',
+            'content': 'La **tasa** sube en el país.' * 5,
+            'vocabulary': [
+                {'term': '  ****tasa****  ', 'gloss': 'rate - valor de referencia'},
+            ],
+            'summary': 'Resumen simple suficiente',
+            'reading_time': 2,
+        }
+
+        mock_call_llm.return_value = FakeAdaptationResponse(**response)
+
+        adapter = LevelAdapter(base_config, mock_logger)
+        result = adapter.adapt_to_a2(sample_base_article)
+
+        assert result.vocabulary == {'tasa': 'rate - valor de referencia'}
+        mock_logger.warning.assert_any_call(
+            "Normalized vocabulary term for article '%s': '%s' -> '%s'",
+            sample_base_article.title,
+            '  ****tasa****  ',
+            'tasa',
+        )
+
+    @patch('scripts.level_adapter.LevelAdapter._call_llm')
+    def test_drops_vocabulary_terms_not_present_in_content_and_warns(
+        self,
+        mock_call_llm,
+        base_config,
+        mock_logger,
+        sample_base_article,
+    ):
+        response = {
+            'title': 'Test',
+            'content': ('España usa **energía eólica**. ' * 10).strip(),
+            'vocabulary': [
+                {'term': 'energía eólica', 'gloss': 'wind energy - energía del viento'},
+                {'term': 'SEPE', 'gloss': 'employment office - oficina de empleo'},
+            ],
+            'summary': 'Resumen simple suficiente',
+            'reading_time': 2,
+        }
+
+        mock_call_llm.return_value = FakeAdaptationResponse(**response)
+
+        adapter = LevelAdapter(base_config, mock_logger)
+        result = adapter.adapt_to_a2(sample_base_article)
+
+        assert result.vocabulary == {'energía eólica': 'wind energy - energía del viento'}
+        mock_logger.warning.assert_any_call(
+            "Dropped vocabulary terms not present in article '%s': %s",
+            sample_base_article.title,
+            'SEPE',
+        )
+
+    @patch('scripts.level_adapter.LevelAdapter._call_llm')
+    def test_drops_base_form_when_only_inflected_variant_exists(
+        self,
+        mock_call_llm,
+        base_config,
+        mock_logger,
+        sample_base_article,
+    ):
+        response = {
+            'title': 'Test',
+            'content': ('España reconoció al Estado Palestino. ' * 10).strip(),
+            'vocabulary': [
+                {'term': 'reconocer', 'gloss': 'recognize - aceptar oficialmente'},
+            ],
+            'summary': 'Resumen simple suficiente',
+            'reading_time': 2,
+        }
+
+        mock_call_llm.return_value = FakeAdaptationResponse(**response)
+
+        adapter = LevelAdapter(base_config, mock_logger)
+        result = adapter.adapt_to_a2(sample_base_article)
+
+        assert result.vocabulary == {}
+        mock_logger.warning.assert_any_call(
+            "Dropped vocabulary terms not present in article '%s': %s",
+            sample_base_article.title,
+            'reconocer',
+        )
+
+    @patch('scripts.level_adapter.LevelAdapter._call_llm')
+    def test_integration_normalized_term_generates_clean_markdown(
+        self,
+        mock_call_llm,
+        base_config,
+        mock_logger,
+        sample_base_article,
+        tmp_path,
+    ):
+        response = {
+            'title': 'Test',
+            'content': ('La **tasa** sube en el país. ' * 10).strip(),
+            'vocabulary': [
+                {'term': '****tasa****', 'gloss': 'rate - valor de referencia'},
+            ],
+            'summary': 'Resumen simple suficiente',
+            'reading_time': 2,
+        }
+
+        mock_call_llm.return_value = FakeAdaptationResponse(**response)
+
+        adapter = LevelAdapter(base_config, mock_logger)
+        article = adapter.adapt_to_a2(sample_base_article)
+
+        base_config.output['path'] = str(tmp_path)
+        publisher = Publisher(base_config, mock_logger, dry_run=True)
+        markdown = publisher._generate_markdown(article, datetime(2024, 1, 1, 12, 0, 0))
+
+        assert "- **tasa** - rate - valor de referencia" in markdown
+        assert "****tasa****" not in markdown

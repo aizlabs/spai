@@ -13,10 +13,14 @@ from typing import Dict, List, Optional
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
-from scripts.models import BaseArticle, AdaptedArticle, Topic
 from scripts.config import AppConfig
-from scripts.text_utils import ensure_vocabulary_bolded
 from scripts.llm_factory import create_chat_model, with_structured_output
+from scripts.models import AdaptedArticle, BaseArticle
+from scripts.text_utils import (
+    ensure_vocabulary_bolded,
+    filter_vocabulary_to_content,
+    normalize_vocabulary_term,
+)
 
 
 class LevelAdapter:
@@ -179,13 +183,37 @@ class LevelAdapter:
                     term = getattr(item, "term", None)
                     gloss = getattr(item, "gloss", None)
                 if term and gloss:
-                    vocab_dict[str(term)] = str(gloss)
+                    original_term = str(term)
+                    normalized_term = normalize_vocabulary_term(original_term)
+                    if not normalized_term:
+                        continue
+
+                    if normalized_term != original_term:
+                        self.logger.warning(
+                            "Normalized vocabulary term for article '%s': '%s' -> '%s'",
+                            base_article.title,
+                            original_term,
+                            normalized_term,
+                        )
+
+                    vocab_dict[normalized_term] = str(gloss)
             parsed["vocabulary"] = vocab_dict
 
             parsed["content"] = ensure_vocabulary_bolded(
                 parsed.get("content", ""),
                 vocab_dict,
             )
+            filtered_vocabulary, dropped_terms = filter_vocabulary_to_content(
+                parsed["content"],
+                vocab_dict,
+            )
+            if dropped_terms:
+                self.logger.warning(
+                    "Dropped vocabulary terms not present in article '%s': %s",
+                    base_article.title,
+                    ", ".join(dropped_terms),
+                )
+            parsed["vocabulary"] = filtered_vocabulary
 
             parsed['level'] = level
             parsed['topic'] = base_article.topic.model_dump() if base_article.topic else None
@@ -196,4 +224,3 @@ class LevelAdapter:
         except Exception as e:
             self.logger.error(f"Invalid adapted article structure or Pydantic validation error: {e}")
             raise ValueError(f"Invalid adapted article structure or Pydantic validation error: {e}")
-

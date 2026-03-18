@@ -116,6 +116,7 @@ def test_format_telegram_message_converts_markdown_and_omits_source_footer():
     assert "<b>energías renovables</b>" in message
     assert "<b>Vocabulario</b>" in message
     assert "• <b>medio ambiente</b> - environment - la naturaleza que nos rodea" in message
+    assert "**medio ambiente**" not in message
     assert "Fuentes" not in message
     assert 'href="https://example.com/articles/040915-espana-a2/"' in message
 

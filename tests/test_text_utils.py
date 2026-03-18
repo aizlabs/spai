@@ -2,8 +2,28 @@
 Unit tests for text_utils.ensure_vocabulary_bolded (FSA vocabulary bold marking).
 """
 
-import pytest
-from scripts.text_utils import ensure_vocabulary_bolded
+from scripts.text_utils import (
+    ensure_vocabulary_bolded,
+    filter_vocabulary_to_content,
+    normalize_vocabulary_term,
+    vocabulary_term_present,
+)
+
+
+class TestNormalizeVocabularyTerm:
+    """Normalization for glossary terms."""
+
+    def test_strips_wrapping_bold_markers(self):
+        assert normalize_vocabulary_term("**término**") == "término"
+
+    def test_strips_multiple_wrapping_bold_marker_layers(self):
+        assert normalize_vocabulary_term("****término****") == "término"
+
+    def test_trims_surrounding_whitespace(self):
+        assert normalize_vocabulary_term("  **término**  ") == "término"
+
+    def test_preserves_internal_punctuation_and_accents(self):
+        assert normalize_vocabulary_term("**índice (IPC)**") == "índice (IPC)"
 
 
 class TestEnsureVocabularyBoldedBasic:
@@ -137,3 +157,33 @@ class TestEnsureVocabularyBoldedEdgeCases:
             ensure_vocabulary_bolded(content, vocab)
             == "la **tasa** sube"
         )
+
+
+class TestVocabularyPresenceFiltering:
+    """Exact presence checks for glossary/body consistency."""
+
+    def test_term_present_as_plain_text(self):
+        assert vocabulary_term_present("la tasa sube", "tasa") is True
+
+    def test_term_present_as_bold_text(self):
+        assert vocabulary_term_present("la **tasa** sube", "tasa") is True
+
+    def test_term_not_present_is_false(self):
+        assert vocabulary_term_present("la inflación sube", "tasa") is False
+
+    def test_inflected_variant_does_not_count_as_present(self):
+        assert vocabulary_term_present("España reconoció al Estado", "reconocer") is False
+
+    def test_filter_keeps_only_terms_present_in_content(self):
+        vocabulary = {
+            "energía eólica": "wind energy",
+            "SEPE": "employment office",
+        }
+
+        filtered, dropped = filter_vocabulary_to_content(
+            "España usa **energía eólica**.",
+            vocabulary,
+        )
+
+        assert filtered == {"energía eólica": "wind energy"}
+        assert dropped == ["SEPE"]
