@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -14,6 +13,7 @@ from typing import Optional
 from scripts.audio_script_builder import build_speech_script
 from scripts.config import AppConfig
 from scripts.models import AdaptedArticle, AudioAsset, AudioManifest
+from scripts.text_utils import slugify_text
 
 
 class AudioPipeline:
@@ -41,7 +41,7 @@ class AudioPipeline:
             return article
 
         timestamp = timestamp or datetime.utcnow()
-        slug = self._slugify(article.title)
+        slug = slugify_text(article.title)
         level = article.level.lower()
         year_month = timestamp.strftime("%Y/%m")
         script = build_speech_script(
@@ -115,26 +115,6 @@ class AudioPipeline:
             return None
         base_url = self.audio_config.public_base_url.rstrip("/")
         return f"{base_url}/{storage_key}"
-
-    def _slugify(self, text: str) -> str:
-        replacements = {
-            "á": "a",
-            "é": "e",
-            "í": "i",
-            "ó": "o",
-            "ú": "u",
-            "ñ": "n",
-            "ü": "u",
-            "¿": "",
-            "¡": "",
-            "?": "",
-            "!": "",
-        }
-        normalized = text.lower()
-        for old, new in replacements.items():
-            normalized = normalized.replace(old, new)
-        normalized = re.sub(r"[^a-z0-9]+", "-", normalized)
-        return normalized.strip("-")
 
     def _mime_type_for_format(self, format_name: str) -> str:
         return {

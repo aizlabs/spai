@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 
 from scripts.config import AppConfig
 from scripts.models import AdaptedArticle
-from scripts.text_utils import normalize_vocabulary_term
+from scripts.text_utils import normalize_vocabulary_term, slugify_text
 from scripts.topic_utils import is_noisy_topic_keyword
 
 
@@ -88,34 +88,11 @@ class Publisher:
 
         # Create slug from title
         title = article.title
-        slug = self._slugify(title)[:50]  # Max 50 chars
+        slug = slugify_text(title)[:50]  # Max 50 chars
 
         level = article.level.lower()
 
         return f"{timestamp_str}-{slug}-{level}.md"
-
-    def _slugify(self, text: str) -> str:
-        """Convert text to URL-safe slug"""
-        # Remove accents and convert to ASCII
-        text = text.lower()
-
-        # Spanish character replacements
-        replacements = {
-            'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
-            'ñ': 'n', 'ü': 'u',
-            '¿': '', '¡': '', '?': '', '!': ''
-        }
-
-        for old, new in replacements.items():
-            text = text.replace(old, new)
-
-        # Replace non-alphanumeric with hyphens
-        text = re.sub(r'[^a-z0-9]+', '-', text)
-
-        # Remove leading/trailing hyphens
-        text = text.strip('-')
-
-        return text
 
     def _escape_yaml_string(self, text: str) -> str:
         """
