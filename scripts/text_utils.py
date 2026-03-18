@@ -5,6 +5,7 @@ Includes vocabulary normalization, presence checks, and bold marking used after
 level adaptation.
 """
 
+import re
 from typing import Dict
 
 
@@ -87,6 +88,43 @@ def filter_vocabulary_to_content(
             dropped.append(term)
 
     return filtered, dropped
+
+
+def normalize_existing_vocabulary_bolding(content: str, vocabulary: Dict[str, str]) -> str:
+    """
+    Collapse malformed repeated bold markers around known glossary terms.
+
+    This preserves the original casing from the content while converting values
+    like "****tasa****" into the standard markdown form "**tasa**" before the
+    re-bolding pass runs.
+    """
+    terms = sorted(
+        {term for term in vocabulary if term},
+        key=len,
+        reverse=True,
+    )
+    if not terms:
+        return content
+
+    term_pattern = "|".join(re.escape(term) for term in terms)
+    pattern = re.compile(rf"(\*{{4,}})({term_pattern})(\*{{4,}})", re.IGNORECASE)
+
+    def replace(match: re.Match[str]) -> str:
+        opening, term_text, closing = match.groups()
+
+        if len(opening) % 2 != 0 or len(closing) % 2 != 0:
+            return match.group(0)
+
+        start = match.start()
+        end = match.end()
+        if start > 0 and _is_word_char(content[start - 1]):
+            return match.group(0)
+        if end < len(content) and _is_word_char(content[end]):
+            return match.group(0)
+
+        return f"**{term_text}**"
+
+    return pattern.sub(replace, content)
 
 
 def ensure_vocabulary_bolded(content: str, vocabulary: Dict[str, str]) -> str:

@@ -5,6 +5,7 @@ Unit tests for text_utils.ensure_vocabulary_bolded (FSA vocabulary bold marking)
 from scripts.text_utils import (
     ensure_vocabulary_bolded,
     filter_vocabulary_to_content,
+    normalize_existing_vocabulary_bolding,
     normalize_vocabulary_term,
     vocabulary_term_present,
 )
@@ -24,6 +25,22 @@ class TestNormalizeVocabularyTerm:
 
     def test_preserves_internal_punctuation_and_accents(self):
         assert normalize_vocabulary_term("**índice (IPC)**") == "índice (IPC)"
+
+
+class TestNormalizeExistingVocabularyBolding:
+    """Normalization for malformed body bold markers."""
+
+    def test_collapses_repeated_bold_markers_for_known_term(self):
+        assert (
+            normalize_existing_vocabulary_bolding("La ****tasa**** sube.", {"tasa": "rate"})
+            == "La **tasa** sube."
+        )
+
+    def test_preserves_original_case_when_collapsing_repeated_markers(self):
+        assert (
+            normalize_existing_vocabulary_bolding("El ****Gobierno**** actúa.", {"gobierno": "government"})
+            == "El **Gobierno** actúa."
+        )
 
 
 class TestEnsureVocabularyBoldedBasic:

@@ -19,6 +19,7 @@ from scripts.models import AdaptedArticle, BaseArticle
 from scripts.text_utils import (
     ensure_vocabulary_bolded,
     filter_vocabulary_to_content,
+    normalize_existing_vocabulary_bolding,
     normalize_vocabulary_term,
 )
 
@@ -199,10 +200,11 @@ class LevelAdapter:
                     vocab_dict[normalized_term] = str(gloss)
             parsed["vocabulary"] = vocab_dict
 
-            parsed["content"] = ensure_vocabulary_bolded(
+            parsed["content"] = normalize_existing_vocabulary_bolding(
                 parsed.get("content", ""),
                 vocab_dict,
             )
+            parsed["content"] = ensure_vocabulary_bolded(parsed["content"], vocab_dict)
             filtered_vocabulary, dropped_terms = filter_vocabulary_to_content(
                 parsed["content"],
                 vocab_dict,

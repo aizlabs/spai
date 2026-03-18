@@ -571,3 +571,38 @@ class TestLevelAdapterEdgeCases:
 
         assert "- **tasa** - rate - valor de referencia" in markdown
         assert "****tasa****" not in markdown
+
+    @patch('scripts.level_adapter.LevelAdapter._call_llm')
+    def test_normalizes_malformed_body_bolding_before_rebolding(
+        self,
+        mock_call_llm,
+        base_config,
+        mock_logger,
+        sample_base_article,
+        tmp_path,
+    ):
+        response = {
+            'title': 'Test',
+            'content': ('La ****tasa**** sube en el país. ' * 10).strip(),
+            'vocabulary': [
+                {'term': '****tasa****', 'gloss': 'rate - valor de referencia'},
+            ],
+            'summary': 'Resumen simple suficiente',
+            'reading_time': 2,
+        }
+
+        mock_call_llm.return_value = FakeAdaptationResponse(**response)
+
+        adapter = LevelAdapter(base_config, mock_logger)
+        article = adapter.adapt_to_a2(sample_base_article)
+
+        assert "******tasa******" not in article.content
+        assert "**tasa**" in article.content
+
+        base_config.output['path'] = str(tmp_path)
+        publisher = Publisher(base_config, mock_logger, dry_run=True)
+        markdown = publisher._generate_markdown(article, datetime(2024, 1, 1, 12, 0, 0))
+
+        assert "******tasa******" not in markdown
+        assert "****tasa****" not in markdown
+        assert "- **tasa** - rate - valor de referencia" in markdown
