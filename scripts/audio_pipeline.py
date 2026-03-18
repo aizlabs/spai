@@ -44,13 +44,14 @@ class AudioPipeline:
         slug = slugify_text(article.title)
         level = article.level.lower()
         year_month = timestamp.strftime("%Y/%m")
+        artifact_id = self._build_artifact_id(timestamp, slug, level)
         script = build_speech_script(
             article,
             include_vocabulary=self.audio_config.include_vocabulary,
         )
 
-        script_rel_path = Path(year_month) / f"{slug}-{level}.txt"
-        manifest_rel_path = Path(year_month) / f"{slug}-{level}.json"
+        script_rel_path = Path(year_month) / f"{artifact_id}.txt"
+        manifest_rel_path = Path(year_month) / f"{artifact_id}.json"
         script_path = self.scripts_dir / script_rel_path
         manifest_path = self.manifests_dir / manifest_rel_path
         script_path.parent.mkdir(parents=True, exist_ok=True)
@@ -58,7 +59,7 @@ class AudioPipeline:
 
         script_path.write_text(script.narration, encoding="utf-8")
 
-        storage_key = self._build_storage_key(timestamp, slug, level)
+        storage_key = self._build_storage_key(timestamp, artifact_id)
         public_url = self._build_public_url(storage_key)
         asset = AudioAsset(
             url=public_url if self.audio_config.upload_enabled and public_url else None,
@@ -71,7 +72,7 @@ class AudioPipeline:
             manifest_path=str(manifest_path),
         )
         manifest = AudioManifest(
-            article_slug=f"{slug}-{level}",
+            article_slug=artifact_id,
             title=article.title,
             level=article.level,
             created_at=timestamp.isoformat(),
@@ -96,7 +97,11 @@ class AudioPipeline:
         )
         return article.model_copy(update={"audio": asset})
 
-    def _build_storage_key(self, timestamp: datetime, slug: str, level: str) -> str:
+    def _build_artifact_id(self, timestamp: datetime, slug: str, level: str) -> str:
+        timestamp_str = timestamp.strftime("%Y%m%d-%H%M%S")
+        return f"{timestamp_str}-{slug}-{level}"
+
+    def _build_storage_key(self, timestamp: datetime, artifact_id: str) -> str:
         prefix = self.audio_config.s3.prefix.strip("/")
         return "/".join(
             part
@@ -104,7 +109,7 @@ class AudioPipeline:
                 prefix,
                 timestamp.strftime("%Y"),
                 timestamp.strftime("%m"),
-                f"{slug}-{level}",
+                artifact_id,
                 f"article.{self.audio_config.format}",
             ]
             if part

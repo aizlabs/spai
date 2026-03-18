@@ -24,7 +24,7 @@ def test_audio_pipeline_writes_manifest_and_script_when_enabled(
 
     assert prepared_article.audio is not None
     assert prepared_article.audio.storage_key == (
-        "articles/2024/01/espana-tiene-menos-contaminacion-a2/article.mp3"
+        "articles/2024/01/20240102-120000-espana-tiene-menos-contaminacion-a2/article.mp3"
     )
     assert prepared_article.audio.url is None
 
@@ -34,7 +34,7 @@ def test_audio_pipeline_writes_manifest_and_script_when_enabled(
         / "scripts"
         / "2024"
         / "01"
-        / "espana-tiene-menos-contaminacion-a2.txt"
+        / "20240102-120000-espana-tiene-menos-contaminacion-a2.txt"
     )
     manifest_path = (
         tmp_path
@@ -42,7 +42,7 @@ def test_audio_pipeline_writes_manifest_and_script_when_enabled(
         / "manifests"
         / "2024"
         / "01"
-        / "espana-tiene-menos-contaminacion-a2.json"
+        / "20240102-120000-espana-tiene-menos-contaminacion-a2.json"
     )
     assert script_path.exists()
     assert manifest_path.exists()
@@ -70,7 +70,7 @@ def test_audio_pipeline_sets_public_url_when_upload_enabled(
     assert prepared_article.audio is not None
     assert (
         prepared_article.audio.url
-        == "https://media.spaili.com/articles/2024/01/espana-tiene-menos-contaminacion-a2/article.mp3"
+        == "https://media.spaili.com/articles/2024/01/20240102-120000-espana-tiene-menos-contaminacion-a2/article.mp3"
     )
 
 
