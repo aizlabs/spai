@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from scripts.audio_pipeline import AudioPipeline
+from scripts.audio_script_builder import build_speech_script
 
 
 def test_audio_pipeline_writes_manifest_and_script_when_enabled(
@@ -71,3 +72,12 @@ def test_audio_pipeline_sets_public_url_when_upload_enabled(
         prepared_article.audio.url
         == "https://media.spaili.com/articles/2024/01/espana-tiene-menos-contaminacion-a2/article.mp3"
     )
+
+
+def test_build_speech_script_marks_vocabulary_false_when_article_has_no_glossary(sample_a2_article):
+    article_without_vocabulary = sample_a2_article.model_copy(update={"vocabulary": {}})
+
+    script = build_speech_script(article_without_vocabulary, include_vocabulary=True)
+
+    assert script.includes_vocabulary is False
+    assert "Vocabulario." not in script.narration

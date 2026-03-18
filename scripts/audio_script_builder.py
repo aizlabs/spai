@@ -21,12 +21,13 @@ def _strip_markdown(text: str) -> str:
 
 def build_speech_script(article: AdaptedArticle, include_vocabulary: bool = False) -> SpeechScript:
     """Convert an adapted article into a narration-friendly plain-text script."""
+    vocabulary_included = bool(include_vocabulary and article.vocabulary)
     sections: List[str] = [f"{article.title}. {article.summary}".strip()]
 
     paragraphs = [paragraph.strip() for paragraph in article.content.split("\n\n") if paragraph.strip()]
     sections.extend(_strip_markdown(paragraph) for paragraph in paragraphs)
 
-    if include_vocabulary and article.vocabulary:
+    if vocabulary_included:
         vocabulary_lines = [
             f"{term} significa {definition}."
             for term, definition in article.vocabulary.items()
@@ -40,5 +41,5 @@ def build_speech_script(article: AdaptedArticle, include_vocabulary: bool = Fals
         title=article.title,
         sections=sections,
         narration=narration,
-        includes_vocabulary=include_vocabulary,
+        includes_vocabulary=vocabulary_included,
     )
