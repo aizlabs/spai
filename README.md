@@ -1,20 +1,22 @@
-# AutoSpanishBlog 🇪🇸
+# AutoSpanishBlog / Spai 🇪🇸
 
 > Automated Spanish language learning content generation platform
 
-[![GitHub Pages](https://img.shields.io/badge/deployed-GitHub%20Pages-success)](https://aizlabs.github.io/spai)
+[![GitHub Pages](https://img.shields.io/badge/deployed-GitHub%20Pages-success)](https://spaili.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
 
-AutoSpanishBlog automatically generates high-quality Spanish learning articles from real news sources. New content published 3x daily at A2 and B1 CEFR levels.
+AutoSpanishBlog automatically generates high-quality Spanish learning articles from real news sources. The published site runs as **Spai** at [spaili.com](https://spaili.com), with new content published 3x daily at A2 and B1 CEFR levels.
 
 ## 🎯 Features
 
-- **Automated Generation:** 12 articles/day from 20+ news sources
+- **Automated Generation:** up to 12 articles/day from 20+ active sources
 - **Multi-Source Synthesis:** Original content from 3-5 sources per article
 - **CEFR Levels:** A2 (beginner) and B1 (intermediate)
 - **Quality Assurance:** LLM judge with 7.5/10 minimum score
+- **Two-Step Generation:** native-level synthesis followed by CEFR adaptation
 - **Jekyll Site:** Beautiful, fast static site on GitHub Pages
+- **Telegram Publishing:** Optional channel publishing after site deploy
 - **Free & Open Source:** MIT license, fully transparent
 
 ## 🚀 Quick Start
@@ -61,7 +63,8 @@ ls output/_posts/
 ## 📖 Documentation
 
 - **[Development Guide](CLAUDE.md)** - Complete development documentation
-- **[System Design](DESING.md)** - Comprehensive architecture (1587 lines)
+- **[System Design](DESING.md)** - Comprehensive architecture and historical roadmap
+- **[Monetization Roadmap](docs/monetization-roadmap.md)** - Feasibility review and implementation plan for ads/distribution monetization
 - **[Local Jekyll Preview](.github/LOCAL_JEKYLL_SETUP.md)** - View site locally before deployment
 - **[GitHub Actions Setup](.github/SECRETS_SETUP.md)** - CI/CD configuration
 - **[GitHub Pages Setup](.github/GITHUB_PAGES_SETUP.md)** - Deployment guide
@@ -70,7 +73,7 @@ ls output/_posts/
 
 ```
 ┌──────────────────┐
-│ Topic Discovery  │  30+ RSS feeds, Wikipedia, SpaCy NER
+│ Topic Discovery  │  20+ active feeds, Wikipedia trending, SpaCy NER
 └────────┬─────────┘
          ↓
 ┌──────────────────┐
@@ -78,7 +81,11 @@ ls output/_posts/
 └────────┬─────────┘
          ↓
 ┌──────────────────┐
-│ Content Generator│  OpenAI GPT-4o, multi-source synthesis
+│ ArticleSynthesizer│  Multi-source synthesis to native-level Spanish
+└────────┬─────────┘
+         ↓
+┌──────────────────┐
+│ Level Adapter    │  A2/B1 CEFR adaptation + vocabulary support
 └────────┬─────────┘
          ↓
 ┌──────────────────┐
@@ -90,7 +97,7 @@ ls output/_posts/
 └────────┬─────────┘
          ↓
 ┌──────────────────┐
-│ GitHub Pages     │  Static site deployment
+│ GitHub Pages     │  Static site deployment + optional Telegram publish
 └──────────────────┘
 ```
 
@@ -188,7 +195,7 @@ Example output: `output/_posts/2025-11-12-messi-estados-unidos-a2.md`
 
 ## 🌐 Live Site
 
-**URL:** [https://aizlabs.github.io/spai](https://aizlabs.github.io/spai)
+**URL:** [https://spaili.com](https://spaili.com)
 
 Features:
 - Homepage with article listing
@@ -221,13 +228,16 @@ Features:
 - GitHub Actions workflows
 - Jekyll site with Minimal Mistakes theme
 - GitHub Pages deployment
-- Initial 20+ articles
+- Production domain (`spaili.com`)
+- Optional Telegram channel publishing workflow
+- Initial article catalog
 
 ### 🔜 Phase 3: Growth & Marketing (Next)
 - SEO optimization
 - Google Search Console
-- AdSense application
-- Newsletter setup
+- AdSense readiness and consent implementation
+- Telegram audience growth
+- See [Monetization Roadmap](docs/monetization-roadmap.md)
 
 ## 🤝 Contributing
 
@@ -257,7 +267,7 @@ MIT License - see [LICENSE](LICENSE) file
 
 - **Repository:** [github.com/aizlabs/spai](https://github.com/aizlabs/spai)
 - **Issues:** [github.com/aizlabs/spai/issues](https://github.com/aizlabs/spai/issues)
-- **Live Site:** [aizlabs.github.io/spai](https://aizlabs.github.io/spai)
+- **Live Site:** [spaili.com](https://spaili.com)
 
 ---
 

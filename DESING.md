@@ -1,8 +1,10 @@
 # AutoSpanishBlog — Complete System Design Document
 
-**Version:** 1.0  
-**Date:** November 11, 2025  
+**Version:** 1.1  
+**Date:** March 18, 2026  
 **Purpose:** Automated Spanish language learning content generation and publishing
+
+> Current-state note: this document remains the foundational architecture reference, but parts of the original roadmap are now historical. For the current monetization strategy and feasibility review, see [docs/monetization-roadmap.md](docs/monetization-roadmap.md).
 
 ---
 
@@ -26,16 +28,24 @@
 
 ### Goals
 - **Primary:** Automatically generate 10-12 high-quality Spanish learning articles daily
-- **Revenue:** Break even in 2-3 months via Google AdSense and donations
+- **Revenue direction:** Prioritize web ads first, then distribution-led monetization
 - **Legal:** Ensure content originality through multi-source synthesis
 - **Quality:** Maintain 7.5+/10 quality score through automated gates
 
 ### Core Metrics
 - **Target:** 12 articles/day (360/month)
 - **Cost:** $10-20/month (LLM + infrastructure)
-- **Revenue target:** $50-100/month by month 3
+- **Revenue target:** Deferred until traffic, consent, and policy readiness are in place
 - **Quality bar:** 7.5/10 minimum score
 - **Success rate:** 80%+ articles pass quality gate
+
+### Current Repository State
+
+- The content pipeline is implemented end to end, including generation, quality gate, publishing, and scheduled deployment.
+- Generation is now a **two-step flow**: native-level synthesis followed by A2/B1 adaptation.
+- The production site config points to `https://spaili.com`.
+- Telegram channel publishing exists as an optional post-deploy workflow.
+- Monetization is not implemented yet.
 
 ### Key Constraints
 - **Budget:** Minimize infrastructure costs (prefer free tiers)
@@ -52,7 +62,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    DISCOVERY PHASE (Daily)                       │
-│  Input: RSS feeds, Wikipedia, Google Trends (30+ sources)       │
+│  Input: RSS feeds + Wikipedia trending (20+ active sources)     │
 │  Output: 10-15 ranked topics worth writing about                │
 └────────────────┬────────────────────────────────────────────────┘
                  │
@@ -107,9 +117,11 @@
 - Requests (HTTP)
 
 **LLMs:**
-- Primary: Claude Sonnet 4 (generation)
-- Secondary: Claude Haiku 4 (quality checking)
-- Flexible: OpenAI GPT-4o-mini (fallback)
+- Current default provider: OpenAI
+- Generation: GPT-4o
+- Adaptation: GPT-4o
+- Quality checking: GPT-4o-mini
+- Anthropic remains supported as an alternate provider
 
 **Static Site:**
 - Jekyll (static site generator)
@@ -121,9 +133,11 @@
 - GitHub Actions (scheduling - free)
 - Git (version control + content storage)
 
-**Monetization:**
-- Google AdSense
-- Buttondown (newsletter - free tier)
+**Monetization Direction:**
+- Google AdSense for the web property
+- Telegram for audience growth and possible later channel revenue
+- Facebook / Meta only as an optional republishing channel
+- See [docs/monetization-roadmap.md](docs/monetization-roadmap.md)
 
 ---
 
@@ -136,13 +150,13 @@
 **Implementation:** `TopicDiscoverer` class
 
 **Process:**
-1. Fetch headlines from 30+ sources (RSS, Wikipedia, Google Trends)
+1. Fetch headlines from active RSS feeds and Wikipedia trending
 2. Extract named entities using SpaCy Spanish NER
 3. Cluster topics appearing in 3+ different sources
 4. Rank by "learnability" score
 5. Return top 10-15 topics
 
-**Sources (30+ total):**
+**Sources (current config):**
 
 ```yaml
 # Spanish News
@@ -181,11 +195,7 @@
 - El País Ciencia
 
 # Google Trends
-- España
-- México
-- Argentina
-- Colombia
-- Chile
+# Currently disabled in config because the old RSS approach is no longer active
 ```
 
 **Ranking Algorithm:**
@@ -1360,6 +1370,8 @@ Weighted Average per Article:
 
 ## Implementation Roadmap
 
+This section documents the original build-and-launch sequence. The current monetization implementation plan is maintained separately in [docs/monetization-roadmap.md](docs/monetization-roadmap.md).
+
 ### Phase 1: MVP Core (Weeks 1-2)
 
 **Goal:** End-to-end pipeline working locally
@@ -1721,7 +1733,7 @@ Artículo educativo generado con fines de aprendizaje de idiomas.
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** November 11, 2025  
+**Document Version:** 1.1  
+**Last Updated:** March 18, 2026  
 **Author:** Alex  
 **Status:** Ready for Implementation

@@ -1,6 +1,6 @@
 # GitHub Pages Setup Guide
 
-This guide walks you through enabling GitHub Pages for the AutoSpanishBlog site.
+This guide walks you through enabling GitHub Pages for the AutoSpanishBlog / Spai site.
 
 ## Prerequisites
 
@@ -32,7 +32,7 @@ Under "Build and deployment":
 
 If you have a custom domain:
 
-1. In the "Custom domain" field, enter: `autospanishblog.com`
+1. In the "Custom domain" field, enter: `spaili.com`
 2. Click **Save**
 3. Wait for DNS check to complete
 4. Check **Enforce HTTPS** (recommended)
@@ -41,7 +41,7 @@ If you have a custom domain:
 
 Add these records to your domain registrar:
 
-**For apex domain (autospanishblog.com):**
+**For apex domain (`spaili.com`):**
 ```
 A Record: 185.199.108.153
 A Record: 185.199.109.153
@@ -49,7 +49,7 @@ A Record: 185.199.110.153
 A Record: 185.199.111.153
 ```
 
-**For www subdomain:**
+**For `www` subdomain:**
 ```
 CNAME Record: www → aizlabs.github.io
 ```
@@ -60,18 +60,18 @@ CNAME Record: www → aizlabs.github.io
 2. Check **Actions** tab to see build progress
 3. Build takes 2-5 minutes
 4. Once complete, visit your site:
-   - Default: https://aizlabs.github.io/spai
-   - Custom: https://autospanishblog.com
+   - Default: GitHub Pages project URL
+   - Custom: https://spaili.com
 
 ## Site URLs
 
 ### Default GitHub Pages URL
-- **URL:** https://aizlabs.github.io/spai
-- **Config:** Update `baseurl: "/spai"` in `output/_config.yml`
+- **URL:** repository-specific GitHub Pages project URL
+- **Config:** only use a non-empty `baseurl` if you deploy as a project site under a subpath
 
 ### Custom Domain
-- **URL:** https://autospanishblog.com
-- **Config:** Update `baseurl: ""` and `url: "https://autospanishblog.com"` in `output/_config.yml`
+- **URL:** https://spaili.com
+- **Config:** keep `baseurl: ""` and `url: "https://spaili.com"` in `output/_config.yml`
 
 ## Troubleshooting
 
