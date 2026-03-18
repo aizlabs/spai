@@ -161,11 +161,60 @@ jobs:
           printf '%s\n' "${{ steps.target.outputs.target_sha }}" > .telegram-published/${{ steps.target.outputs.target_sha }}/published.txt
 
       - name: Save Telegram publish marker
+        id: telegram_cache_save
         if: steps.publish_config.outputs.enabled == 'true' && steps.telegram_cache.outputs.cache-hit != 'true' && steps.detect_posts.outputs.has_posts == 'true' && steps.publish.outcome == 'success'
         uses: actions/cache/save@v4
         with:
           path: .telegram-published/${{ steps.target.outputs.target_sha }}
           key: telegram-published-${{ steps.target.outputs.target_sha }}
+
+      - name: Summarize Telegram publish status
+        if: always()
+        run: |
+          echo "### Telegram Publish Status" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ steps.publish_config.outputs.enabled }}" != "true" ]; then
+            echo "- Status: skipped" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Reason: Telegram publish secrets are not configured" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "- Target commit: \`${{ steps.target.outputs.target_sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ steps.telegram_cache.outputs.cache-hit }}" = "true" ]; then
+            echo "- Cache restore: hit" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Publish: skipped because this commit already has a saved marker" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "- Cache restore: miss" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ steps.detect_posts.outputs.has_posts }}" != "true" ]; then
+            echo "- Publish: skipped because no new article posts were detected" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if [ -f telegram_posts.txt ]; then
+            echo "- New article files: $(wc -l < telegram_posts.txt | tr -d ' ')" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          PUBLISH_OUTCOME="${{ steps.publish.outcome }}"
+          SAVE_OUTCOME="${{ steps.telegram_cache_save.outcome }}"
+
+          if [ -z "$PUBLISH_OUTCOME" ]; then
+            PUBLISH_OUTCOME="skipped"
+          fi
+          if [ -z "$SAVE_OUTCOME" ]; then
+            SAVE_OUTCOME="skipped"
+          fi
+
+          echo "- Publish step outcome: $PUBLISH_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Marker save outcome: $SAVE_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$PUBLISH_OUTCOME" = "success" ] && [ "$SAVE_OUTCOME" = "success" ]; then
+            echo "- Cache marker: saved for this commit" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Summarize Telegram publish warning
         if: always() && steps.publish.outcome == 'failure'
