@@ -115,8 +115,12 @@ class AudioPipeline:
         )
 
     def _mime_type_for_format(self, format_name: str) -> str:
-        return {
+        mime_types = {
             "mp3": "audio/mpeg",
             "m4a": "audio/mp4",
             "wav": "audio/wav",
-        }[format_name]
+        }
+        try:
+            return mime_types[format_name]
+        except KeyError as exc:
+            raise ValueError(f"Unsupported audio format for MIME type mapping: {format_name}") from exc
