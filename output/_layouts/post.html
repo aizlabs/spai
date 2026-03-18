@@ -35,6 +35,19 @@ layout: default
     {% endunless %}
 
     <section class="page__content" itemprop="text">
+      {% if page.audio and page.audio.url %}
+        <section class="article-audio" aria-label="Audio del artículo">
+          <h2>Escuchar</h2>
+          <audio controls preload="none">
+            <source src="{{ page.audio.url }}" type="{{ page.audio.mime_type | default: 'audio/mpeg' }}">
+            Tu navegador no soporta la reproducción de audio.
+          </audio>
+          <p class="article-audio__meta">
+            {% if page.audio.voice %}Voz: {{ page.audio.voice }}{% endif %}
+            {% if page.audio.provider %}{% if page.audio.voice %} · {% endif %}{{ page.audio.provider }}{% endif %}
+          </p>
+        </section>
+      {% endif %}
       {{ content }}
       {% if page.link %}<div><a href="{{ page.link }}" class="btn btn--primary">{{ site.data.ui-text[site.locale].ext_link_label | default: "Direct Link" }}</a></div>{% endif %}
     </section>

@@ -276,6 +276,7 @@ date: {date_str}
 level: {article.level}
 topics: {self._format_topics(article)}
 {self._format_sources(article.sources)}
+{self._format_audio(article)}
 reading_time: {article.reading_time}
 ---
 
@@ -393,6 +394,26 @@ reading_time: {article.reading_time}
                 escaped_url = self._escape_yaml_string(url)
                 lines.append(f"  url: \"{escaped_url}\"")
 
+        return '\n'.join(lines)
+
+    def _format_audio(self, article: AdaptedArticle) -> str:
+        """Format website audio metadata for YAML frontmatter."""
+        audio = article.audio
+        if not audio or not audio.url:
+            return 'audio: null'
+
+        lines = ['audio:']
+        lines.append(f'  url: "{self._escape_yaml_string(audio.url)}"')
+        if audio.format:
+            lines.append(f'  format: "{self._escape_yaml_string(audio.format)}"')
+        if audio.mime_type:
+            lines.append(f'  mime_type: "{self._escape_yaml_string(audio.mime_type)}"')
+        if audio.provider:
+            lines.append(f'  provider: "{self._escape_yaml_string(audio.provider)}"')
+        if audio.voice:
+            lines.append(f'  voice: "{self._escape_yaml_string(audio.voice)}"')
+        if audio.duration_seconds is not None:
+            lines.append(f'  duration_seconds: {audio.duration_seconds}')
         return '\n'.join(lines)
 
     def _format_attribution(self, sources) -> str:

@@ -6,9 +6,8 @@ automatic validation, serialization, and clear type hints.
 """
 
 from typing import Dict, List, Optional, Union
-from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # =============================================================================
 # Topic Discovery Models
@@ -112,6 +111,41 @@ class VocabularyItem(BaseModel):
     explanation: Optional[str] = Field(default=None, description="Spanish A2/B1 explanation")
 
 
+class SpeechScript(BaseModel):
+    """Provider-neutral narration payload derived from an article."""
+
+    title: str = Field(..., min_length=1, description="Spoken title for the article")
+    sections: List[str] = Field(default_factory=list, description="Ordered narration blocks")
+    narration: str = Field(..., min_length=1, description="Flattened narration text")
+    includes_vocabulary: bool = Field(default=False, description="Whether glossary terms are narrated")
+
+
+class AudioAsset(BaseModel):
+    """Audio metadata for website and future multi-channel delivery."""
+
+    url: Optional[str] = Field(default=None, description="Public audio URL")
+    storage_key: Optional[str] = Field(default=None, description="Canonical object key in media storage")
+    provider: Optional[str] = Field(default=None, description="TTS provider identifier")
+    voice: Optional[str] = Field(default=None, description="Selected voice identifier")
+    format: str = Field(default="mp3", pattern="^(mp3|m4a|wav)$", description="Container format")
+    mime_type: Optional[str] = Field(default=None, description="MIME type for playback")
+    local_script_path: Optional[str] = Field(default=None, description="Local narration script path")
+    manifest_path: Optional[str] = Field(default=None, description="Local audio manifest path")
+    duration_seconds: Optional[float] = Field(default=None, ge=0, description="Audio duration")
+
+
+class AudioManifest(BaseModel):
+    """Local manifest describing the audio preparation state for an article."""
+
+    article_slug: str = Field(..., min_length=1)
+    title: str = Field(..., min_length=1)
+    level: str = Field(..., pattern="^(A2|B1)$")
+    created_at: str = Field(..., min_length=1, description="ISO timestamp")
+    status: str = Field(default="pending", pattern="^(pending|ready)$")
+    script: SpeechScript
+    asset: AudioAsset
+
+
 class AdaptedArticle(BaseModel):
     """Level-adapted article from LevelAdapter (Step 2)"""
     title: str = Field(..., min_length=1, max_length=150, description="Adapted title")
@@ -129,6 +163,7 @@ class AdaptedArticle(BaseModel):
 
     # Base article stored for regeneration
     base_article: Optional[BaseArticle] = Field(default=None, description="Base article for regeneration")
+    audio: Optional[AudioAsset] = Field(default=None, description="Audio metadata for delivery surfaces")
 
     @field_validator('reading_time', mode='before')
     @classmethod
@@ -276,6 +311,44 @@ class AlertsConfig(BaseModel):
     cooldown_hours: int = Field(default=6, ge=0, description="Hours to suppress duplicate alerts")
 
 
+class AudioStorageConfig(BaseModel):
+    """Cloud storage configuration for generated audio assets."""
+
+    bucket: Optional[str] = Field(default=None, description="S3 bucket for canonical audio storage")
+    region: Optional[str] = Field(default=None, description="AWS region for uploads")
+    prefix: str = Field(default="articles", description="Key prefix inside the bucket")
+
+
+class AudioWebsiteConfig(BaseModel):
+    """Website playback feature flags."""
+
+    enabled: bool = Field(default=True, description="Render website audio player when audio exists")
+
+
+class AudioConfig(BaseModel):
+    """Configuration for TTS preparation and future upload/delivery."""
+
+    enabled: bool = Field(default=False, description="Enable audio preparation for approved articles")
+    provider: Optional[str] = Field(default=None, description="TTS provider identifier")
+    voice: Optional[str] = Field(default=None, description="Voice identifier")
+    format: str = Field(default="mp3", pattern="^(mp3|m4a|wav)$", description="Primary output format")
+    output_path: str = Field(default="./output/audio", description="Local working directory for audio files")
+    include_vocabulary: bool = Field(
+        default=False,
+        description="Whether narrated scripts should include glossary terms",
+    )
+    upload_enabled: bool = Field(
+        default=False,
+        description="Enable object-storage uploads once the AWS side is provisioned",
+    )
+    public_base_url: Optional[str] = Field(
+        default=None,
+        description="Public CDN base URL, e.g. https://media.spaili.com",
+    )
+    s3: AudioStorageConfig = Field(default_factory=AudioStorageConfig)
+    website: AudioWebsiteConfig = Field(default_factory=AudioWebsiteConfig)
+
+
 # =============================================================================
 # Helper Functions
 # =============================================================================
@@ -301,4 +374,6 @@ def dict_to_adapted_article(data: Dict) -> AdaptedArticle:
         data['topic'] = Topic(**data['topic'])
     if 'base_article' in data and data['base_article'] and isinstance(data['base_article'], dict):
         data['base_article'] = BaseArticle(**data['base_article'])
+    if 'audio' in data and data['audio'] and isinstance(data['audio'], dict):
+        data['audio'] = AudioAsset(**data['audio'])
     return AdaptedArticle(**data)

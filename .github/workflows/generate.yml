@@ -27,6 +27,16 @@ jobs:
       ALERT_SMTP_PORT: ${{ secrets.ALERT_SMTP_PORT || 587 }}
       ALERT_TELEGRAM_BOT_TOKEN: ${{ secrets.ALERT_TELEGRAM_BOT_TOKEN }}
       ALERT_TELEGRAM_CHAT_ID: ${{ secrets.ALERT_TELEGRAM_CHAT_ID }}
+      AUDIO_ENABLED: ${{ secrets.AUDIO_ENABLED }}
+      AUDIO_PROVIDER: ${{ secrets.AUDIO_PROVIDER }}
+      AUDIO_VOICE: ${{ secrets.AUDIO_VOICE }}
+      AUDIO_FORMAT: ${{ secrets.AUDIO_FORMAT }}
+      AUDIO_UPLOAD_ENABLED: ${{ secrets.AUDIO_UPLOAD_ENABLED }}
+      AUDIO_PUBLIC_BASE_URL: ${{ secrets.AUDIO_PUBLIC_BASE_URL }}
+      AUDIO_S3_BUCKET: ${{ secrets.AUDIO_S3_BUCKET }}
+      AUDIO_S3_REGION: ${{ secrets.AWS_REGION }}
+      AUDIO_S3_PREFIX: ${{ secrets.AUDIO_S3_PREFIX }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
 
     permissions:
       contents: write  # Needed to commit and push files
@@ -81,6 +91,16 @@ jobs:
           ALERT_SMTP_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           ALERT_TELEGRAM_BOT_TOKEN: ${{ secrets.ALERT_TELEGRAM_BOT_TOKEN }}
           ALERT_TELEGRAM_CHAT_ID: ${{ secrets.ALERT_TELEGRAM_CHAT_ID }}
+          AUDIO_ENABLED: ${{ secrets.AUDIO_ENABLED }}
+          AUDIO_PROVIDER: ${{ secrets.AUDIO_PROVIDER }}
+          AUDIO_VOICE: ${{ secrets.AUDIO_VOICE }}
+          AUDIO_FORMAT: ${{ secrets.AUDIO_FORMAT }}
+          AUDIO_UPLOAD_ENABLED: ${{ secrets.AUDIO_UPLOAD_ENABLED }}
+          AUDIO_PUBLIC_BASE_URL: ${{ secrets.AUDIO_PUBLIC_BASE_URL }}
+          AUDIO_S3_BUCKET: ${{ secrets.AUDIO_S3_BUCKET }}
+          AUDIO_S3_REGION: ${{ secrets.AWS_REGION }}
+          AUDIO_S3_PREFIX: ${{ secrets.AUDIO_S3_PREFIX }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           uv run spai-pipeline
 
