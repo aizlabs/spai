@@ -31,6 +31,7 @@ The goal is to add monetization in a way that is technically simple, policy-comp
 - No advertiser-facing disclosure or ad placement rules
 - No published production support email or formal takedown contact outside GitHub Issues
 - No content policy layer to reduce sensitive-news inventory before ad review
+- Public-facing site copy still exposes implementation details that are not part of the reader value proposition
 
 ## Feasibility Matrix
 
@@ -44,6 +45,7 @@ The goal is to add monetization in a way that is technically simple, policy-comp
 
 - Publish a real support contact for readers, rights holders, and ad review
 - Finalize privacy/disclosure wording
+- Remove public-facing "AI-generated", "automatically generated", or similar implementation framing unless a specific legal or policy obligation requires it
 - Add privacy controls for both:
   - EEA/UK/Switzerland opt-in consent flows
   - California and similar US-state opt-out flows, including GPC handling where applicable
@@ -452,12 +454,14 @@ Tasks:
 - Define one canonical monetization plan in this document
 - Replace placeholder production contact information in public site pages
 - Finalize privacy-policy language for analytics, advertising, and consent
+- Audit public-facing copy and remove unnecessary references to AI generation or automation where those references do not serve users, compliance, or editorial trust
 - Add a short advertising disclosure policy for future sponsored placements
 
 Exit criteria:
 
 - Docs no longer contradict current site config or pipeline behavior
 - Public-facing policy pages are credible enough for ad review
+- Public site messaging emphasizes educational value, source quality, and reader usefulness rather than implementation mechanics
 
 ## Phase 1: AdSense readiness
 
@@ -483,6 +487,7 @@ Suggested launch guardrails:
 - Stable navigation and policy pages
 - Real contact method and takedown path
 - No placeholder branding or broken links
+- No unnecessary "AI-generated" framing in reader-facing brand or editorial copy
 
 Exit criteria:
 
