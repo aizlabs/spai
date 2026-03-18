@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - 'output/**'
+  workflow_run:
+    workflows: ["Generate Spanish Learning Articles"]
+    types:
+      - completed
+    branches: [main]
   workflow_dispatch:
 
 # Grant GITHUB_TOKEN permissions for Pages deployment
@@ -21,9 +26,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -61,12 +69,22 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy
     continue-on-error: true
-    if: github.event_name == 'push' && secrets.TELEGRAM_PUBLISH_BOT_TOKEN != '' && secrets.TELEGRAM_PUBLISH_CHAT_ID != ''
+    if: (github.event_name == 'push' || github.event_name == 'workflow_run') && secrets.TELEGRAM_PUBLISH_BOT_TOKEN != '' && secrets.TELEGRAM_PUBLISH_CHAT_ID != ''
     steps:
+      - name: Resolve publish target
+        id: target
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "target_sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "target_sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ steps.target.outputs.target_sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -77,19 +95,28 @@ jobs:
         id: telegram_cache
         uses: actions/cache/restore@v4
         with:
-          path: .telegram-published/${{ github.sha }}
-          key: telegram-published-${{ github.sha }}
+          path: .telegram-published/${{ steps.target.outputs.target_sha }}
+          key: telegram-published-${{ steps.target.outputs.target_sha }}
 
       - name: Detect new article posts
         id: detect_posts
         if: steps.telegram_cache.outputs.cache-hit != 'true'
         run: |
-          BEFORE_SHA="${{ github.event.before }}"
-          if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            BEFORE_SHA="$(git hash-object -t tree /dev/null)"
+          TARGET_SHA="${{ steps.target.outputs.target_sha }}"
+
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            BEFORE_SHA="$(git rev-list --parents -n 1 "$TARGET_SHA" | awk '{print $2}')"
+            if [ -z "$BEFORE_SHA" ]; then
+              BEFORE_SHA="$(git hash-object -t tree /dev/null)"
+            fi
+          else
+            BEFORE_SHA="${{ github.event.before }}"
+            if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+              BEFORE_SHA="$(git hash-object -t tree /dev/null)"
+            fi
           fi
 
-          git diff --name-only --diff-filter=A "$BEFORE_SHA" "${{ github.sha }}" -- output/_posts/ \
+          git diff --name-only --diff-filter=A "$BEFORE_SHA" "$TARGET_SHA" -- output/_posts/ \
             | grep -E '^output/_posts/.*\.md$' \
             | sort > telegram_posts.txt || true
 
@@ -116,15 +143,15 @@ jobs:
       - name: Create Telegram publish marker
         if: steps.telegram_cache.outputs.cache-hit != 'true' && steps.detect_posts.outputs.has_posts == 'true' && steps.publish.outcome == 'success'
         run: |
-          mkdir -p .telegram-published/${{ github.sha }}
-          printf '%s\n' "${{ github.sha }}" > .telegram-published/${{ github.sha }}/published.txt
+          mkdir -p .telegram-published/${{ steps.target.outputs.target_sha }}
+          printf '%s\n' "${{ steps.target.outputs.target_sha }}" > .telegram-published/${{ steps.target.outputs.target_sha }}/published.txt
 
       - name: Save Telegram publish marker
         if: steps.telegram_cache.outputs.cache-hit != 'true' && steps.detect_posts.outputs.has_posts == 'true' && steps.publish.outcome == 'success'
         uses: actions/cache/save@v4
         with:
-          path: .telegram-published/${{ github.sha }}
-          key: telegram-published-${{ github.sha }}
+          path: .telegram-published/${{ steps.target.outputs.target_sha }}
+          key: telegram-published-${{ steps.target.outputs.target_sha }}
 
       - name: Summarize Telegram publish warning
         if: always() && steps.publish.outcome == 'failure'
@@ -150,7 +177,7 @@ jobs:
           ALERT_TELEGRAM_BOT_TOKEN: ${{ secrets.ALERT_TELEGRAM_BOT_TOKEN }}
           ALERT_TELEGRAM_CHAT_ID: ${{ secrets.ALERT_TELEGRAM_CHAT_ID }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_SHA: ${{ github.sha }}
+          TARGET_SHA: ${{ steps.target.outputs.target_sha }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_SERVER_URL: ${{ github.server_url }}
         run: |
@@ -162,7 +189,7 @@ jobs:
           message = (
               "Telegram channel publishing failed after Pages deploy.\n"
               f"Repository: {os.environ['GITHUB_REPOSITORY']}\n"
-              f"Commit: {os.environ['GITHUB_SHA']}\n"
+              f"Commit: {os.environ['TARGET_SHA']}\n"
               f"Run: {os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
           )
           payload = json.dumps(
