@@ -2,7 +2,7 @@
 
 **Modularity Score: 9/10** ⭐
 
-Each component is **100% independent** and can be tested/iterated in isolation.
+Core components remain independently testable, but the system now includes the full production pipeline rather than discovery/fetching only.
 
 ---
 
@@ -33,6 +33,31 @@ tail -f logs/local.log
 **What it does:** Fetches articles from URLs, extracts clean text with Trafilatura
 **Output:** 5 sources per topic (300 words each)
 **Config:** `config/base.yaml` → `sources` section
+
+### Content Generator
+```bash
+# Test generation pipeline
+uv run spai-generate
+```
+
+**What it does:** Runs two-step generation:
+- `ArticleSynthesizer` creates a native-level source synthesis
+- `LevelAdapter` adapts that article to A2 or B1
+
+**Output:** Adapted article with vocabulary, summary, metadata, and retained base article for regeneration
+**Config:** `config/base.yaml` → `generation`, `llm`
+
+### Quality Gate
+
+**What it does:** Scores generated articles and triggers regeneration if needed
+**Output:** Approved article or rejection after max attempts
+**Config:** `config/base.yaml` → `quality_gate`
+
+### Publisher
+
+**What it does:** Saves approved articles as Jekyll posts with structured source metadata
+**Output:** Markdown files in `output/_posts/`
+**Config:** `config/base.yaml` → `output`
 
 ---
 
@@ -111,7 +136,13 @@ ranking:
 |-----------|---------------|-------------|----------------|
 | Discovery | `scripts/topic_discovery.py` | `scripts/test_discovery.py` | `discovery`, `ranking` |
 | Fetcher | `scripts/content_fetcher.py` | `scripts/test_fetcher.py` | `sources` |
-| Config | `scripts/config.py` | - | `config/base.yaml`, `config/local.yaml` |
+| Synthesizer | `scripts/article_synthesizer.py` | `tests/test_article_synthesizer.py` | `generation`, `llm` |
+| Level Adapter | `scripts/level_adapter.py` | `tests/test_level_adapter.py` | `generation`, `llm` |
+| Generator | `scripts/content_generator.py` | `scripts/test_generator.py` | `generation`, `llm` |
+| Quality Gate | `scripts/quality_gate.py` | `tests/test_quality_gate.py` | `quality_gate` |
+| Publisher | `scripts/publisher.py` | `tests/test_publisher_sources.py` | `output` |
+| Telegram Publish | `scripts/publish_telegram_channel.py` | `tests/test_telegram_channel_publisher.py` | site config + deploy workflow |
+| Config | `scripts/config.py` | `tests/test_config.py` | `config/base.yaml`, `config/local.yaml` |
 
 ---
 
@@ -147,16 +178,17 @@ uv run python -c "import spacy; nlp = spacy.load('es_core_news_sm'); print('✓ 
 
 ## Status
 
-✅ **Implemented & Fully Modular:**
+✅ **Implemented & Modular:**
 - Topic Discovery Engine
 - Content Fetcher
-- Configuration System
-- Logger Infrastructure
-
-⏳ **Not Yet Implemented:**
-- Content Generator
+- Two-step Content Generation
 - Quality Gate
 - Publisher
 - Main Pipeline Orchestrator (`scripts/main.py`)
+- Telegram Channel Publisher
+- Configuration System
+- Logger Infrastructure
 
-**Result:** You can iterate on discovery and fetching **completely independently** without touching other code.
+**Result:** You can iterate on most pipeline stages independently, then verify orchestration with the integration tests in `tests/`.
+
+See also: [docs/monetization-roadmap.md](docs/monetization-roadmap.md)

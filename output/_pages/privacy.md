@@ -14,14 +14,12 @@ Spai ("nosotros", "nuestro") se compromete a proteger su privacidad. Esta polít
 ## Información que Recopilamos
 
 ### Información Automática
-Cuando visita nuestro sitio, automáticamente recopilamos:
-- Dirección IP
-- Tipo de navegador
-- Páginas visitadas
-- Tiempo en el sitio
-- Dispositivo utilizado
+Actualmente, Spai es un sitio estático alojado en GitHub Pages. En este momento:
+- no ejecutamos analítica propia en la web
+- no cargamos publicidad activa
+- no instalamos un banner de cookies porque todavía no usamos herramientas publicitarias o de medición que lo requieran
 
-Esta información se recopila mediante **cookies** y tecnologías similares.
+GitHub y otros proveedores de infraestructura pueden procesar registros técnicos básicos como dirección IP, agente de usuario y solicitudes HTTP para operar el servicio.
 
 ### Información que Proporciona
 Actualmente, **no recopilamos información personal directamente** ya que no tenemos:
@@ -43,16 +41,14 @@ La información recopilada automáticamente se usa para:
 Las cookies son pequeños archivos de texto almacenados en su dispositivo por los sitios web que visita.
 
 ### Cookies que Usamos
+**Estado actual:**
+- No usamos Google Analytics activo
+- No usamos Google AdSense activo
+- No cargamos cookies publicitarias propias desde el sitio
 
-**Google Analytics (futuro):**
-- Propósito: Analítica web
-- Tipo: Cookies de terceros
-- Datos: Anónimos y agregados
-
-**Google AdSense (futuro):**
-- Propósito: Publicidad
-- Tipo: Cookies de terceros
-- Personalización: Puede optar por no participar
+**Si esto cambia en el futuro:**
+- actualizaremos esta política antes de activar analítica o publicidad
+- añadiremos los avisos y mecanismos de consentimiento que correspondan
 
 ### Control de Cookies
 Puede controlar las cookies mediante:
@@ -65,8 +61,8 @@ Puede controlar las cookies mediante:
 ### GitHub Pages
 Nuestro sitio está alojado en **GitHub Pages**. GitHub puede recopilar información técnica según su [Política de Privacidad](https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement).
 
-### Google AdSense (futuro)
-Cuando activemos publicidad, Google mostrará anuncios y usará cookies para:
+### Google AdSense (si se activa en el futuro)
+Si activamos publicidad más adelante, Google podrá mostrar anuncios y usar cookies para:
 - Mostrar anuncios relevantes
 - Limitar la frecuencia de anuncios
 - Medir la efectividad
@@ -82,7 +78,7 @@ Si se encuentra en la Unión Europea, tiene derecho a:
 - **Portabilidad:** Recibir sus datos en formato estructurado
 - **Objeción:** Oponerse al procesamiento de sus datos
 
-Para ejercer estos derechos, contáctenos en: [tu-email@example.com](mailto:tu-email@example.com)
+Para ejercer estos derechos, contáctenos mediante GitHub Issues: [github.com/aizlabs/spai/issues](https://github.com/aizlabs/spai/issues)
 
 ## Seguridad
 
@@ -118,7 +114,7 @@ Podemos actualizar esta política ocasionalmente. Los cambios se publicarán en 
 
 Para preguntas sobre esta política de privacidad:
 
-- **Email:** [tu-email@example.com](mailto:tu-email@example.com)
+- **Email:** soporte por email no publicado todavía
 - **GitHub:** [github.com/aizlabs/spai/issues](https://github.com/aizlabs/spai/issues)
 
 ---
@@ -126,4 +122,4 @@ Para preguntas sobre esta política de privacidad:
 Esta política de privacidad está diseñada para cumplir con:
 - GDPR (General Data Protection Regulation)
 - CCPA (California Consumer Privacy Act)
-- Requisitos de Google AdSense
+- Requisitos de Google AdSense, en caso de activarse

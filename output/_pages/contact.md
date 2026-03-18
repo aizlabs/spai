@@ -13,7 +13,9 @@ layout: single
 
 ## Email
 
-**General inquiries:** [tu-email@example.com](mailto:tu-email@example.com)
+**General inquiries:** Email support is not published yet.
+
+For now, please use GitHub Issues for operational questions, bug reports, takedown requests, and content corrections.
 
 Por favor incluye:
 - Asunto claro
@@ -51,7 +53,7 @@ Publicamos 12 artículos nuevos cada día (3 ejecuciones de 4 artículos).
 Actualmente, los temas se seleccionan automáticamente de fuentes de noticias. Pero puedes sugerir categorías temáticas vía GitHub Issues.
 
 **¿Encontré un error en un artículo, ¿qué hago?**
-Por favor repórtalo vía email o GitHub Issue con el enlace al artículo y descripción del error.
+Por favor repórtalo vía GitHub Issue con el enlace al artículo y una descripción clara del problema.
 
 ### Sobre el Uso
 
@@ -76,10 +78,10 @@ Sí, completamente. Licencia MIT. [GitHub Repository](https://github.com/aizlabs
 
 ## Social Media (Futuro)
 
-Planeamos expandir a:
-- Twitter/X: Artículos destacados
-- Newsletter: Resumen semanal
-- YouTube: Guías de uso
+Canales actuales o previstos:
+- Telegram: distribución automatizada de artículos cuando está configurado
+- Newsletter: resumen semanal
+- Redes sociales cortas: resúmenes y vocabulario destacado
 
 *Coming soon!*
 
@@ -89,7 +91,7 @@ Planeamos expandir a:
 
 Si crees que algún artículo viola derechos de autor u otras leyes:
 
-1. Envía un email detallando:
+1. Abre un GitHub Issue detallando:
    - URL del artículo
    - Razón del reclamo
    - Tu información de contacto

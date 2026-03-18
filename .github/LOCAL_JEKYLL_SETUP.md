@@ -65,10 +65,10 @@ bundle exec jekyll serve --port 4001
 
 Open your browser to:
 ```
-http://localhost:4000/spai/
+http://localhost:4000/
 ```
 
-Note the `/spai/` baseurl - this matches the GitHub Pages URL structure.
+The current production config uses an empty `baseurl`, so local preview should normally be served from the root path.
 
 ## Configuration for Local Development
 
@@ -82,7 +82,7 @@ bundle exec jekyll serve --config _config.yml,_config_dev.yml
 Create `output/_config_dev.yml`:
 ```yaml
 # Local development overrides
-baseurl: ""  # Empty for localhost
+baseurl: ""
 url: "http://localhost:4000"
 ```
 
@@ -183,7 +183,7 @@ bundle exec jekyll serve
 
 Check baseurl in `_config.yml`:
 - Local: `baseurl: ""`
-- GitHub Pages: `baseurl: "/spai"`
+- Production: `baseurl: ""`
 
 ## Live Reload
 
@@ -197,7 +197,7 @@ gem install eventmachine --platform ruby
 bundle exec jekyll serve --livereload
 ```
 
-Then visit `http://localhost:4000/spai/` and edits will auto-refresh.
+Then visit `http://localhost:4000/` and edits will auto-refresh.
 
 ## Testing Articles
 
@@ -208,7 +208,7 @@ Then visit `http://localhost:4000/spai/` and edits will auto-refresh.
 ls _posts/
 
 # View article in browser
-# Navigate to http://localhost:4000/spai/articles/[article-slug]/
+# Navigate to http://localhost:4000/articles/[article-slug]/
 ```
 
 ### Test Article Format
@@ -270,7 +270,7 @@ docker run --rm \
   jekyll serve
 ```
 
-Visit: `http://localhost:4000/spai/`
+Visit: `http://localhost:4000/`
 
 ## Makefile Helper (Optional)
 
@@ -338,7 +338,7 @@ cd output/
 bundle exec jekyll serve
 
 # 3. View in browser
-open http://localhost:4000/spai/
+open http://localhost:4000/
 
 # 4. If satisfied, commit
 cd ..
@@ -375,7 +375,7 @@ Once satisfied with local preview:
    - Follow [GitHub Pages Setup Guide](.github/GITHUB_PAGES_SETUP.md)
 
 4. **View live site:**
-   - https://aizlabs.github.io/spai
+   - https://spaili.com
 
 ## Support
 

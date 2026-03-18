@@ -1,7 +1,7 @@
-# AutoSpanishBlog - Phase 1 Development Guide
+# AutoSpanishBlog / Spai - Development Guide
 
-**Phase:** MVP Core
-**Goal:** End-to-end pipeline working locally
+**Phase:** Post-MVP, production pipeline active
+**Goal:** Maintain and extend the automated generation + publishing system
 **Stack:** Python 3.11 + uv
 
 ---
@@ -17,7 +17,7 @@ uv sync
 
 # Configure API key
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
+# Edit .env and add your OPENAI_API_KEY and/or ANTHROPIC_API_KEY
 
 # Create output directories
 mkdir -p output/_posts logs
@@ -70,8 +70,8 @@ spai/
 ## Key Files Overview
 
 **Design Documents:**
-- `DESING.md` - Complete system design (1587 lines)
-- **Useful code examples in `example-code/` directory**
+- `DESING.md` - Foundational system design
+- `docs/monetization-roadmap.md` - Current monetization feasibility and implementation plan
 
 **Configuration:**
 - `config/base.yaml` - Shared settings for discovery, ranking, and fetching
@@ -81,8 +81,13 @@ spai/
 **Components Implemented:**
 - `scripts/topic_discovery.py` - Multi-source topic discovery with SpaCy NER
 - `scripts/content_fetcher.py` - Article fetcher with Trafilatura and parallel processing
-- `scripts/test_discovery.py` - Topic discovery test harness
-- `scripts/test_fetcher.py` - Content fetcher test harness
+- `scripts/article_synthesizer.py` - Base article synthesis
+- `scripts/level_adapter.py` - CEFR level adaptation
+- `scripts/content_generator.py` - Two-step generation orchestration
+- `scripts/quality_gate.py` - Quality scoring and regeneration loop
+- `scripts/publisher.py` - Jekyll markdown output
+- `scripts/publish_telegram_channel.py` - Optional Telegram channel publishing
+- `scripts/main.py` - End-to-end pipeline orchestration
 
 ---
 
@@ -161,10 +166,10 @@ uv run mypy scripts/ --config-file mypy.ini --show-error-codes
 
 ```bash
 # Create worktrees for parallel dev
-git worktree add ../spai-discovery feature/topic-discovery
-git worktree add ../spai-fetcher feature/content-fetcher
-git worktree add ../spai-generator feature/content-generator
-git worktree add ../spai-quality feature/quality-gate
+git worktree add ../spai-discovery codex/topic-discovery
+git worktree add ../spai-fetcher codex/content-fetcher
+git worktree add ../spai-generator codex/content-generator
+git worktree add ../spai-quality codex/quality-gate
 
 # Work in worktree
 cd ../spai-discovery
@@ -210,6 +215,14 @@ base.yaml → local.yaml → ENV vars → final config
 - Per article: $0.031 (with regeneration)
 - Phase 1 testing (50 articles): $1.50-2.00
 - Daily production (12 articles): $0.37
+
+## Current State Snapshot
+
+- Production site config points to `https://spaili.com`
+- The generator uses a two-step flow: synthesis, then level adaptation
+- GitHub Actions generates content 3x daily and deploys the Jekyll site
+- Telegram article publishing is available as an optional post-deploy step
+- Monetization is not implemented yet; see `docs/monetization-roadmap.md`
 
 ---
 
