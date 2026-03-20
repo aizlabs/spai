@@ -72,6 +72,11 @@ def test_audio_pipeline_writes_manifest_and_script_when_enabled(
     assert audio_path.exists()
     assert "Fin del artículo." in script_path.read_text(encoding="utf-8")
     mock_tts_client.audio.speech.create.assert_called_once()
+    info_messages = [call.args[0] for call in mock_logger.info.call_args_list]
+    assert (
+        "Skipping audio upload for '%s' because audio.upload_enabled=false; audio remains local at %s"
+        in info_messages
+    )
 
 
 def test_audio_pipeline_uploads_and_sets_public_url_when_upload_enabled(
@@ -175,8 +180,27 @@ def test_audio_pipeline_raises_when_upload_enabled_without_bucket(
         )
     except ValueError as exc:
         assert "audio.s3.bucket" in str(exc)
+        error_messages = [call.args[0] for call in mock_logger.error.call_args_list]
+        assert (
+            "Audio upload cannot start for '%s': audio.s3.bucket is not configured"
+            in error_messages
+        )
     else:
         raise AssertionError("Expected ValueError when bucket is missing")
+
+
+def test_audio_pipeline_logs_when_audio_disabled(base_config, mock_logger, sample_a2_article):
+    base_config.audio.enabled = False
+
+    pipeline = AudioPipeline(base_config, mock_logger)
+
+    prepared_article = pipeline.prepare_for_publish(sample_a2_article)
+
+    assert prepared_article.audio is None
+    mock_logger.info.assert_called_with(
+        "Skipping audio preparation for '%s' because audio.enabled=false",
+        sample_a2_article.title,
+    )
 
 
 def test_build_speech_script_marks_vocabulary_false_when_article_has_no_glossary(sample_a2_article):

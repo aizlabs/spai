@@ -206,6 +206,12 @@ def main():
                         logger.info("Phase 5: Preparing website audio metadata...")
                         final_article = audio_pipeline.prepare_for_publish(final_article)
                         logger.info("")
+                    else:
+                        logger.info(
+                            "Phase 5: Skipping website audio preparation because "
+                            "audio.enabled=false"
+                        )
+                        logger.info("")
 
                     # Phase 5: Publish
                     current_stage = f"publishing:{level}"
