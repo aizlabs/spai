@@ -72,6 +72,11 @@ def test_audio_pipeline_writes_manifest_and_script_when_enabled(
     assert audio_path.exists()
     assert "Fin del artículo." in script_path.read_text(encoding="utf-8")
     mock_tts_client.audio.speech.create.assert_called_once()
+    info_messages = [call.args[0] for call in mock_logger.info.call_args_list]
+    assert (
+        "Skipping audio upload for '%s' because audio.upload_enabled=false; audio remains local at %s"
+        in info_messages
+    )
 
 
 def test_audio_pipeline_uploads_and_sets_public_url_when_upload_enabled(
@@ -113,6 +118,11 @@ def test_audio_pipeline_uploads_and_sets_public_url_when_upload_enabled(
         "articles/2024/01/20240102-120000-espana-tiene-menos-contaminacion-a2/article.mp3"
     )
     mock_s3_client.upload_file.assert_called_once()
+    info_messages = [call.args[0] for call in mock_logger.info.call_args_list]
+    assert "Synthesizing audio for '%s' with provider=%s voice=%s format=%s" in info_messages
+    assert "Synthesized audio for '%s' at %s" in info_messages
+    assert "Uploading audio for '%s' to s3://%s/%s" in info_messages
+    assert "Uploaded audio for '%s' to %s" in info_messages
 
 
 def test_audio_pipeline_maps_m4a_to_openai_aac_response_format(
@@ -170,8 +180,28 @@ def test_audio_pipeline_raises_when_upload_enabled_without_bucket(
         )
     except ValueError as exc:
         assert "audio.s3.bucket" in str(exc)
+        error_calls = mock_logger.error.call_args_list
+        assert error_calls
+        assert error_calls[-1].args == (
+            "Audio upload cannot start for '%s': audio.s3.bucket is not configured",
+            sample_a2_article.title,
+        )
     else:
         raise AssertionError("Expected ValueError when bucket is missing")
+
+
+def test_audio_pipeline_logs_when_audio_disabled(base_config, mock_logger, sample_a2_article):
+    base_config.audio.enabled = False
+
+    pipeline = AudioPipeline(base_config, mock_logger)
+
+    prepared_article = pipeline.prepare_for_publish(sample_a2_article)
+
+    assert prepared_article.audio is None
+    mock_logger.info.assert_called_with(
+        "Skipping audio preparation for '%s' because audio.enabled=false",
+        sample_a2_article.title,
+    )
 
 
 def test_build_speech_script_marks_vocabulary_false_when_article_has_no_glossary(sample_a2_article):
