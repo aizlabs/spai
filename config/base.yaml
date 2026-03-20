@@ -58,8 +58,8 @@ quality_gate:
 # Audio preparation (website first; Telegram and podcast later)
 audio:
   enabled: false
-  provider: elevenlabs
-  voice: ""
+  provider: openai
+  voice: alloy
   format: mp3
   output_path: ./output/audio
   include_vocabulary: false
