@@ -113,6 +113,11 @@ def test_audio_pipeline_uploads_and_sets_public_url_when_upload_enabled(
         "articles/2024/01/20240102-120000-espana-tiene-menos-contaminacion-a2/article.mp3"
     )
     mock_s3_client.upload_file.assert_called_once()
+    info_messages = [call.args[0] for call in mock_logger.info.call_args_list]
+    assert "Synthesizing audio for '%s' with provider=%s voice=%s format=%s" in info_messages
+    assert "Synthesized audio for '%s' at %s" in info_messages
+    assert "Uploading audio for '%s' to s3://%s/%s" in info_messages
+    assert "Uploaded audio for '%s' to %s" in info_messages
 
 
 def test_audio_pipeline_maps_m4a_to_openai_aac_response_format(

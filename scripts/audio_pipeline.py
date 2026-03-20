@@ -77,7 +77,15 @@ class AudioPipeline:
         audio_path.parent.mkdir(parents=True, exist_ok=True)
 
         script_path.write_text(script.narration, encoding="utf-8")
+        self.logger.info(
+            "Synthesizing audio for '%s' with provider=%s voice=%s format=%s",
+            article.title,
+            self.audio_config.provider,
+            self.audio_config.voice or "alloy",
+            self.audio_config.format,
+        )
         self._synthesize_audio(script.narration, audio_path)
+        self.logger.info("Synthesized audio for '%s' at %s", article.title, audio_path)
 
         storage_key = self._build_storage_key(timestamp, artifact_id)
         asset = AudioAsset(
@@ -93,8 +101,10 @@ class AudioPipeline:
         )
 
         if self.audio_config.upload_enabled:
+            self.logger.info("Uploading audio for '%s' to s3://%s/%s", article.title, self.audio_config.s3.bucket, storage_key)
             self._upload_audio_file(audio_path, storage_key, asset.mime_type)
             asset.url = self._build_public_url(storage_key)
+            self.logger.info("Uploaded audio for '%s' to %s", article.title, asset.url)
 
         manifest = AudioManifest(
             article_slug=artifact_id,
