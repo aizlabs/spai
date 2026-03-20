@@ -36,13 +36,10 @@ Until then, the code can generate local narration scripts and manifests under `o
 7. Create an IAM user or role limited to the audio bucket/prefix.
 8. Store the IAM access key in GitHub repository secrets.
 
-## GitHub Repository Secrets
+## GitHub Actions Variables
 
-Add these repository secrets before enabling CI uploads:
+Add these repository variables before enabling CI uploads:
 
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-- `AWS_REGION`
 - `AUDIO_ENABLED`
 - `AUDIO_PROVIDER`
 - `AUDIO_VOICE`
@@ -51,9 +48,19 @@ Add these repository secrets before enabling CI uploads:
 - `AUDIO_PUBLIC_BASE_URL`
 - `AUDIO_S3_BUCKET`
 - `AUDIO_S3_PREFIX`
+- `AWS_REGION`
+
+## GitHub Repository Secrets
+
+Add these repository secrets before enabling CI uploads:
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
 
 Recommended values:
 
+- `AUDIO_PROVIDER=openai`
+- `AUDIO_VOICE=alloy`
 - `AUDIO_PUBLIC_BASE_URL=https://media.spaili.com`
 - `AUDIO_S3_PREFIX=articles`
 

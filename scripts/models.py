@@ -130,6 +130,7 @@ class AudioAsset(BaseModel):
     format: str = Field(default="mp3", pattern="^(mp3|m4a|wav)$", description="Container format")
     mime_type: Optional[str] = Field(default=None, description="MIME type for playback")
     local_script_path: Optional[str] = Field(default=None, description="Local narration script path")
+    local_audio_path: Optional[str] = Field(default=None, description="Local synthesized audio path")
     manifest_path: Optional[str] = Field(default=None, description="Local audio manifest path")
     duration_seconds: Optional[float] = Field(default=None, ge=0, description="Audio duration")
 
