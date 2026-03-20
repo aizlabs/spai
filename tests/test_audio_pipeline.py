@@ -115,6 +115,36 @@ def test_audio_pipeline_uploads_and_sets_public_url_when_upload_enabled(
     mock_s3_client.upload_file.assert_called_once()
 
 
+def test_audio_pipeline_maps_m4a_to_openai_aac_response_format(
+    base_config,
+    mock_logger,
+    sample_a2_article,
+    tmp_path,
+):
+    base_config.audio.enabled = True
+    base_config.audio.provider = "openai"
+    base_config.audio.voice = "alloy"
+    base_config.audio.format = "m4a"
+    base_config.audio.output_path = str(tmp_path / "audio")
+
+    mock_tts_client = MagicMock()
+    mock_tts_client.audio.speech.create.return_value = DummySpeechResponse()
+
+    pipeline = AudioPipeline(base_config, mock_logger, tts_client=mock_tts_client)
+
+    prepared_article = pipeline.prepare_for_publish(
+        sample_a2_article,
+        timestamp=datetime(2024, 1, 2, 12, 0, 0),
+    )
+
+    assert prepared_article.audio is not None
+    assert prepared_article.audio.format == "m4a"
+    assert prepared_article.audio.local_audio_path is not None
+    assert prepared_article.audio.local_audio_path.endswith("article.m4a")
+    mock_tts_client.audio.speech.create.assert_called_once()
+    assert mock_tts_client.audio.speech.create.call_args.kwargs["response_format"] == "aac"
+
+
 def test_audio_pipeline_raises_when_upload_enabled_without_bucket(
     base_config,
     mock_logger,

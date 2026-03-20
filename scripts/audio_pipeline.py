@@ -144,7 +144,7 @@ class AudioPipeline:
             input=narration,
             model=OPENAI_TTS_MODEL,
             voice=self.audio_config.voice or "alloy",
-            response_format=self.audio_config.format,
+            response_format=self._openai_response_format(self.audio_config.format),
         )
         response.write_to_file(audio_path)
 
@@ -200,3 +200,16 @@ class AudioPipeline:
             return mime_types[format_name]
         except KeyError as exc:
             raise ValueError(f"Unsupported audio format for MIME type mapping: {format_name}") from exc
+
+    def _openai_response_format(self, format_name: str) -> str:
+        response_formats = {
+            "mp3": "mp3",
+            "m4a": "aac",
+            "wav": "wav",
+        }
+        try:
+            return response_formats[format_name]
+        except KeyError as exc:
+            raise ValueError(
+                f"Unsupported audio format for OpenAI TTS response mapping: {format_name}"
+            ) from exc
