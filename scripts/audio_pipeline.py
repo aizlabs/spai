@@ -88,7 +88,7 @@ class AudioPipeline:
             self.audio_config.voice or "alloy",
             self.audio_config.format,
         )
-        self._synthesize_audio(script.narration, audio_path)
+        self._synthesize_audio(article.title, script.narration, audio_path)
         self.logger.info("Synthesized audio for '%s' at %s", article.title, audio_path)
 
         storage_key = self._build_storage_key(timestamp, artifact_id)
@@ -111,7 +111,7 @@ class AudioPipeline:
                 self.audio_config.s3.bucket,
                 storage_key,
             )
-            self._upload_audio_file(audio_path, storage_key, asset.mime_type)
+            self._upload_audio_file(article.title, audio_path, storage_key, asset.mime_type)
             asset.url = self._build_public_url(storage_key)
             self.logger.info("Uploaded audio for '%s' to %s", article.title, asset.url)
         else:
@@ -161,12 +161,12 @@ class AudioPipeline:
             if part
         )
 
-    def _synthesize_audio(self, narration: str, audio_path: Path) -> None:
+    def _synthesize_audio(self, article_title: str, narration: str, audio_path: Path) -> None:
         provider = (self.audio_config.provider or "").strip().lower()
         if provider != "openai":
             self.logger.error(
                 "Audio synthesis cannot start for '%s': unsupported audio provider '%s'",
-                audio_path,
+                article_title,
                 self.audio_config.provider,
             )
             raise ValueError(f"Unsupported audio provider: {self.audio_config.provider}")
@@ -179,12 +179,18 @@ class AudioPipeline:
         )
         response.write_to_file(audio_path)
 
-    def _upload_audio_file(self, audio_path: Path, storage_key: str, mime_type: Optional[str]) -> None:
+    def _upload_audio_file(
+        self,
+        article_title: str,
+        audio_path: Path,
+        storage_key: str,
+        mime_type: Optional[str],
+    ) -> None:
         bucket = self.audio_config.s3.bucket
         if not bucket:
             self.logger.error(
                 "Audio upload cannot start for '%s': audio.s3.bucket is not configured",
-                audio_path,
+                article_title,
             )
             raise ValueError("Audio upload is enabled but audio.s3.bucket is not configured")
 
@@ -192,7 +198,7 @@ class AudioPipeline:
         if not public_base_url:
             self.logger.error(
                 "Audio upload cannot start for '%s': audio.public_base_url is not configured",
-                audio_path,
+                article_title,
             )
             raise ValueError("Audio upload is enabled but audio.public_base_url is not configured")
 
@@ -209,7 +215,7 @@ class AudioPipeline:
         except (BotoCoreError, ClientError) as exc:
             self.logger.error(
                 "Failed to upload audio for '%s' to s3://%s/%s: %s",
-                audio_path,
+                article_title,
                 bucket,
                 storage_key,
                 exc,

@@ -180,10 +180,11 @@ def test_audio_pipeline_raises_when_upload_enabled_without_bucket(
         )
     except ValueError as exc:
         assert "audio.s3.bucket" in str(exc)
-        error_messages = [call.args[0] for call in mock_logger.error.call_args_list]
-        assert (
-            "Audio upload cannot start for '%s': audio.s3.bucket is not configured"
-            in error_messages
+        error_calls = mock_logger.error.call_args_list
+        assert error_calls
+        assert error_calls[-1].args == (
+            "Audio upload cannot start for '%s': audio.s3.bucket is not configured",
+            sample_a2_article.title,
         )
     else:
         raise AssertionError("Expected ValueError when bucket is missing")
