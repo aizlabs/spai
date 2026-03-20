@@ -59,6 +59,8 @@ Add these repository secrets before enabling CI uploads:
 
 Recommended values:
 
+- `AUDIO_PROVIDER=openai`
+- `AUDIO_VOICE=alloy`
 - `AUDIO_PUBLIC_BASE_URL=https://media.spaili.com`
 - `AUDIO_S3_PREFIX=articles`
 
