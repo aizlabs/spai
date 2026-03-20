@@ -23,6 +23,8 @@ jobs:
       ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
       EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
       EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       ALERT_SMTP_HOST: ${{ secrets.ALERT_SMTP_HOST || 'smtp.gmail.com' }}
       ALERT_SMTP_PORT: ${{ secrets.ALERT_SMTP_PORT || 587 }}
       ALERT_TELEGRAM_BOT_TOKEN: ${{ secrets.ALERT_TELEGRAM_BOT_TOKEN }}
@@ -87,6 +89,8 @@ jobs:
           ALERT_SMTP_HOST: ${{ secrets.ALERT_SMTP_HOST || 'smtp.gmail.com' }}
           ALERT_SMTP_PORT: ${{ secrets.ALERT_SMTP_PORT || 587 }}
           ALERT_SMTP_TLS: ${{ secrets.ALERT_SMTP_TLS || true }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           ALERT_SMTP_USERNAME: ${{ secrets.EMAIL_USERNAME }}
           ALERT_SMTP_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           ALERT_TELEGRAM_BOT_TOKEN: ${{ secrets.ALERT_TELEGRAM_BOT_TOKEN }}
