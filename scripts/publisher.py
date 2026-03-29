@@ -313,9 +313,8 @@ reading_time: {article.reading_time}
                     normalized_spanish,
                 )
 
-            definition = item.english
-            if item.explanation:
-                definition = f"{definition} - {item.explanation}"
+            definition_parts = [part for part in (item.english, item.explanation) if part]
+            definition = " - ".join(definition_parts)
             vocab_lines.append(f"- **{normalized_spanish}** - {definition}")
 
         return '\n'.join(vocab_lines)
