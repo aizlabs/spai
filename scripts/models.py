@@ -146,7 +146,7 @@ def coerce_vocabulary_items(value: Any) -> List["VocabularyItem"]:
     elif isinstance(value, list):
         iterable = value
     else:
-        return value
+        return []
 
     items: List[VocabularyItem] = []
     for raw_item in iterable:
