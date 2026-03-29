@@ -205,7 +205,7 @@ def test_audio_pipeline_logs_when_audio_disabled(base_config, mock_logger, sampl
 
 
 def test_build_speech_script_marks_vocabulary_false_when_article_has_no_glossary(sample_a2_article):
-    article_without_vocabulary = sample_a2_article.model_copy(update={"vocabulary": {}})
+    article_without_vocabulary = sample_a2_article.model_copy(update={"vocabulary": []})
 
     script = build_speech_script(article_without_vocabulary, include_vocabulary=True)
 

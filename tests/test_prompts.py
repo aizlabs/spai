@@ -3,14 +3,16 @@ Unit tests for prompts module
 """
 
 import pytest
+
 from scripts.prompts import (
-    get_synthesis_prompt,
+    LEVEL_EVALUATION_CRITERIA,
+    LEVEL_GENERATION_RULES,
     get_a2_adaptation_prompt,
     get_b1_adaptation_prompt,
+    get_glossary_generation_prompt,
+    get_synthesis_prompt,
     prepare_source_context,
     validate_level,
-    LEVEL_GENERATION_RULES,
-    LEVEL_EVALUATION_CRITERIA
 )
 
 
@@ -150,7 +152,9 @@ class TestGetA2AdaptationPrompt:
 
         # Should have output format
         assert 'OUTPUT FORMAT' in prompt
-        assert 'vocabulary' in prompt
+        assert '"content"' in prompt
+        assert '"vocabulary"' not in prompt
+        assert 'no markdown emphasis' in prompt.lower()
 
     def test_a2_prompt_without_feedback(self, sample_base_article):
         """Test A2 prompt without feedback"""
@@ -228,11 +232,26 @@ class TestGetB1AdaptationPrompt:
         assert 'Subjunctive only' in prompt or 'Subjunctive' in prompt
 
     def test_b1_prompt_vocabulary_glosses(self, sample_base_article):
-        """Test B1 prompt specifies vocabulary glosses"""
+        """Test B1 prompt explicitly forbids inline gloss formatting."""
         prompt = get_b1_adaptation_prompt(sample_base_article)
 
-        assert '8-12' in prompt
-        assert '**bold**' in prompt
+        assert 'markdown emphasis' in prompt.lower()
+        assert '"vocabulary"' not in prompt
+
+
+class TestGetGlossaryGenerationPrompt:
+    """Test glossary prompt generation from final article text."""
+
+    def test_glossary_prompt_targets_final_text(self, sample_a2_text_article):
+        prompt = get_glossary_generation_prompt(sample_a2_text_article)
+
+        assert sample_a2_text_article.title in prompt
+        assert sample_a2_text_article.content in prompt
+        assert "English-speaking learner" in prompt
+        assert '"term"' in prompt
+        assert '"english"' in prompt
+        assert '"explanation"' in prompt
+        assert "Do not add filler terms" in prompt
 
 
 class TestLevelGenerationRules:
@@ -297,4 +316,4 @@ class TestPromptConsistency:
             assert 'JSON' in prompt
             assert '"title"' in prompt
             assert '"content"' in prompt
-            assert '"vocabulary"' in prompt
+            assert '"vocabulary"' not in prompt

@@ -3,12 +3,12 @@ Level Adapter - Step 2 of Two-Step Generation
 
 Adapts base (native-level) articles to specific CEFR levels.
 Uses different strategies per level:
-- A2: Glossing strategy with strict simplification
-- B1: Light adaptation with vocabulary support
+- A2: Strict simplification
+- B1: Light adaptation with vocabulary simplification
 """
 
 import logging
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
@@ -16,12 +16,6 @@ from pydantic import BaseModel, Field
 from scripts.config import AppConfig
 from scripts.llm_factory import create_chat_model, with_structured_output
 from scripts.models import AdaptedArticle, BaseArticle
-from scripts.text_utils import (
-    ensure_vocabulary_bolded,
-    filter_vocabulary_to_content,
-    normalize_existing_vocabulary_bolding,
-    normalize_vocabulary_term,
-)
 
 
 class LevelAdapter:
@@ -54,7 +48,6 @@ class LevelAdapter:
             Adapted article dict with:
             - title (level-appropriate)
             - content (adapted to level)
-            - vocabulary (glossary)
             - summary (level-appropriate)
             - reading_time (int)
             - level (metadata)
@@ -75,9 +68,7 @@ class LevelAdapter:
         feedback: Optional[List[str]] = None
     ) -> AdaptedArticle:
         """
-        Adapt to A2 using glossing strategy
-
-        Uses existing A2_NEWS_PROCESSING_INSTRUCTIONS from prompts module
+        Adapt to A2 with text-only simplification.
         """
         from scripts import prompts
 
@@ -102,10 +93,7 @@ class LevelAdapter:
         feedback: Optional[List[str]] = None
     ) -> AdaptedArticle:
         """
-        Adapt to B1 with light modifications
-
-        Similar structure to A2 but less restrictive.
-        Uses B1 adaptation prompt (similar to A2, will be refined externally).
+        Adapt to B1 with light text-only modifications.
         """
         from scripts import prompts
 
@@ -133,17 +121,9 @@ class LevelAdapter:
         )
         chat_model = create_chat_model(self.llm_config, model_name, self.temperature)
 
-        class VocabularyItem(BaseModel):
-            term: str = Field(..., description="Vocabulary term in Spanish")
-            gloss: str = Field(..., description="Translation or explanation for the term")
-
         class AdaptationResponse(BaseModel):
             title: str = Field(..., description="Level-appropriate title")
             content: str = Field(..., description="Level-adapted content")
-            vocabulary: List[VocabularyItem] = Field(
-                default_factory=list,
-                description="Vocabulary glossary as a list of term/gloss pairs",
-            )
             summary: str = Field(..., description="Level-appropriate summary")
             reading_time: int = Field(..., description="Estimated reading time in minutes")
 
@@ -173,49 +153,8 @@ class LevelAdapter:
         """Convert structured adaptation response into AdaptedArticle with metadata."""
         try:
             parsed = response.model_dump()
-
-            raw_vocabulary = parsed.get("vocabulary") or []
-            vocab_dict: Dict[str, str] = {}
-            for item in raw_vocabulary:
-                if isinstance(item, dict):
-                    term = item.get("term")
-                    gloss = item.get("gloss")
-                else:
-                    term = getattr(item, "term", None)
-                    gloss = getattr(item, "gloss", None)
-                if term and gloss:
-                    original_term = str(term)
-                    normalized_term = normalize_vocabulary_term(original_term)
-                    if not normalized_term:
-                        continue
-
-                    if normalized_term != original_term:
-                        self.logger.warning(
-                            "Normalized vocabulary term for article '%s': '%s' -> '%s'",
-                            base_article.title,
-                            original_term,
-                            normalized_term,
-                        )
-
-                    vocab_dict[normalized_term] = str(gloss)
-            parsed["vocabulary"] = vocab_dict
-
-            parsed["content"] = normalize_existing_vocabulary_bolding(
-                parsed.get("content", ""),
-                vocab_dict,
-            )
-            parsed["content"] = ensure_vocabulary_bolded(parsed["content"], vocab_dict)
-            filtered_vocabulary, dropped_terms = filter_vocabulary_to_content(
-                parsed["content"],
-                vocab_dict,
-            )
-            if dropped_terms:
-                self.logger.warning(
-                    "Dropped vocabulary terms not present in article '%s': %s",
-                    base_article.title,
-                    ", ".join(dropped_terms),
-                )
-            parsed["vocabulary"] = filtered_vocabulary
+            parsed["content"] = parsed.get("content", "").replace("**", "")
+            parsed["vocabulary"] = []
 
             parsed['level'] = level
             parsed['topic'] = base_article.topic.model_dump() if base_article.topic else None

@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from scripts.models import LLMConfig, LLMModelsConfig
+from scripts.models import AdaptedArticle, LLMConfig, LLMModelsConfig, VocabularyItem
 
 
 def _valid_models() -> LLMModelsConfig:
@@ -32,3 +32,45 @@ def test_llm_config_enforces_temperature_upper_bound(field_name, value):
 
     with pytest.raises(ValidationError):
         LLMConfig(**base_kwargs)
+
+
+def test_adapted_article_coerces_legacy_vocabulary_dict():
+    article = AdaptedArticle(
+        title="Título",
+        content="Texto suficiente para pasar la validación. " * 4,
+        summary="Resumen suficientemente largo.",
+        reading_time=2,
+        level="A2",
+        vocabulary={
+            "cambio climático": "climate change - cambios en el clima del planeta",
+        },
+    )
+
+    assert article.vocabulary == [
+        VocabularyItem(
+            term="cambio climático",
+            english="climate change",
+            explanation="cambios en el clima del planeta",
+        )
+    ]
+
+
+def test_adapted_article_coerces_legacy_term_gloss_items():
+    article = AdaptedArticle(
+        title="Título",
+        content="Texto suficiente para pasar la validación. " * 4,
+        summary="Resumen suficientemente largo.",
+        reading_time=2,
+        level="B1",
+        vocabulary=[
+            {"term": "bombardeos", "gloss": "bombings - ataques con bombas desde el aire"},
+        ],
+    )
+
+    assert article.vocabulary == [
+        VocabularyItem(
+            term="bombardeos",
+            english="bombings",
+            explanation="ataques con bombas desde el aire",
+        )
+    ]

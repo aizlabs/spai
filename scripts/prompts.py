@@ -50,9 +50,9 @@ B1 Level Grammar Expectations:
 """
 }
 
-# A2 News Processing Instructions with Glossing Strategy
+# A2 News Processing Instructions (text adaptation only)
 A2_NEWS_PROCESSING_INSTRUCTIONS = """
-You are a Spanish language education specialist tasked with adapting news articles to A2 CEFR level while maintaining their informational value. You will simplify structure and grammar while preserving key terminology through glossing.
+You are a Spanish language education specialist tasked with adapting news articles to A2 CEFR level while maintaining their informational value. Your job is to produce a clean A2 article. Glossary creation happens later in a separate stage, so do not create glossary entries or markdown emphasis.
 
 === STEP 1: VOCABULARY ASSESSMENT ===
 
@@ -62,10 +62,10 @@ You are a Spanish language education specialist tasked with adapting news articl
     - Category B: Important but secondary information
     - Category C: Can be eliminated or simplified without loss
 1.3 From Category A and B, rank by importance for the article's main message
-1.4 Select the TOP 10-15 terms for glossing (prioritize Category A)
-1.5 Mark selected terms with **bold** formatting in the text
-1.6 Keep glossed terms in original form (do not simplify these)
-1.7 Do not gloss proper names and named entities, such as geographical locations. Those should be explained naturally in text.
+1.4 Simplify or rewrite Category B and C terms whenever possible
+1.5 For Category A terms, explain them naturally in the article instead of preserving them for a glossary
+1.6 Do not add markdown bolding, glossary markers, or vocabulary notes anywhere in the article
+1.7 Do not rely on later glossary support to justify keeping difficult wording in the text
 
 === STEP 2: STRUCTURAL MODIFICATIONS ===
 
@@ -103,51 +103,9 @@ You are a Spanish language education specialist tasked with adapting news articl
     - Cause: porque, por eso
     - Time: cuando, mientras, antes, después
 
-=== STEP 3: GLOSS GENERATION ===
+=== STEP 3: CONTENT ORGANIZATION ===
 
-3.1 FORMAT FOR EACH GLOSS
-[Spanish term] - [English translation] - [Spanish explanation]
-
-3.2 GLOSS CREATION RULES
-    - Spanish explanations use ONLY A2 vocabulary
-    - Maximum 15 words per Spanish explanation
-    - Multi-word expressions glossed as complete units
-    - Include cultural context when needed
-    - Use present tense for all definitions
-    - Be functional, not dictionary-style
-    - Do not gloss proper names and well known named entities like geographical locaions.
-
-3.3 GLOSS CATEGORIES AND EXAMPLES
-
-Political/Institutional:
-• "Congreso de los Diputados" - Congress of Deputies - donde los políticos españoles hacen las leyes
-• "presidente del Gobierno" - Prime Minister - la persona que dirige el gobierno de España
-
-Economic:
-• "tasa de desempleo" - unemployment rate - el porcentaje de personas sin trabajo
-• "recortes presupuestarios" - budget cuts - cuando el gobierno reduce el dinero que gasta
-
-Social/Cultural:
-• "estado de alarma" - state of emergency - situación especial cuando hay un problema grave
-• "comunidades autónomas" - autonomous communities - las 17 regiones de España con su gobierno
-
-Technical:
-• "cambio climático" - climate change - cuando la temperatura del planeta sube
-• "energías renovables" - renewable energy - energía del sol, viento y agua
-
-General:
-• "Traicionar a" - betray - significa hacer algo malo contra una persona que confías.
-• "Tomar decisiones" - make decisions - significa pensar y elegir qué hacer.
-
-3.4 GLOSSING LIMITS
-    - Minimum: 8 glosses (for simple articles)
-    - Target: 10-15 glosses,  the more the better.
-    - Maximum: 20 glosses (absolute limit)
-    - If more than 20 terms need glossing, prioritize by importance
-
-=== STEP 4: CONTENT ORGANIZATION ===
-
-4.1 ARTICLE STRUCTURE
+3.1 ARTICLE STRUCTURE
     Title: Maximum 10 words, clear and direct
 
     Lead paragraph (2-3 sentences):
@@ -165,22 +123,20 @@ General:
     - Summary or future implications
     - Keep very simple
 
-4.2 PARAGRAPH GUIDELINES
+3.2 PARAGRAPH GUIDELINES
     - Maximum 5 sentences per paragraph
     - Start with clearest, simplest statement
     - Add supporting details progressively
     - End with transition to next paragraph
 
-=== STEP 5: QUALITY VERIFICATION ===
+=== STEP 4: QUALITY VERIFICATION ===
 
 Before finalizing, verify:
 
 □ VOCABULARY
-  - 80%+ of non-glossed words are within A2 level (top 1,500 words)
-  - All glossed terms are marked with **bold**
-  - No more than 15 terms are glossed
-  - Glosses use only A2 vocabulary
-  - Vocabulary term values are plain text only, with no markdown markers
+  - 80%+ of words are within A2 level (top 1,500 words)
+  - Difficult terms are simplified or explained naturally in the text
+  - No glossary markers or markdown emphasis appear in the article
 
 □ STRUCTURE
   - No sentence exceeds 20 words
@@ -202,7 +158,7 @@ Before finalizing, verify:
   - Paragraphs are clearly organized
   - Cultural references are explained
 
-=== STEP 6: OUTPUT FORMAT ===
+=== STEP 5: OUTPUT FORMAT ===
 
 Format the final article as follows:
 
@@ -216,22 +172,10 @@ Format the final article as follows:
 
 [Optional body paragraph 3 - context or implications]
 
----
-📚 **Vocabulario / Vocabulary:**
-- [term 1] - [translation] - [explanation]
-- [term 2] - [translation] - [explanation]
-- [term 3] - [translation] - [explanation]
-[...continue for all glossed terms in order of appearance]
-
----
-📰 **Fuente original:** [Source name/URL]
-📅 **Fecha:** [Publication date]
-🎯 **Nivel:** A2 (con glosario)
-
 SPECIAL HANDLING:
 
 For Complex Political Terms:
-1. Always gloss institutions with their function
+1. Explain institutions by function in the body text
 2. Simplify political processes to basic cause-effect
 3. Avoid complex political ideology or theory
 4. Focus on concrete actions rather than abstract policies
@@ -239,11 +183,11 @@ For Complex Political Terms:
 For Economic/Financial Content:
 1. Replace percentages with simple descriptions when possible
 2. Simplify large numbers
-3. Gloss all economic terminology
+3. Rewrite economic terminology into simpler Spanish when possible
 4. Focus on human impact rather than abstract markets
 
 For Cultural References:
-1. Always provide context in the gloss
+1. Always provide context inside the article
 2. Compare to universal concepts when possible
 3. Don't assume cultural knowledge
 4. Keep explanations factual and neutral
@@ -258,17 +202,17 @@ ERROR HANDLING:
 
 If vocabulary simplification conflicts with meaning:
 - Priority: Preserve meaning over strict A2 compliance
-- Solution: Gloss the complex term rather than using inaccurate simple term
+- Solution: explain the complex term in simple Spanish rather than using inaccurate wording
 
 If sentence cannot be shortened:
 - Accept sentences up to 25 words if absolutely necessary
 - Must be clearly structured with simple vocabulary
 - Should be rare exceptions
 
-If more than 15 terms need glossing:
-- Prioritize terms that appear multiple times
-- Prioritize terms essential to understanding
-- Consider if article is too complex for A2 adaptation
+If the article remains too dense:
+- Prioritize simplification of the most important concepts
+- Reduce secondary detail
+- Consider whether the article needs stronger condensation to fit A2
 
 VALIDATION EXAMPLES:
 
@@ -276,30 +220,27 @@ Good Simplification:
 ❌ Original: "El ejecutivo ha manifestado su preocupación por el incremento exponencial de los índices inflacionarios"
 ✅ Simplified: "El gobierno está preocupado. Los precios están subiendo mucho."
 
-Good Glossing Choice:
-✅ Gloss: "**índice de precios**" (appears 3 times, essential to understanding)
-❌ Don't gloss: "manifestar" (can be replaced with "decir")
+Good Vocabulary Choice:
+✅ Keep: "Los precios suben mucho."
+❌ Don't keep: "índice de precios" if simple wording can replace it
 
 Good Sentence Breaking:
 ❌ Original: "El ministro, quien llegó ayer de Bruselas donde participó en una cumbre sobre cambio climático, anunció que España aumentará su inversión en energías renovables."
-✅ Simplified: "El ministro llegó ayer de Bruselas. Participó en una reunión sobre **cambio climático**. Dijo que España va a gastar más dinero en **energías renovables**."
+✅ Simplified: "El ministro llegó ayer de Bruselas. Participó en una reunión sobre el clima. Dijo que España va a gastar más dinero en energía limpia."
 """
 
-# B1 Adaptation Instructions with Staged Workflow
+# B1 Adaptation Instructions (text adaptation only)
 B1_ADAPTATION_INSTRUCTIONS = """
-You are a Spanish language education specialist tasked with adapting news articles to B1 CEFR level while maintaining their informational value. Keep authentic news style but make the language accessible to solid intermediate learners.
+You are a Spanish language education specialist tasked with adapting news articles to B1 CEFR level while maintaining their informational value. Keep authentic news style but make the language accessible to solid intermediate learners. Glossary creation happens later in a separate stage, so do not create glossary entries or markdown emphasis.
 
 === B1 ADAPTATION GUIDELINES ===
 
 STEP 1: VOCABULARY ASSESSMENT
 1.1 Identify words/phrases outside the 3,000 most frequent Spanish words.
-1.2 Selection priorities (choose 8-12 for glossing):
-    - Essential for understanding the main story
-    - Cultural or institutional terms that lack easy cognates
-    - Specialized/technical terms that may block comprehension
-1.3 Mark selected terms with **bold** formatting in the text.
-1.4 Keep glossed terms in original form (do not simplify these).
-1.5 Do not gloss proper names or widely known named entities; explain them naturally in context when needed.
+1.2 Keep only terminology that is necessary for the story's meaning and simplify the rest.
+1.3 Explain cultural, institutional, and technical terms naturally in context when needed.
+1.4 Do not add **bold** formatting, glossary entries, or vocabulary notes.
+1.5 Do not preserve difficult wording just because a future glossary could explain it.
 
 STEP 2: STRUCTURE AND GRAMMAR TUNING
 2.1 Sentence shaping
@@ -316,21 +257,7 @@ STEP 2: STRUCTURE AND GRAMMAR TUNING
     - Convert passive to active when it keeps meaning intact
     - Prefer concrete, direct constructions over abstract phrasing
 
-STEP 3: GLOSS GENERATION
-3.1 Format for each gloss
-[Spanish term] - [English translation] - [Spanish B1 explanation]
-3.2 Gloss rules
-    - Spanish explanations use B1-level vocabulary
-    - Maximum 20 words per Spanish explanation
-    - Multi-word expressions glossed as complete units
-    - Include cultural context when needed; keep functional and practical
-    - Vocabulary term values must be plain text only, with no markdown markers
-3.3 Examples
-- "infraestructura" - infrastructure - conjunto de carreteras, puentes y servicios que permiten que una ciudad funcione
-- "sequía" - drought - tiempo largo sin lluvia que afecta al agua y a los cultivos
-- "presupuesto" - budget - cantidad de dinero que un gobierno o empresa planea gastar
-
-STEP 4: CONTENT ORGANIZATION AND VOICE
+STEP 3: CONTENT ORGANIZATION AND VOICE
 - Title: Clear and engaging (8-10 words)
 - Lead paragraph: WHO, WHAT, WHEN, WHERE
 - Body: 3-4 paragraphs with clear topic sentences
@@ -338,13 +265,13 @@ STEP 4: CONTENT ORGANIZATION AND VOICE
 - Preserve all key facts and maintain chronological order
 - Tone: informative and accessible; do not oversimplify general vocabulary
 
-STEP 5: QUALITY VERIFICATION BEFORE OUTPUT
+STEP 4: QUALITY VERIFICATION BEFORE OUTPUT
 □ Word count is ~300 words (acceptable range 270-330)
-□ 8-12 vocabulary terms are glossed, marked with **bold**, and kept in original form
 □ Sentences average 12-20 words; none exceed 25 words
 □ Mixed tenses appear naturally; subjunctive limited to common expressions
 □ Passive voice avoided unless meaning requires it
-□ Gloss explanations use B1 vocabulary and stay under 20 words
+□ Difficult terms are explained naturally in context when needed
+□ No glossary markers or markdown emphasis appear
 □ Facts, chronology, and nuance from the base article are preserved
 □ Connectors and paragraph structure create clear flow
 """
@@ -521,7 +448,7 @@ def get_quality_judge_prompt(article: AdaptedArticle, level: str) -> str:
     - Level Appropriateness (0-1)
 
     Args:
-        article: Article dict with 'title', 'content', 'vocabulary'
+        article: Article dict with 'title', 'content', and text metadata
         level: CEFR level ('A2' or 'B1')
 
     Returns:
@@ -531,8 +458,6 @@ def get_quality_judge_prompt(article: AdaptedArticle, level: str) -> str:
         ValueError: If level is not supported
     """
     validate_level(level)
-    vocab_count = len(article.vocabulary)
-
     prompt = f"""You are a Spanish language teaching expert. Evaluate this article for {level} level learners.
 
 ARTICLE:
@@ -540,8 +465,6 @@ Title: {article.title}
 Level: {level}
 Content:
 {article.content}
-
-Vocabulary provided: {vocab_count} words
 
 EVALUATION CRITERIA (total 0-10 points):
 
@@ -553,7 +476,7 @@ EVALUATION CRITERIA (total 0-10 points):
 2. Educational Value (0-3 points):
 - Is this interesting and useful for Spanish learners?
 - Does it teach cultural concepts?
-- Are the vocabulary words relevant and useful?
+- Is the article itself useful as a learning text?
 
 3. Content Quality (0-2 points):
 - Is the information accurate and coherent?
@@ -731,34 +654,23 @@ Make sure to specifically address these issues in your adaptation.
 
 Adapt the below NATIVE-LEVEL article to A2 CEFR level following ALL steps (1-6) in the instructions above.
 
-Key points:
-- This is already a well-written, factually accurate article
-- Your job is to make it A2-accessible while preserving the information
-- Use the glossing strategy for important terminology
-- Simplify grammar and sentence structure
-- Maintain factual accuracy absolutely
-- Target word count: ~200 words
-- Target vocabulary: 10-15 glossed terms
+    Key points:
+    - This is already a well-written, factually accurate article
+    - Your job is to make it A2-accessible while preserving the information
+    - Simplify grammar and sentence structure
+    - Maintain factual accuracy absolutely
+    - Target word count: ~200 words
+    - Do not include vocabulary lists or markdown emphasis
 
 OUTPUT FORMAT (return ONLY valid JSON, no markdown):
 {{
   "title": "Simplified title (max 10 words)",
-  "content": "A2-adapted content with **bold** glossed terms (~200 words)",
-  "vocabulary": [
-    {{
-      "term": "plain text difficult Spanish word or phrase from the article, no ** markdown markers",
-      "gloss": "English translation - Spanish A2 explanation"
-    }},
-    {{
-      "term": "plain text important term from the article, no ** markdown markers",
-      "gloss": "English translation - Spanish A2 explanation"
-    }}
-  ],
+  "content": "A2-adapted content in plain text only (~200 words), with no markdown emphasis and no glossary",
   "summary": "One sentence summary in simple Spanish",
   "reading_time": 2
 }}
 
-IMPORTANT: Follow the above A2 processing instructions exactly. Verify all requirements in Step 5 before outputting.
+IMPORTANT: Follow the above A2 processing instructions exactly. Verify all requirements in Step 4 before outputting.
 
 === ARTICLE TO ADAPT ===
 
@@ -817,36 +729,73 @@ Adapt the above native-level article to B1 CEFR level following ALL steps in the
 
 Key goals:
 - Preserve the article's facts and chronology
-- Make specialized terminology accessible through glossing (8-12 terms)
+- Make specialized terminology accessible through context and clearer wording
 - Keep authentic tone while keeping sentences clear and within length limits
 - Target word count: ~300 words (acceptable range 270-330)
+- Do not include vocabulary lists or markdown emphasis
 
 OUTPUT FORMAT (return ONLY valid JSON, no markdown):
 {{
   "title": "Engaging title in Spanish (8-10 words)",
-  "content": "B1-adapted content with **bold** glossed terms (~300 words)",
-  "vocabulary": [
-    {{
-      "term": "plain text difficult Spanish word or phrase from the article, no ** markdown markers",
-      "gloss": "English translation - Spanish B1 explanation"
-    }},
-    {{
-      "term": "plain text important term from the article, no ** markdown markers",
-      "gloss": "English translation - Spanish B1 explanation"
-    }}
-  ],
+  "content": "B1-adapted content in plain text only (~300 words), with no markdown emphasis and no glossary",
   "summary": "One sentence summary in Spanish",
   "reading_time": 3
 }}
 
 QUALITY VERIFICATION (must check BEFORE outputting JSON):
-□ All checklist items in STEP 5 are satisfied
-□ Gloss count is 8-12 with **bold** formatting
+□ All checklist items in STEP 4 are satisfied
 □ Word count within range and sentences under 25 words
 □ Mixed tenses and appropriate connectors are present
 □ Facts and nuance from the base article are preserved
 
-Remember: B1 learners have solid intermediate skills. Maintain authenticity while ensuring clarity and support through glosses.
+Remember: B1 learners have solid intermediate skills. Maintain authenticity while ensuring clarity and support through the article text itself.
 """
 
     return prompt
+
+
+def get_glossary_generation_prompt(article: AdaptedArticle) -> str:
+    """Prompt for glossary generation from the final approved article text."""
+    validate_level(article.level)
+
+    target_counts = {"A2": "4-8", "B1": "5-9"}
+    max_words = {"A2": 15, "B1": 20}
+    explanation_style = {
+        "A2": "Use only very simple Spanish vocabulary.",
+        "B1": "Use clear intermediate Spanish vocabulary.",
+    }
+
+    return f"""You are generating a glossary for an English-speaking learner reading this Spanish article.
+
+Use ONLY the exact final article text below. The article itself is already approved, so do not rewrite it.
+
+SELECTION RULES:
+- Choose only words or phrases that are genuinely useful for an English-speaking learner.
+- Prefer context-specific, reusable, phrase-level terms from the exact article text.
+- Avoid proper names, country names, common place names, and famous people.
+- Avoid obvious cognates and transparent loanwords that an English speaker can easily guess.
+- Avoid isolated modifiers when the real useful unit is a longer phrase.
+- If the article only contains a few strong glossary candidates, return only those. Do not add filler terms.
+
+LEVEL GUIDANCE:
+- Target {target_counts[article.level]} strong glossary entries when possible.
+- {explanation_style[article.level]}
+- Maximum {max_words[article.level]} words per Spanish explanation.
+
+OUTPUT FORMAT (return ONLY valid JSON, no markdown):
+{{
+  "vocabulary": [
+    {{
+      "term": "exact word or phrase from the article text",
+      "english": "natural English translation",
+      "explanation": "short Spanish explanation for the learner"
+    }}
+  ]
+}}
+
+ARTICLE:
+Title: {article.title}
+Level: {article.level}
+Content:
+{article.content}
+"""

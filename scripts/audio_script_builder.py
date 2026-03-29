@@ -7,7 +7,7 @@ from __future__ import annotations
 import re
 from typing import List
 
-from scripts.models import AdaptedArticle, SpeechScript
+from scripts.models import AdaptedArticle, SpeechScript, coerce_vocabulary_items
 
 _EMPHASIS_PATTERN = re.compile(r"\*\*(.+?)\*\*")
 
@@ -21,7 +21,10 @@ def _strip_markdown(text: str) -> str:
 
 def build_speech_script(article: AdaptedArticle, include_vocabulary: bool = False) -> SpeechScript:
     """Convert an adapted article into a narration-friendly plain-text script."""
-    vocabulary_included = bool(include_vocabulary and article.vocabulary)
+    vocabulary_items = [
+        item for item in coerce_vocabulary_items(article.vocabulary) if item.explanation
+    ]
+    vocabulary_included = bool(include_vocabulary and vocabulary_items)
     sections: List[str] = [f"{article.title}. {article.summary}".strip()]
 
     paragraphs = [paragraph.strip() for paragraph in article.content.split("\n\n") if paragraph.strip()]
@@ -29,8 +32,8 @@ def build_speech_script(article: AdaptedArticle, include_vocabulary: bool = Fals
 
     if vocabulary_included:
         vocabulary_lines = [
-            f"{term} significa {definition}."
-            for term, definition in article.vocabulary.items()
+            f"{item.term} significa {item.explanation}."
+            for item in vocabulary_items
         ]
         sections.append("Vocabulario. " + " ".join(_strip_markdown(line) for line in vocabulary_lines))
 
