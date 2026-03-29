@@ -19,7 +19,6 @@ from scripts.llm_factory import create_chat_model, with_structured_output
 from scripts.models import AdaptedArticle, VocabularyItem, coerce_vocabulary_items
 from scripts.text_utils import (
     ensure_vocabulary_bolded,
-    normalize_existing_vocabulary_bolding,
     normalize_vocabulary_term,
     vocabulary_term_present,
 )
@@ -224,7 +223,6 @@ class GlossaryGenerator:
 
         term_map = {item.term: item.english or item.explanation for item in vocabulary}
         cleaned_content = content.replace("**", "")
-        cleaned_content = normalize_existing_vocabulary_bolding(cleaned_content, term_map)
         return ensure_vocabulary_bolded(cleaned_content, term_map)
 
     def enrich_article(self, article: AdaptedArticle) -> AdaptedArticle:
