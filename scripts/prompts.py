@@ -545,11 +545,11 @@ def get_news_processing_prompt(article_text: str, source_url: Optional[str] = No
 {article_text}
 
 === YOUR TASK ===
-Process the above article following ALL steps (1-6) in the instructions above.
-Ensure you verify quality (Step 5) before outputting the final formatted article (Step 6).
+Process the above article following ALL steps (1-5) in the instructions above.
+Ensure you verify quality (Step 4) before outputting the final formatted article (Step 5).
 
 Remember:
-- Process in multiple passes (vocabulary → structure → glosses → verification)
+- Process in multiple passes (vocabulary → structure → verification)
 - Maintain factual accuracy absolutely
 - Preserve the core news value
 - Make it accessible to A2 learners while maintaining authenticity
@@ -652,7 +652,7 @@ Make sure to specifically address these issues in your adaptation.
 
 === YOUR TASK ===
 
-Adapt the below NATIVE-LEVEL article to A2 CEFR level following ALL steps (1-6) in the instructions above.
+Adapt the below NATIVE-LEVEL article to A2 CEFR level following ALL steps (1-5) in the instructions above.
 
     Key points:
     - This is already a well-written, factually accurate article
