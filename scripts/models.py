@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from scripts.text_utils import normalize_vocabulary_term
+
 # =============================================================================
 # Topic Discovery Models
 # =============================================================================
@@ -119,14 +121,6 @@ class VocabularyItem(BaseModel):
         return str(v).strip()
 
 
-def _normalize_legacy_vocabulary_term(term: str) -> str:
-    """Normalize legacy markdown-wrapped terms into plain text."""
-    normalized = str(term).strip()
-    while len(normalized) >= 4 and normalized.startswith("**") and normalized.endswith("**"):
-        normalized = normalized[2:-2].strip()
-    return normalized
-
-
 def split_legacy_gloss(gloss: str) -> tuple[str, str]:
     """Split legacy 'english - explanation' strings into structured fields."""
     cleaned = str(gloss).strip()
@@ -167,7 +161,7 @@ def coerce_vocabulary_items(value: Any) -> List["VocabularyItem"]:
         if not term:
             continue
 
-        normalized_term = _normalize_legacy_vocabulary_term(str(term))
+        normalized_term = normalize_vocabulary_term(str(term))
         if not normalized_term:
             continue
 
