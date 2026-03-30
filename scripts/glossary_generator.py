@@ -553,7 +553,7 @@ class GlossaryGenerator:
                     continue
                 if next_word and next_word not in NON_NOUN_FOLLOWER_TOKENS:
                     return True
-                if previous_word and previous_word not in PREDICATIVE_PREVIOUS_TOKENS:
+                if previous_word:
                     return True
             return False
 
