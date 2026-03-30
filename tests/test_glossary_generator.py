@@ -104,8 +104,9 @@ def test_validate_keeps_high_value_terms_and_context_phrases(glossary_generator)
 
 def test_validate_without_nlp_rejects_people_and_places_but_keeps_organizations(glossary_generator):
     content = (
-        "Pedro Sánchez habló con Francia y París. "
-        "La Guardia Revolucionaria respondió después."
+        "Países afectados: Francia y París. Pedro Sánchez habló después. "
+        "La República Dominicana pidió ayuda. "
+        "La Guardia Revolucionaria respondió junto con Naciones Unidas y la Cruz Roja."
     )
     candidates = [
         VocabularyItem(
@@ -124,18 +125,38 @@ def test_validate_without_nlp_rejects_people_and_places_but_keeps_organizations(
             explanation="capital de Francia",
         ),
         VocabularyItem(
+            term="República Dominicana",
+            english="dominican republic",
+            explanation="país del Caribe",
+        ),
+        VocabularyItem(
             term="Guardia Revolucionaria",
             english="revolutionary guard",
             explanation="fuerza militar de élite en Irán",
+        ),
+        VocabularyItem(
+            term="Naciones Unidas",
+            english="united nations",
+            explanation="organización internacional de países",
+        ),
+        VocabularyItem(
+            term="Cruz Roja",
+            english="red cross",
+            explanation="organización humanitaria internacional",
         ),
     ]
 
     accepted, dropped = glossary_generator.validate(content, candidates)
 
-    assert [item.term for item in accepted] == ["Guardia Revolucionaria"]
+    assert [item.term for item in accepted] == [
+        "Guardia Revolucionaria",
+        "Naciones Unidas",
+        "Cruz Roja",
+    ]
     assert dropped["Pedro Sánchez"] == "named entity or common place/person name"
     assert dropped["Francia"] == "named entity or common place/person name"
     assert dropped["París"] == "named entity or common place/person name"
+    assert dropped["República Dominicana"] == "named entity or common place/person name"
 
 
 def test_apply_bolding_marks_only_accepted_terms(glossary_generator):

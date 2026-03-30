@@ -50,11 +50,107 @@ ORGANIZATION_OR_GROUP_TOKENS = {
     "policia",
     "policía",
     "presidencia",
-    "republica",
-    "república",
     "tribunal",
     "union",
     "unión",
+}
+PLACE_DESIGNATOR_TOKENS = {
+    "capital",
+    "ciudad",
+    "estado",
+    "isla",
+    "islas",
+    "pais",
+    "país",
+    "provincia",
+    "region",
+    "región",
+    "reino",
+    "republica",
+    "república",
+}
+PLACE_CLUE_TOKENS = {
+    "capital",
+    "capitol",
+    "ciudad",
+    "city",
+    "continent",
+    "continente",
+    "country",
+    "estado",
+    "isla",
+    "island",
+    "nation",
+    "nacion",
+    "nación",
+    "pais",
+    "país",
+    "province",
+    "provincia",
+    "region",
+    "región",
+    "reino",
+    "republic",
+    "república",
+    "republica",
+    "state",
+}
+PERSON_CLUE_TOKENS = {
+    "actor",
+    "actriz",
+    "cantante",
+    "expresidente",
+    "former",
+    "gobernante",
+    "king",
+    "leader",
+    "lider",
+    "líder",
+    "ministro",
+    "politician",
+    "politico",
+    "político",
+    "president",
+    "presidente",
+    "queen",
+    "rey",
+}
+ORGANIZATION_CLUE_TOKENS = ORGANIZATION_OR_GROUP_TOKENS | {
+    "committee",
+    "commission",
+    "congress",
+    "council",
+    "court",
+    "cross",
+    "force",
+    "forces",
+    "government",
+    "group",
+    "guard",
+    "ministry",
+    "movement",
+    "nations",
+    "organization",
+    "organisation",
+    "party",
+    "police",
+    "tribunal",
+    "union",
+}
+NAME_CONNECTOR_TOKENS = {
+    "da",
+    "de",
+    "del",
+    "di",
+    "e",
+    "el",
+    "la",
+    "las",
+    "lo",
+    "los",
+    "van",
+    "von",
+    "y",
 }
 COMMON_PLACE_TERMS = {
     "alemania",
@@ -269,7 +365,7 @@ class GlossaryGenerator:
             if matched_term:
                 term = matched_term
 
-            if self._is_rejected_named_entity(doc, content, term, english):
+            if self._is_rejected_named_entity(doc, content, term, english, explanation):
                 dropped[display_term] = "named entity or common place/person name"
                 continue
 
@@ -364,7 +460,14 @@ class GlossaryGenerator:
             return None
         return self._nlp(content)
 
-    def _is_rejected_named_entity(self, doc, content: str, term: str, english: str) -> bool:
+    def _is_rejected_named_entity(
+        self,
+        doc,
+        content: str,
+        term: str,
+        english: str,
+        explanation: str,
+    ) -> bool:
         folded_term = self._fold_text(term)
         if folded_term in COMMON_PLACE_TERMS:
             return True
@@ -373,7 +476,12 @@ class GlossaryGenerator:
             return True
 
         if doc is None:
-            return self._looks_like_rejected_named_entity_without_nlp(content, term, english)
+            return self._looks_like_rejected_named_entity_without_nlp(
+                content,
+                term,
+                english,
+                explanation,
+            )
 
         for span in self._find_matching_spans(doc, term):
             for ent in doc.ents:
@@ -492,33 +600,65 @@ class GlossaryGenerator:
         return token
 
     def _looks_like_title_case_name(self, text: str) -> bool:
-        parts = [part for part in text.split() if part]
-        if not parts:
+        significant_parts = self._significant_name_parts(text)
+        if not significant_parts:
             return False
-        return len(parts) >= 2 and all(part[:1].isupper() for part in parts)
+        return len(significant_parts) >= 2 and all(part[:1].isupper() for part in significant_parts)
 
-    def _looks_like_rejected_named_entity_without_nlp(self, content: str, term: str, english: str) -> bool:
+    def _looks_like_rejected_named_entity_without_nlp(
+        self,
+        content: str,
+        term: str,
+        english: str,
+        explanation: str,
+    ) -> bool:
         term_parts = [part for part in term.split() if part]
-        english_parts = [part for part in english.split() if part]
         if not term_parts:
             return False
 
         folded_term_parts = {self._fold_text(part) for part in term_parts}
-        if folded_term_parts & ORGANIZATION_OR_GROUP_TOKENS:
-            return False
-
-        term_title_case = all(part[:1].isupper() for part in term_parts if part[:1].isalpha())
-        english_title_case = bool(english_parts) and all(
-            part[:1].isupper() for part in english_parts if part[:1].isalpha()
+        english_tokens = set(self._tokenize(english))
+        explanation_tokens = set(self._tokenize(explanation))
+        semantic_tokens = english_tokens | explanation_tokens
+        significant_parts = self._significant_name_parts(term)
+        title_cased = significant_parts and all(part[:1].isupper() for part in significant_parts)
+        explicit_place_clue = bool(semantic_tokens & PLACE_CLUE_TOKENS)
+        person_clue = bool(semantic_tokens & PERSON_CLUE_TOKENS)
+        organization_clue = bool(
+            folded_term_parts & ORGANIZATION_OR_GROUP_TOKENS or semantic_tokens & ORGANIZATION_CLUE_TOKENS
         )
+        term_place_designator = bool(folded_term_parts & PLACE_DESIGNATOR_TOKENS)
 
-        if len(term_parts) >= 2 and term_title_case:
+        if explicit_place_clue:
             return True
 
-        if len(term_parts) == 1 and term_title_case:
-            return english_title_case or self._appears_title_cased_mid_sentence(content, term)
+        if person_clue and title_cased:
+            return True
+
+        if len(significant_parts) >= 2 and title_cased:
+            if organization_clue:
+                return False
+            if term_place_designator:
+                return True
+            return True
+
+        if len(significant_parts) == 1 and title_cased:
+            if organization_clue:
+                return False
+            if term_place_designator:
+                return True
+            if self._appears_title_cased_mid_sentence(content, term):
+                return True
 
         return False
+
+    def _significant_name_parts(self, text: str) -> List[str]:
+        parts = [part for part in text.split() if part]
+        return [
+            part
+            for part in parts
+            if self._fold_text(part) not in NAME_CONNECTOR_TOKENS and part[:1].isalpha()
+        ]
 
     def _find_first_term_match(self, content: str, term: str):
         return self._term_pattern(term).search(content)
@@ -551,4 +691,4 @@ class GlossaryGenerator:
             cursor -= 1
         if cursor < 0:
             return True
-        return content[cursor] in ".!?\n:;"
+        return content[cursor] in ".!?\n"
