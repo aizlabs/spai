@@ -159,6 +159,24 @@ def test_apply_bolding_marks_only_accepted_terms(glossary_generator):
     assert "**bombardeos**" in bolded
 
 
+def test_validate_normalizes_term_casing_to_match_article_text(glossary_generator):
+    content = "Los bombardeos aumentaron durante la noche."
+    candidates = [
+        VocabularyItem(
+            term="Bombardeos",
+            english="bombings",
+            explanation="ataques con bombas desde el aire",
+        ),
+    ]
+
+    accepted, dropped = glossary_generator.validate(content, candidates)
+    bolded = glossary_generator.apply_bolding(content, accepted)
+
+    assert dropped == {}
+    assert [item.term for item in accepted] == ["bombardeos"]
+    assert "**bombardeos**" in bolded
+
+
 def test_isolated_modifier_allows_predicative_adjectives_with_nlp(glossary_generator):
     class FakeHead:
         def __init__(self, pos_):

@@ -225,6 +225,10 @@ class GlossaryGenerator:
                 dropped[display_term] = "term not present literally in article text"
                 continue
 
+            matched_term = self._match_term_casing_from_content(content, term)
+            if matched_term:
+                term = matched_term
+
             if self._is_rejected_named_entity(doc, term, english):
                 dropped[display_term] = "named entity or common place/person name"
                 continue
@@ -394,6 +398,13 @@ class GlossaryGenerator:
                 continue
             matches.append(span)
         return matches
+
+    def _match_term_casing_from_content(self, content: str, term: str) -> str | None:
+        pattern = re.compile(rf"(?<!\w){re.escape(term)}(?!\w)", re.IGNORECASE)
+        match = pattern.search(content)
+        if match is None:
+            return None
+        return content[match.start():match.end()]
 
     def _tokenize(self, text: str) -> List[str]:
         folded = self._fold_text(text)
