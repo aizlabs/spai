@@ -133,7 +133,7 @@ def test_content_generator():
         print(f"Title: {article.title}")
         print(f"Level: {article.level}")
         print(f"Word count: {len(article.content.split())} words")
-        print(f"Vocabulary words: {len(article.vocabulary)}")
+        print(f"Glossary entries attached: {len(article.vocabulary)}")
         print(f"Reading time: {article.reading_time} minutes")
         print(f"Sources: {', '.join(source.name for source in article.sources)}")
         print()
@@ -146,14 +146,17 @@ def test_content_generator():
         print("-" * 60)
         print()
 
-        # Display vocabulary
+        # Display glossary entries when testing already-enriched articles.
         if article.vocabulary:
-            print("Vocabulary (first 5):")
+            print("Glossary (first 5):")
             for item in article.vocabulary[:5]:
                 definition = item.english
                 if item.explanation:
                     definition = f"{definition} - {item.explanation}"
                 print(f"  - {item.term}: {definition}")
+            print()
+        else:
+            print("Glossary: not generated in this step (added after quality validation)")
             print()
 
     except Exception as e:
@@ -185,12 +188,12 @@ def test_content_generator():
     else:
         print(f"✓ Content length appropriate: {word_count} words (target: ~{target})")
 
-    # Check vocabulary count
+    # Glossary is generated in a later pipeline stage, so empty vocabulary is expected here.
     vocab_count = len(article.vocabulary)
-    if vocab_count < 5:
-        print(f"⚠ Few vocabulary words: {vocab_count} (expected: 10)")
+    if vocab_count == 0:
+        print("✓ No glossary attached yet (expected before glossary generation stage)")
     else:
-        print(f"✓ Vocabulary count: {vocab_count} words")
+        print(f"✓ Glossary entries already attached: {vocab_count}")
 
     print()
     print("=" * 60)
