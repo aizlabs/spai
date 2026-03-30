@@ -270,6 +270,14 @@ def test_isolated_modifier_fallback_allows_predicative_adjectives(glossary_gener
     assert (
         glossary_generator._is_isolated_modifier(
             None,
+            "Es sostenible la energía del país.",
+            "sostenible",
+        )
+        is False
+    )
+    assert (
+        glossary_generator._is_isolated_modifier(
+            None,
             "La política migratoria cambió.",
             "migratoria",
         )

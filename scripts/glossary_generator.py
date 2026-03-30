@@ -299,12 +299,21 @@ NON_NOUN_FOLLOWER_TOKENS = {
     "aunque",
     "como",
     "cuando",
+    "el",
+    "la",
+    "las",
+    "lo",
+    "los",
     "para",
     "pero",
     "por",
     "porque",
     "que",
     "si",
+    "un",
+    "una",
+    "unas",
+    "unos",
     "y",
 }
 
@@ -539,6 +548,8 @@ class GlossaryGenerator:
                 return False
             for match in self._find_term_matches(content, stripped_term):
                 previous_word, next_word = self._neighbor_words(content, match.start(), match.end())
+                if previous_word in PREDICATIVE_PREVIOUS_TOKENS:
+                    continue
                 if next_word and next_word not in NON_NOUN_FOLLOWER_TOKENS:
                     return True
                 if previous_word and previous_word not in PREDICATIVE_PREVIOUS_TOKENS:
