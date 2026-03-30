@@ -658,7 +658,7 @@ class GlossaryGenerator:
         )
         term_place_designator = bool(folded_term_parts & PLACE_DESIGNATOR_TOKENS)
 
-        if explicit_place_clue:
+        if explicit_place_clue and (title_cased or term_place_designator):
             return True
 
         if person_clue and title_cased:
