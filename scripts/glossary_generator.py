@@ -158,7 +158,6 @@ COMMON_PLACE_TERMS = {
     "barcelona",
     "china",
     "dinamarca",
-    "donald trump",
     "espana",
     "estados unidos",
     "europa",
@@ -172,6 +171,9 @@ COMMON_PLACE_TERMS = {
     "venezuela",
     "washington",
     "yemen",
+}
+COMMON_PERSON_TERMS = {
+    "donald trump",
 }
 SPANISH_STOPWORDS = {
     "a",
@@ -469,7 +471,7 @@ class GlossaryGenerator:
         explanation: str,
     ) -> bool:
         folded_term = self._fold_text(term)
-        if folded_term in COMMON_PLACE_TERMS:
+        if folded_term in COMMON_PLACE_TERMS or folded_term in COMMON_PERSON_TERMS:
             return True
 
         if english and term == english and self._looks_like_title_case_name(term):
