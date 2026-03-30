@@ -389,6 +389,7 @@ class GlossaryGenerator:
             matched_term = self._match_term_casing_from_content(content, term)
             if matched_term:
                 term = matched_term
+                display_term = matched_term
 
             if self._is_rejected_named_entity(doc, content, term, english, explanation):
                 dropped[display_term] = "named entity or common place/person name"

@@ -217,6 +217,24 @@ def test_validate_without_nlp_rejects_people_and_places_but_keeps_organizations(
     assert dropped["República Dominicana"] == "named entity or common place/person name"
 
 
+def test_validate_uses_article_casing_for_dropped_term_keys(glossary_generator):
+    content = "Francia anunció nuevas medidas."
+    candidates = [
+        VocabularyItem(
+            term="francia",
+            english="france",
+            explanation="país europeo",
+        ),
+    ]
+
+    accepted, dropped = glossary_generator.validate(content, candidates)
+
+    assert accepted == []
+    assert "Francia" in dropped
+    assert "francia" not in dropped
+    assert dropped["Francia"] == "named entity or common place/person name"
+
+
 def test_validate_without_nlp_keeps_generic_terms_when_explanation_mentions_a_country(glossary_generator):
     content = "El presupuesto cambió después del debate."
     candidates = [
