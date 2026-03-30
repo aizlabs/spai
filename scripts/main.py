@@ -177,7 +177,7 @@ def main():
 
                 logger.info(f"✓ Generated: {article.title}")
                 logger.info(f"  Word count: {word_count}")
-                logger.info(f"  Vocabulary: {len(article.vocabulary)} words")
+                logger.info("  Glossary: pending Phase 5 generation")
                 logger.info("")
 
                 # Phase 4: Quality Gate (with regeneration)
