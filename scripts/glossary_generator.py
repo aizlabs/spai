@@ -651,8 +651,6 @@ class GlossaryGenerator:
         if len(significant_parts) >= 2 and title_cased:
             if organization_clue:
                 return False
-            if term_place_designator:
-                return True
             return True
 
         if len(significant_parts) == 1 and title_cased:
