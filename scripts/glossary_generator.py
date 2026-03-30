@@ -361,6 +361,9 @@ class GlossaryGenerator:
             explanation = raw_item.explanation.strip()
             display_term = term or raw_item.term or "<empty>"
 
+            # Generated glossary entries are required to include both an English gloss and a
+            # learner-facing Spanish explanation. The publisher is more tolerant only to avoid
+            # breaking legacy or mixed stored data during render.
             if not term or not english or not explanation:
                 dropped[display_term] = "missing required glossary fields"
                 continue

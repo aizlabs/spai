@@ -139,6 +139,27 @@ def test_validate_keeps_high_value_terms_and_context_phrases(glossary_generator)
     assert dropped == {}
 
 
+def test_validate_requires_both_english_and_explanation_for_generated_items(glossary_generator):
+    content = "Los bombardeos aumentaron y la política migratoria cambió."
+    candidates = [
+        VocabularyItem(
+            term="bombardeos",
+            english="bombings",
+            explanation="",
+        ),
+        VocabularyItem(
+            term="política migratoria",
+            english="migration policy",
+            explanation="reglas del gobierno sobre la inmigración",
+        ),
+    ]
+
+    accepted, dropped = glossary_generator.validate(content, candidates)
+
+    assert [item.term for item in accepted] == ["política migratoria"]
+    assert dropped["bombardeos"] == "missing required glossary fields"
+
+
 def test_validate_without_nlp_rejects_people_and_places_but_keeps_organizations(glossary_generator):
     content = (
         "Países afectados: Francia y París. Pedro Sánchez habló después. "
