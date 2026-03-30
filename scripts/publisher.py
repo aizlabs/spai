@@ -315,6 +315,13 @@ reading_time: {article.reading_time}
 
             definition_parts = [part for part in (item.english, item.explanation) if part]
             definition = " - ".join(definition_parts)
+            if not definition:
+                self.logger.warning(
+                    "Skipping vocabulary term without definition during publish for article '%s': '%s'",
+                    article_title,
+                    normalized_spanish,
+                )
+                continue
             vocab_lines.append(f"- **{normalized_spanish}** - {definition}")
 
         return '\n'.join(vocab_lines)

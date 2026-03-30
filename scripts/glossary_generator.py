@@ -24,6 +24,38 @@ from scripts.text_utils import (
 )
 
 REJECT_ENTITY_LABELS = {"PER", "PERSON", "GPE", "LOC"}
+ORGANIZATION_OR_GROUP_TOKENS = {
+    "agencia",
+    "banco",
+    "brigada",
+    "comision",
+    "comité",
+    "comite",
+    "congreso",
+    "consejo",
+    "corte",
+    "ejército",
+    "ejercito",
+    "estado",
+    "fuerza",
+    "frente",
+    "gobierno",
+    "guardia",
+    "grupo",
+    "ministerio",
+    "movimiento",
+    "organizacion",
+    "organización",
+    "partido",
+    "policia",
+    "policía",
+    "presidencia",
+    "republica",
+    "república",
+    "tribunal",
+    "union",
+    "unión",
+}
 COMMON_PLACE_TERMS = {
     "alemania",
     "america latina",
@@ -297,7 +329,7 @@ class GlossaryGenerator:
             return True
 
         if doc is None:
-            return False
+            return self._looks_like_rejected_named_entity_without_nlp(term, english)
 
         for span in self._find_matching_spans(doc, term):
             for ent in doc.ents:
@@ -347,7 +379,7 @@ class GlossaryGenerator:
             if len(span) != 1:
                 continue
             token = span[0]
-            if token.pos_ == "ADJ":
+            if token.pos_ == "ADJ" and token.dep_ == "amod":
                 return True
         return False
 
@@ -405,3 +437,26 @@ class GlossaryGenerator:
         if not parts:
             return False
         return len(parts) >= 2 and all(part[:1].isupper() for part in parts)
+
+    def _looks_like_rejected_named_entity_without_nlp(self, term: str, english: str) -> bool:
+        term_parts = [part for part in term.split() if part]
+        english_parts = [part for part in english.split() if part]
+        if not term_parts:
+            return False
+
+        folded_term_parts = {self._fold_text(part) for part in term_parts}
+        if folded_term_parts & ORGANIZATION_OR_GROUP_TOKENS:
+            return False
+
+        term_title_case = all(part[:1].isupper() for part in term_parts if part[:1].isalpha())
+        english_title_case = bool(english_parts) and all(
+            part[:1].isupper() for part in english_parts if part[:1].isalpha()
+        )
+
+        if len(term_parts) >= 2 and term_title_case:
+            return english_title_case or term == english
+
+        if len(term_parts) == 1 and term_title_case:
+            return english_title_case
+
+        return False

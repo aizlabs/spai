@@ -102,6 +102,42 @@ def test_validate_keeps_high_value_terms_and_context_phrases(glossary_generator)
     assert dropped == {}
 
 
+def test_validate_without_nlp_rejects_people_and_places_but_keeps_organizations(glossary_generator):
+    content = (
+        "Pedro Sánchez habló con Francia y París. "
+        "La Guardia Revolucionaria respondió después."
+    )
+    candidates = [
+        VocabularyItem(
+            term="Pedro Sánchez",
+            english="Pedro Sanchez",
+            explanation="presidente del gobierno de España",
+        ),
+        VocabularyItem(
+            term="Francia",
+            english="France",
+            explanation="país europeo",
+        ),
+        VocabularyItem(
+            term="París",
+            english="Paris",
+            explanation="capital de Francia",
+        ),
+        VocabularyItem(
+            term="Guardia Revolucionaria",
+            english="Revolutionary Guard",
+            explanation="fuerza militar de élite en Irán",
+        ),
+    ]
+
+    accepted, dropped = glossary_generator.validate(content, candidates)
+
+    assert [item.term for item in accepted] == ["Guardia Revolucionaria"]
+    assert dropped["Pedro Sánchez"] == "named entity or common place/person name"
+    assert dropped["Francia"] == "named entity or common place/person name"
+    assert dropped["París"] == "named entity or common place/person name"
+
+
 def test_apply_bolding_marks_only_accepted_terms(glossary_generator):
     content = "La política migratoria cambió después de los bombardeos."
     items = [
@@ -121,6 +157,32 @@ def test_apply_bolding_marks_only_accepted_terms(glossary_generator):
 
     assert "**política migratoria**" in bolded
     assert "**bombardeos**" in bolded
+
+
+def test_isolated_modifier_allows_predicative_adjectives_with_nlp(glossary_generator):
+    class FakeHead:
+        def __init__(self, pos_):
+            self.pos_ = pos_
+
+    class FakeToken:
+        def __init__(self, pos_, dep_, head_pos_):
+            self.pos_ = pos_
+            self.dep_ = dep_
+            self.head = FakeHead(head_pos_)
+
+    predicative = [FakeToken("ADJ", "ROOT", "VERB")]
+    attributive = [FakeToken("ADJ", "amod", "NOUN")]
+
+    glossary_generator._find_matching_spans = MagicMock(
+        side_effect=[[[predicative[0]]], [[attributive[0]]]]
+    )
+
+    assert glossary_generator._is_isolated_modifier(object(), "El sistema es frágil.", "frágil") is False
+    assert glossary_generator._is_isolated_modifier(
+        object(),
+        "La política migratoria cambió.",
+        "migratoria",
+    ) is True
 
 
 def test_enrich_article_publishes_without_glossary_when_all_items_are_rejected(
