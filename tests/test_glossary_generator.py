@@ -110,22 +110,22 @@ def test_validate_without_nlp_rejects_people_and_places_but_keeps_organizations(
     candidates = [
         VocabularyItem(
             term="Pedro Sánchez",
-            english="Pedro Sanchez",
+            english="pedro sanchez",
             explanation="presidente del gobierno de España",
         ),
         VocabularyItem(
             term="Francia",
-            english="France",
+            english="france",
             explanation="país europeo",
         ),
         VocabularyItem(
             term="París",
-            english="Paris",
+            english="paris",
             explanation="capital de Francia",
         ),
         VocabularyItem(
             term="Guardia Revolucionaria",
-            english="Revolutionary Guard",
+            english="revolutionary guard",
             explanation="fuerza militar de élite en Irán",
         ),
     ]
@@ -184,6 +184,18 @@ def test_transparent_token_matching_handles_plural_cognates_before_singularizing
 
 def test_transparent_token_matching_handles_ous_cognates_before_singularizing_english(glossary_generator):
     assert glossary_generator._tokens_look_transparent("famosa", "famous") is True
+
+
+def test_isolated_modifier_fallback_allows_predicative_adjectives(glossary_generator):
+    assert glossary_generator._is_isolated_modifier(None, "El sistema es frágil.", "frágil") is False
+    assert (
+        glossary_generator._is_isolated_modifier(
+            None,
+            "La política migratoria cambió.",
+            "migratoria",
+        )
+        is True
+    )
 
 
 def test_isolated_modifier_allows_predicative_adjectives_with_nlp(glossary_generator):

@@ -299,7 +299,7 @@ reading_time: {article.reading_time}
         if not items:
             return ""
 
-        vocab_lines = ["", "## Vocabulario", ""]
+        rendered_lines = []
 
         for item in items:
             normalized_spanish = normalize_vocabulary_term(item.term)
@@ -322,8 +322,12 @@ reading_time: {article.reading_time}
                     normalized_spanish,
                 )
                 continue
-            vocab_lines.append(f"- **{normalized_spanish}** - {definition}")
+            rendered_lines.append(f"- **{normalized_spanish}** - {definition}")
 
+        if not rendered_lines:
+            return ""
+
+        vocab_lines = ["", "## Vocabulario", "", *rendered_lines]
         return '\n'.join(vocab_lines)
 
     def _deduplicate_sources(self, sources) -> List[Any]:

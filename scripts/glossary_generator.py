@@ -169,6 +169,46 @@ ADJECTIVE_SUFFIXES = (
     "taria",
     "tario",
 )
+PREDICATIVE_PREVIOUS_TOKENS = {
+    "bastante",
+    "era",
+    "eran",
+    "es",
+    "esta",
+    "está",
+    "estaba",
+    "estaban",
+    "estan",
+    "están",
+    "fue",
+    "fueron",
+    "mas",
+    "más",
+    "menos",
+    "muy",
+    "parece",
+    "parecen",
+    "resulta",
+    "resultan",
+    "seguia",
+    "seguía",
+    "sigue",
+    "siguen",
+    "son",
+    "tan",
+}
+NON_NOUN_FOLLOWER_TOKENS = {
+    "aunque",
+    "como",
+    "cuando",
+    "para",
+    "pero",
+    "por",
+    "porque",
+    "que",
+    "si",
+    "y",
+}
 
 
 class GlossaryResponse(BaseModel):
@@ -229,7 +269,7 @@ class GlossaryGenerator:
             if matched_term:
                 term = matched_term
 
-            if self._is_rejected_named_entity(doc, term, english):
+            if self._is_rejected_named_entity(doc, content, term, english):
                 dropped[display_term] = "named entity or common place/person name"
                 continue
 
@@ -324,7 +364,7 @@ class GlossaryGenerator:
             return None
         return self._nlp(content)
 
-    def _is_rejected_named_entity(self, doc, term: str, english: str) -> bool:
+    def _is_rejected_named_entity(self, doc, content: str, term: str, english: str) -> bool:
         folded_term = self._fold_text(term)
         if folded_term in COMMON_PLACE_TERMS:
             return True
@@ -333,7 +373,7 @@ class GlossaryGenerator:
             return True
 
         if doc is None:
-            return self._looks_like_rejected_named_entity_without_nlp(term, english)
+            return self._looks_like_rejected_named_entity_without_nlp(content, term, english)
 
         for span in self._find_matching_spans(doc, term):
             for ent in doc.ents:
@@ -373,11 +413,13 @@ class GlossaryGenerator:
             folded_term = self._fold_text(stripped_term)
             if not any(folded_term.endswith(suffix) for suffix in ADJECTIVE_SUFFIXES):
                 return False
-            phrase_pattern = re.compile(
-                rf"(?<!\w)\w+\s+{re.escape(stripped_term)}(?!\w)|(?<!\w){re.escape(stripped_term)}\s+\w+(?!\w)",
-                re.IGNORECASE,
-            )
-            return bool(phrase_pattern.search(content))
+            for match in self._find_term_matches(content, stripped_term):
+                previous_word, next_word = self._neighbor_words(content, match.start(), match.end())
+                if next_word and next_word not in NON_NOUN_FOLLOWER_TOKENS:
+                    return True
+                if previous_word and previous_word not in PREDICATIVE_PREVIOUS_TOKENS:
+                    return True
+            return False
 
         for span in self._find_matching_spans(doc, term):
             if len(span) != 1:
@@ -400,8 +442,7 @@ class GlossaryGenerator:
         return matches
 
     def _match_term_casing_from_content(self, content: str, term: str) -> str | None:
-        pattern = re.compile(rf"(?<!\w){re.escape(term)}(?!\w)", re.IGNORECASE)
-        match = pattern.search(content)
+        match = self._find_first_term_match(content, term)
         if match is None:
             return None
         return content[match.start():match.end()]
@@ -456,7 +497,7 @@ class GlossaryGenerator:
             return False
         return len(parts) >= 2 and all(part[:1].isupper() for part in parts)
 
-    def _looks_like_rejected_named_entity_without_nlp(self, term: str, english: str) -> bool:
+    def _looks_like_rejected_named_entity_without_nlp(self, content: str, term: str, english: str) -> bool:
         term_parts = [part for part in term.split() if part]
         english_parts = [part for part in english.split() if part]
         if not term_parts:
@@ -472,9 +513,42 @@ class GlossaryGenerator:
         )
 
         if len(term_parts) >= 2 and term_title_case:
-            return english_title_case or term == english
+            return True
 
         if len(term_parts) == 1 and term_title_case:
-            return english_title_case
+            return english_title_case or self._appears_title_cased_mid_sentence(content, term)
 
         return False
+
+    def _find_first_term_match(self, content: str, term: str):
+        return self._term_pattern(term).search(content)
+
+    def _find_term_matches(self, content: str, term: str):
+        return self._term_pattern(term).finditer(content)
+
+    def _term_pattern(self, term: str) -> re.Pattern[str]:
+        return re.compile(rf"(?<!\w){re.escape(term)}(?!\w)", re.IGNORECASE)
+
+    def _neighbor_words(self, content: str, start: int, end: int) -> tuple[str | None, str | None]:
+        previous_match = re.search(r"(\w+)\W*$", content[:start], re.UNICODE)
+        next_match = re.search(r"^\W*(\w+)", content[end:], re.UNICODE)
+        previous_word = self._fold_text(previous_match.group(1)) if previous_match else None
+        next_word = self._fold_text(next_match.group(1)) if next_match else None
+        return previous_word, next_word
+
+    def _appears_title_cased_mid_sentence(self, content: str, term: str) -> bool:
+        for match in self._find_term_matches(content, term):
+            matched_text = content[match.start():match.end()]
+            if not matched_text[:1].isupper():
+                continue
+            if not self._is_sentence_boundary(content, match.start()):
+                return True
+        return False
+
+    def _is_sentence_boundary(self, content: str, index: int) -> bool:
+        cursor = index - 1
+        while cursor >= 0 and content[cursor].isspace():
+            cursor -= 1
+        if cursor < 0:
+            return True
+        return content[cursor] in ".!?\n:;"

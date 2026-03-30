@@ -214,6 +214,7 @@ def test_publisher_skips_vocabulary_items_without_any_definition(
     markdown = publisher._generate_markdown(article, datetime(2024, 1, 1, 12, 0, 0))
 
     assert "- **bombardeos** -" not in markdown
+    assert "## Vocabulario" not in markdown
 
 
 def test_publisher_includes_audio_frontmatter_when_public_url_exists(
