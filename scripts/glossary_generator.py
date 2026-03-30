@@ -640,8 +640,10 @@ class GlossaryGenerator:
         title_cased = significant_parts and all(part[:1].isupper() for part in significant_parts)
         explicit_place_clue = bool(semantic_tokens & PLACE_CLUE_TOKENS)
         person_clue = bool(semantic_tokens & PERSON_CLUE_TOKENS)
+        term_organization_tokens = folded_term_parts & ORGANIZATION_OR_GROUP_TOKENS
+        semantic_organization_tokens = semantic_tokens & ORGANIZATION_CLUE_TOKENS
         organization_clue = bool(
-            folded_term_parts & ORGANIZATION_OR_GROUP_TOKENS or semantic_tokens & ORGANIZATION_CLUE_TOKENS
+            term_organization_tokens or semantic_organization_tokens
         )
         term_place_designator = bool(folded_term_parts & PLACE_DESIGNATOR_TOKENS)
 
