@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from scripts.glossary_generator import GlossaryGenerator
+from scripts.glossary_generator import GlossaryGenerator, GlossaryResponse
 from scripts.models import VocabularyItem
 
 
@@ -54,6 +54,43 @@ def test_validate_rejects_named_entities_transparent_terms_and_fragments(glossar
         "migratoria",
         "unilaterales",
     }
+
+
+def test_generate_keeps_valid_items_when_structured_output_contains_null_term(
+    glossary_generator,
+    sample_a2_text_article,
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        glossary_generator,
+        "_call_llm",
+        MagicMock(
+            return_value=GlossaryResponse(
+                vocabulary=[
+                    {
+                        "term": None,
+                        "english": "ignored",
+                        "explanation": "entrada inválida",
+                    },
+                    {
+                        "term": "bombardeos",
+                        "english": "bombings",
+                        "explanation": "ataques con bombas desde el aire",
+                    },
+                ]
+            )
+        ),
+    )
+
+    generated = glossary_generator.generate(sample_a2_text_article)
+
+    assert generated == [
+        VocabularyItem(
+            term="bombardeos",
+            english="bombings",
+            explanation="ataques con bombas desde el aire",
+        )
+    ]
 
 
 def test_validate_keeps_high_value_terms_and_context_phrases(glossary_generator):

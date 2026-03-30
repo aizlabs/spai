@@ -7,11 +7,11 @@ from __future__ import annotations
 import logging
 import re
 import unicodedata
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import spacy
 from langchain_core.prompts import ChatPromptTemplate
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from scripts import prompts
 from scripts.config import AppConfig
@@ -309,10 +309,21 @@ NON_NOUN_FOLLOWER_TOKENS = {
 }
 
 
+class RawGlossaryItem(BaseModel):
+    """Lenient structured output item so one malformed candidate does not drop the whole glossary."""
+
+    term: Any = None
+    english: Any = None
+    explanation: Any = None
+    gloss: Any = None
+
+    model_config = ConfigDict(extra="allow")
+
+
 class GlossaryResponse(BaseModel):
     """Structured LLM output for glossary generation."""
 
-    vocabulary: List[VocabularyItem] = Field(default_factory=list)
+    vocabulary: List[RawGlossaryItem] = Field(default_factory=list)
 
 
 class GlossaryGenerator:
@@ -331,7 +342,7 @@ class GlossaryGenerator:
         """Generate glossary candidates from the final approved text."""
         prompt = prompts.get_glossary_generation_prompt(article)
         response = self._call_llm(prompt)
-        return coerce_vocabulary_items(response.model_dump().get("vocabulary") or [])
+        return coerce_vocabulary_items(response.model_dump(exclude_none=True).get("vocabulary") or [])
 
     def validate(
         self,
