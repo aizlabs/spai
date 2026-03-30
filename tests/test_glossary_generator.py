@@ -177,6 +177,15 @@ def test_validate_normalizes_term_casing_to_match_article_text(glossary_generato
     assert "**bombardeos**" in bolded
 
 
+def test_transparent_token_matching_handles_plural_cognates_before_singularizing(glossary_generator):
+    assert glossary_generator._tokens_look_transparent("notables", "notable") is True
+    assert glossary_generator._tokens_look_transparent("visibles", "visible") is True
+
+
+def test_transparent_token_matching_handles_ous_cognates_before_singularizing_english(glossary_generator):
+    assert glossary_generator._tokens_look_transparent("famosa", "famous") is True
+
+
 def test_isolated_modifier_allows_predicative_adjectives_with_nlp(glossary_generator):
     class FakeHead:
         def __init__(self, pos_):

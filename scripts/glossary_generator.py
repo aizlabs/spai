@@ -419,13 +419,20 @@ class GlossaryGenerator:
         if spanish_token == english_token:
             return True
 
+        transformed = self._apply_cognate_suffix_map(spanish_token)
+        if transformed == english_token:
+            return True
+
         singular_spanish = self._singularize(spanish_token)
         singular_english = self._singularize(english_token)
         if singular_spanish == singular_english:
             return True
 
-        transformed = self._apply_cognate_suffix_map(singular_spanish)
         if transformed == singular_english:
+            return True
+
+        transformed_singular = self._apply_cognate_suffix_map(singular_spanish)
+        if transformed_singular == singular_english:
             return True
 
         return False
