@@ -10,6 +10,7 @@ from scripts.prompts import (
     get_a2_adaptation_prompt,
     get_b1_adaptation_prompt,
     get_glossary_generation_prompt,
+    get_glossary_retry_prompt,
     get_synthesis_prompt,
     prepare_source_context,
     validate_level,
@@ -252,6 +253,25 @@ class TestGetGlossaryGenerationPrompt:
         assert '"english"' in prompt
         assert '"explanation"' in prompt
         assert "Do not add filler terms" in prompt
+
+    def test_glossary_retry_prompt_includes_rejections_and_shortlist(self, sample_a2_text_article):
+        prompt = get_glossary_retry_prompt(
+            sample_a2_text_article,
+            rejected_terms={
+                "España": "named entity or common place/person name",
+                "drones": "transparent term for English-speaking learners",
+            },
+            shortlist=["procesiones", "espacio aéreo", "selección"],
+        )
+
+        assert "Do NOT return any rejected term again" in prompt
+        assert "España" in prompt
+        assert "drones" in prompt
+        assert "procesiones" in prompt
+        assert "espacio aéreo" in prompt
+        assert '"term"' in prompt
+        assert '"english"' in prompt
+        assert '"explanation"' in prompt
 
 
 class TestLevelGenerationRules:

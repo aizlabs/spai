@@ -205,6 +205,31 @@ def main():
 
                     logger.info("Phase 5: Generating glossary...")
                     final_article = glossary_generator.enrich_article(final_article)
+                    glossary_stats = glossary_generator.last_run_stats
+                    logger.info(
+                        "  glossary_candidates_initial="
+                        f"{glossary_stats['glossary_candidates_initial']}"
+                    )
+                    logger.info(
+                        "  glossary_candidates_retry="
+                        f"{glossary_stats['glossary_candidates_retry']}"
+                    )
+                    logger.info(
+                        "  glossary_accepted="
+                        f"{glossary_stats['glossary_accepted']}"
+                    )
+                    logger.info(
+                        "  glossary_empty_after_retry="
+                        f"{glossary_stats['glossary_empty_after_retry']}"
+                    )
+                    if glossary_stats["glossary_empty_after_retry"]:
+                        logger.warning(
+                            "Glossary still empty after retry for "
+                            f"'{final_article.title}' "
+                            f"(glossary_candidates_initial={glossary_stats['glossary_candidates_initial']}, "
+                            f"glossary_candidates_retry={glossary_stats['glossary_candidates_retry']}, "
+                            f"glossary_accepted={glossary_stats['glossary_accepted']})"
+                        )
                     logger.info("")
 
                     # Optional website audio preparation

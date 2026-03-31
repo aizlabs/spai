@@ -1,3 +1,4 @@
+import json
 from unittest.mock import MagicMock
 
 import pytest
@@ -5,12 +6,52 @@ import pytest
 from scripts.glossary_generator import GlossaryGenerator, GlossaryResponse
 from scripts.models import VocabularyItem
 
+SEMANA_SANTA_A2_CONTENT = (
+    "La Semana Santa en España este año tiene buen clima. La Agencia Estatal de Meteorología "
+    "dice que el tiempo será estable. Las procesiones serán bonitas. En Andalucía y Levante, "
+    "hará entre 20 y 25 grados. En el centro y norte, entre 15 y 20 grados. Algunas zonas del "
+    "norte y Mediterráneo tendrán viento, pero no será un problema.\n\n"
+    "La Semana Santa es importante en España. No es solo religión, también es arte y tradición. "
+    "En Sevilla, la ‘Madrugá’ es muy especial. Muchas personas van a ver las procesiones en "
+    "silencio. En Zamora, las celebraciones son más simples, pero también bonitas.\n\n"
+    "En noticias internacionales, España ha cerrado su espacio aéreo a aviones de Estados Unidos. "
+    "La ministra de Defensa, Margarita Robles, dice que España no quiere más problemas en el "
+    "conflicto con Irán. España ha comunicado esto a Estados Unidos.\n\n"
+    "En deportes, la selección española de fútbol se prepara para el Mundial. El entrenador es "
+    "Luis de la Fuente. El equipo juega bien, pero perdió contra Escocia. A pesar de esto, "
+    "España es favorita. Tiene jugadores buenos como Oyarzabal y Zubimendi."
+)
+
+MIGRACION_B1_CONTENT = (
+    "España está en un momento importante en varios aspectos, como la migración, el trabajo y el "
+    "deporte. El gobierno español ha decidido regularizar a muchos inmigrantes, lo que preocupa a "
+    "la Comisión Europea. Magnus Brunner, encargado de Migración, dice que vivir en España no "
+    "significa poder mudarse a otros países de la Unión Europea. Esto podría causar problemas si "
+    "los inmigrantes quieren ir a otros lugares del bloque.\n\n"
+    "En el trabajo, los autónomos son muy importantes para la economía española. Un informe "
+    "reciente muestra que representan el 14,58% del empleo total en España, más que la media "
+    "europea. Sin embargo, este sector tiene retos, como atraer a jóvenes, ya que muchos "
+    "autónomos tienen más de 45 años. También se destaca el aumento de mujeres y extranjeros que "
+    "trabajan por cuenta propia desde 2021.\n\n"
+    "Por otro lado, el sistema de trenes en España recibe críticas porque no es compatible con "
+    "los sistemas europeos. Empresas como Ouigo e Iryo están preocupadas por la competitividad "
+    "debido a los diferentes anchos de vía. Esto afecta tanto a los pasajeros como al transporte "
+    "de mercancías. Las empresas piden un plan claro para adaptarse a los estándares europeos.\n\n"
+    "En deportes, el equipo de fútbol de España, dirigido por Luis de la Fuente, se prepara para "
+    "el Mundial. Aunque ha tenido algunas derrotas recientes, como contra Escocia y Colombia, "
+    "sigue siendo uno de los favoritos. Esto se debe a jugadores importantes como Unai Simón, "
+    "Pedri y Oyarzabal. España quiere seguir teniendo éxito en el escenario internacional, "
+    "enfrentando los desafíos y cambios en el equipo."
+)
+
 
 @pytest.fixture
 def glossary_generator(monkeypatch, base_config, mock_logger):
     monkeypatch.setattr(GlossaryGenerator, "_init_chain", lambda self: None)
     monkeypatch.setattr(GlossaryGenerator, "_init_nlp", lambda self: setattr(self, "_nlp", None))
-    return GlossaryGenerator(base_config, mock_logger)
+    generator = GlossaryGenerator(base_config, mock_logger)
+    monkeypatch.setattr(generator, "_call_llm", MagicMock(return_value=GlossaryResponse()))
+    return generator
 
 
 def test_validate_rejects_named_entities_transparent_terms_and_fragments(glossary_generator):
@@ -371,3 +412,196 @@ def test_enrich_article_publishes_without_glossary_when_all_items_are_rejected(
 
     assert enriched.vocabulary == []
     assert enriched.content == article.content
+    assert any(
+        "glossary_candidates_initial=1" in str(call.args[0])
+        for call in glossary_generator.logger.warning.call_args_list
+    )
+
+
+def test_enrich_article_retries_when_initial_candidates_all_fail_for_march_31_a2(
+    glossary_generator,
+    sample_a2_text_article,
+    monkeypatch,
+):
+    article = sample_a2_text_article.model_copy(
+        update={
+            "title": "Semana Santa Soleada en España",
+            "content": SEMANA_SANTA_A2_CONTENT,
+        }
+    )
+    monkeypatch.setattr(
+        glossary_generator,
+        "_call_llm",
+        MagicMock(
+            side_effect=[
+                GlossaryResponse(
+                    vocabulary=[
+                        {"term": "España", "english": "Spain", "explanation": "país europeo"},
+                        {
+                            "term": "Estados Unidos",
+                            "english": "United States",
+                            "explanation": "país de América del Norte",
+                        },
+                        {"term": "Irán", "english": "Iran", "explanation": "país de Asia"},
+                        {
+                            "term": "Margarita Robles",
+                            "english": "Margarita Robles",
+                            "explanation": "ministra española",
+                        },
+                        {
+                            "term": "Luis de la Fuente",
+                            "english": "Luis de la Fuente",
+                            "explanation": "entrenador español",
+                        },
+                    ]
+                ),
+                GlossaryResponse(
+                    vocabulary=[
+                        {
+                            "term": "procesiones",
+                            "english": "processions",
+                            "explanation": "desfiles religiosos en la calle",
+                        },
+                        {
+                            "term": "espacio aéreo",
+                            "english": "airspace",
+                            "explanation": "zona del cielo de un país para aviones",
+                        },
+                        {
+                            "term": "selección",
+                            "english": "national team",
+                            "explanation": "equipo que representa a un país",
+                        },
+                        {
+                            "term": "conflicto",
+                            "english": "conflict",
+                            "explanation": "situación de lucha o problema entre grupos",
+                        },
+                    ]
+                ),
+            ]
+        ),
+    )
+
+    enriched = glossary_generator.enrich_article(article)
+
+    assert [item.term for item in enriched.vocabulary] == [
+        "procesiones",
+        "espacio aéreo",
+        "selección",
+        "conflicto",
+    ]
+    assert glossary_generator.last_run_stats["retry_used"] is True
+    assert glossary_generator.last_run_stats["glossary_candidates_initial"] == 5
+    assert glossary_generator.last_run_stats["glossary_candidates_retry"] == 4
+    assert glossary_generator.last_run_stats["glossary_accepted"] == 4
+
+
+def test_enrich_article_retries_when_initial_candidates_all_fail_for_march_31_b1(
+    glossary_generator,
+    sample_b1_text_article,
+    monkeypatch,
+):
+    article = sample_b1_text_article.model_copy(
+        update={
+            "title": "España enfrenta desafíos en migración, trabajo y deportes",
+            "content": MIGRACION_B1_CONTENT,
+        }
+    )
+    monkeypatch.setattr(
+        glossary_generator,
+        "_call_llm",
+        MagicMock(
+            side_effect=[
+                GlossaryResponse(
+                    vocabulary=[
+                        {"term": "España", "english": "Spain", "explanation": "país europeo"},
+                        {
+                            "term": "Magnus Brunner",
+                            "english": "Magnus Brunner",
+                            "explanation": "político europeo",
+                        },
+                        {"term": "Ouigo", "english": "Ouigo", "explanation": "empresa de trenes"},
+                        {"term": "Iryo", "english": "Iryo", "explanation": "empresa de trenes"},
+                        {
+                            "term": "Luis de la Fuente",
+                            "english": "Luis de la Fuente",
+                            "explanation": "entrenador español",
+                        },
+                    ]
+                ),
+                GlossaryResponse(
+                    vocabulary=[
+                        {
+                            "term": "autónomos",
+                            "english": "self-employed workers",
+                            "explanation": "personas que trabajan por cuenta propia",
+                        },
+                        {
+                            "term": "anchos de vía",
+                            "english": "track gauges",
+                            "explanation": "distancias entre los rieles del tren",
+                        },
+                        {
+                            "term": "mercancías",
+                            "english": "goods",
+                            "explanation": "productos que se transportan para vender",
+                        },
+                        {
+                            "term": "mudarse",
+                            "english": "to move",
+                            "explanation": "cambiar de lugar para vivir",
+                        },
+                    ]
+                ),
+            ]
+        ),
+    )
+
+    enriched = glossary_generator.enrich_article(article)
+
+    assert [item.term for item in enriched.vocabulary] == [
+        "autónomos",
+        "anchos de vía",
+        "mercancías",
+        "mudarse",
+    ]
+    assert glossary_generator.last_run_stats["retry_used"] is True
+    assert glossary_generator.last_run_stats["glossary_accepted"] == 4
+
+
+def test_debug_dump_writes_glossary_artifact(glossary_generator, sample_a2_text_article, tmp_path, monkeypatch):
+    glossary_generator.debug_dump = True
+    glossary_generator.metrics_output_dir = tmp_path / "glossary"
+    monkeypatch.setattr(
+        glossary_generator,
+        "_call_llm",
+        MagicMock(
+            return_value=GlossaryResponse(
+                vocabulary=[
+                    {
+                        "term": "bombardeos",
+                        "english": "bombings",
+                        "explanation": "ataques con bombas desde el aire",
+                    }
+                ]
+            )
+        ),
+    )
+
+    article = sample_a2_text_article.model_copy(
+        update={"content": "Los bombardeos aumentaron durante la noche."}
+    )
+    glossary_generator.enrich_article(article)
+
+    artifact_paths = list((tmp_path / "glossary").glob("*.json"))
+    assert len(artifact_paths) == 1
+
+    payload = json.loads(artifact_paths[0].read_text(encoding="utf-8"))
+    assert payload["article_title"] == article.title
+    assert payload["level"] == article.level
+    assert payload["retry_used"] is False
+    assert payload["counts"]["initial_candidates"] == 1
+    assert payload["counts"]["accepted"] == 1
+    assert payload["accepted"][0]["term"] == "bombardeos"
+    assert payload["dropped"]["initial"] == []

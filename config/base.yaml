@@ -55,6 +55,10 @@ quality_gate:
   min_score: 7.5
   max_attempts: 3
 
+glossary:
+  retry_on_empty: true
+  debug_dump: false
+
 # Audio preparation (website first; Telegram and podcast later)
 audio:
   enabled: false
