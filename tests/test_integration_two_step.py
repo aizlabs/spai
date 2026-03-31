@@ -5,16 +5,16 @@ These tests verify that components work together correctly, catching bugs
 that unit tests miss (like the Publisher AttributeError on None topic).
 """
 
-import pytest
 from datetime import datetime
-from unittest.mock import Mock, MagicMock, patch
-from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from scripts.article_synthesizer import ArticleSynthesizer, SynthesisResponse
-from scripts.level_adapter import LevelAdapter
 from scripts.content_generator import ContentGenerator
+from scripts.level_adapter import LevelAdapter
+from scripts.models import AdaptedArticle, BaseArticle, SourceMetadata
 from scripts.publisher import Publisher
-from scripts.models import Topic, BaseArticle, AdaptedArticle, SourceMetadata
 
 
 class TestTwoStepPipelineIntegration:
@@ -24,7 +24,7 @@ class TestTwoStepPipelineIntegration:
     @patch('scripts.level_adapter.LevelAdapter._call_llm')
     def test_synthesis_to_adaptation_a2(self, mock_adapter_call_llm, mock_synth_call_llm,
                                          base_config, mock_logger, sample_topic, sample_sources,
-                                         sample_base_article, sample_a2_article):
+                                         sample_base_article, sample_a2_text_article):
         """Test complete two-step flow: ArticleSynthesizer → LevelAdapter (A2)"""
         # Setup synthesizer mock with structured response
         synth_response = SynthesisResponse(
@@ -38,15 +38,12 @@ class TestTwoStepPipelineIntegration:
         # Setup adapter mock using the FakeAdaptationResponse from unit tests
         from tests.test_level_adapter import FakeAdaptationResponse
 
-        response_adapter_dict = sample_a2_article.model_dump()
-        vocab_dict = response_adapter_dict.get('vocabulary') or {}
-        response_adapter_dict['vocabulary'] = [
-            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
-        ]
+        response_adapter_dict = sample_a2_text_article.model_dump()
         del response_adapter_dict['base_article']
         del response_adapter_dict['topic']
         del response_adapter_dict['sources']
         del response_adapter_dict['level']
+        del response_adapter_dict['vocabulary']
         mock_adapter_call_llm.return_value = FakeAdaptationResponse(**response_adapter_dict)
 
         # Execute two-step pipeline
@@ -68,9 +65,8 @@ class TestTwoStepPipelineIntegration:
         # Verify adapted article
         assert isinstance(a2_article, AdaptedArticle)
         assert a2_article.level == 'A2'
-        assert a2_article.title == sample_a2_article.title
-        assert a2_article.vocabulary is not None
-        assert len(a2_article.vocabulary) > 0
+        assert a2_article.title == sample_a2_text_article.title
+        assert a2_article.vocabulary == []
 
         # CRITICAL: Verify metadata propagation (would have caught the bug!)
         assert a2_article.topic == sample_topic  # Not None!
@@ -116,7 +112,7 @@ class TestPublisherIntegration:
     def test_synthesis_to_adaptation_to_publisher(self, mock_mkdir, mock_open,
                                                     mock_adapter_call_llm, mock_synth_call_llm,
                                                     base_config, mock_logger, sample_topic,
-                                                    sample_sources, sample_base_article, sample_a2_article):
+                                                    sample_sources, sample_base_article, sample_a2_text_article):
         """
         Test complete flow: Synthesize → Adapt → Publish
 
@@ -134,15 +130,12 @@ class TestPublisherIntegration:
         # Setup adapter
         from tests.test_level_adapter import FakeAdaptationResponse
 
-        response_adapter_dict = sample_a2_article.model_dump()
-        vocab_dict = response_adapter_dict.get('vocabulary') or {}
-        response_adapter_dict['vocabulary'] = [
-            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
-        ]
+        response_adapter_dict = sample_a2_text_article.model_dump()
         del response_adapter_dict['base_article']
         del response_adapter_dict['topic']
         del response_adapter_dict['sources']
         del response_adapter_dict['level']
+        del response_adapter_dict['vocabulary']
         mock_adapter_call_llm.return_value = FakeAdaptationResponse(**response_adapter_dict)
 
         # Execute full pipeline
@@ -170,7 +163,7 @@ class TestPublisherIntegration:
     def test_publisher_handles_missing_topic_metadata(self, mock_mkdir, mock_open,
                                                         mock_adapter_call_llm,
                                                         base_config, mock_logger,
-                                                        sample_base_article_minimal, sample_a2_article):
+                                                        sample_base_article_minimal, sample_a2_text_article):
         """
         Test Publisher handles missing topic metadata gracefully
 
@@ -179,15 +172,12 @@ class TestPublisherIntegration:
         # Setup adapter (synthesizer not needed for this test)
         from tests.test_level_adapter import FakeAdaptationResponse
 
-        response_adapter_dict = sample_a2_article.model_dump()
-        vocab_dict = response_adapter_dict.get('vocabulary') or {}
-        response_adapter_dict['vocabulary'] = [
-            {'term': term, 'gloss': gloss} for term, gloss in vocab_dict.items()
-        ]
+        response_adapter_dict = sample_a2_text_article.model_dump()
         del response_adapter_dict['base_article']
         del response_adapter_dict['topic']
         del response_adapter_dict['sources']
         del response_adapter_dict['level']
+        del response_adapter_dict['vocabulary']
         mock_adapter_call_llm.return_value = FakeAdaptationResponse(**response_adapter_dict)
 
         # Execute
@@ -201,7 +191,7 @@ class TestPublisherIntegration:
         # Before fix: topic_data.get('keywords') would crash because topic_data was None
         # After fix: topic_data is {} and .get() works fine
         try:
-            success = publisher.save_article(a2_article)
+            publisher.save_article(a2_article)
             # Success! Bug is fixed
             assert True
         except AttributeError as e:

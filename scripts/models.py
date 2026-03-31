@@ -1,13 +1,15 @@
 """
-Pydantic models for type-safe data structures
+Pydantic models for type-safe data structures.
 
 These models ensure data integrity throughout the pipeline and provide
 automatic validation, serialization, and clear type hints.
 """
 
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from scripts.text_utils import normalize_vocabulary_term
 
 # =============================================================================
 # Topic Discovery Models
@@ -105,10 +107,79 @@ class BaseArticle(BaseModel):
 
 
 class VocabularyItem(BaseModel):
-    """Single vocabulary glossary item"""
-    spanish: str = Field(..., description="Spanish term")
-    english: str = Field(..., description="English translation")
-    explanation: Optional[str] = Field(default=None, description="Spanish A2/B1 explanation")
+    """Single vocabulary glossary item."""
+
+    term: str = Field(..., min_length=1, description="Spanish term from the article")
+    english: str = Field(default="", description="English translation")
+    explanation: str = Field(default="", description="Spanish learner-facing explanation")
+
+    @field_validator("term", "english", "explanation", mode="before")
+    @classmethod
+    def coerce_string_fields(cls, v: Any) -> str:
+        if v is None:
+            return ""
+        return str(v).strip()
+
+
+def split_legacy_gloss(gloss: str) -> tuple[str, str]:
+    """Split legacy 'english - explanation' strings into structured fields."""
+    cleaned = str(gloss).strip()
+    if not cleaned:
+        return "", ""
+    if " - " not in cleaned:
+        return cleaned, ""
+
+    english, explanation = cleaned.split(" - ", 1)
+    return english.strip(), explanation.strip()
+
+
+def coerce_vocabulary_items(value: Any) -> List["VocabularyItem"]:
+    """Coerce legacy and structured vocabulary payloads into VocabularyItem objects."""
+    if value is None:
+        return []
+
+    if isinstance(value, dict):
+        iterable: Any = [
+            {"term": term, "gloss": gloss}
+            for term, gloss in value.items()
+        ]
+    elif isinstance(value, list):
+        iterable = value
+    else:
+        return []
+
+    items: List[VocabularyItem] = []
+    for raw_item in iterable:
+        if isinstance(raw_item, VocabularyItem):
+            items.append(raw_item)
+            continue
+
+        if not isinstance(raw_item, dict):
+            continue
+
+        term = raw_item.get("term") or raw_item.get("spanish")
+        if not term:
+            continue
+
+        normalized_term = normalize_vocabulary_term(str(term))
+        if not normalized_term:
+            continue
+
+        if "gloss" in raw_item:
+            english, explanation = split_legacy_gloss(str(raw_item.get("gloss") or ""))
+        else:
+            english = str(raw_item.get("english") or "").strip()
+            explanation = str(raw_item.get("explanation") or "").strip()
+
+        items.append(
+            VocabularyItem(
+                term=normalized_term,
+                english=english,
+                explanation=explanation,
+            )
+        )
+
+    return items
 
 
 class SpeechScript(BaseModel):
@@ -154,8 +225,11 @@ class AdaptedArticle(BaseModel):
     summary: str = Field(..., min_length=10, max_length=500, description="Level-adapted summary")
     reading_time: int = Field(..., ge=1, le=30, description="Reading time in minutes")
 
-    # Vocabulary glossary (key: spanish term, value: translation + explanation)
-    vocabulary: Dict[str, str] = Field(default_factory=dict, description="Vocabulary glossary")
+    # Vocabulary glossary, generated after text validation.
+    vocabulary: List[VocabularyItem] = Field(
+        default_factory=list,
+        description="Structured glossary entries for the approved article",
+    )
 
     # Level and metadata
     level: str = Field(..., pattern="^(A2|B1)$", description="CEFR level")
@@ -205,6 +279,11 @@ class AdaptedArticle(BaseModel):
             return [to_metadata(item) for item in v]
 
         return v
+
+    @field_validator("vocabulary", mode="before")
+    @classmethod
+    def coerce_vocabulary(cls, v):
+        return coerce_vocabulary_items(v)
 
     model_config = ConfigDict(frozen=False)
 

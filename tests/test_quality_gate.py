@@ -1,3 +1,5 @@
+# ruff: noqa: E402
+
 import sys
 from types import SimpleNamespace
 from unittest.mock import MagicMock
@@ -154,3 +156,31 @@ def test_evaluate_handles_llm_error(monkeypatch, quality_gate, sample_a2_article
 
     assert result["total_score"] == 0
     assert "Evaluation error: boom" in result["issues"]
+
+
+def test_evaluate_allows_text_only_article_with_empty_vocabulary(
+    monkeypatch,
+    quality_gate,
+    sample_a2_text_article,
+):
+    monkeypatch.setattr(prompts, "get_quality_judge_prompt", lambda article, level: "PROMPT")
+    quality_gate._call_llm = MagicMock(
+        return_value=JudgeResponse(
+            grammar_score=4.0,
+            grammar_issues=[],
+            educational_score=2.5,
+            educational_notes="Useful text-only article",
+            content_score=2.0,
+            content_issues=[],
+            level_score=1.0,
+            total_score=8.5,
+            issues=[],
+            strengths=["Clear text"],
+            recommendation="PASS",
+        )
+    )
+
+    result = quality_gate._evaluate(sample_a2_text_article)
+
+    assert result["total_score"] == 8.5
+    assert result["issues"] == []

@@ -2,24 +2,21 @@
 Pytest configuration and shared fixtures for test suite
 """
 
-import pytest
 import json
-from unittest.mock import Mock, MagicMock
-from pathlib import Path
-
 from typing import List
-from scripts.models import (
-    Topic,
-    SourceArticle,
-    BaseArticle,
-    AdaptedArticle,
-    SourceMetadata,
-    LLMConfig,
-    TwoStepSynthesisConfig,
-    LLMModelsConfig,
-)
-from scripts.config import AppConfig
+from unittest.mock import MagicMock
 
+import pytest
+
+from scripts.config import AppConfig
+from scripts.models import (
+    AdaptedArticle,
+    BaseArticle,
+    SourceArticle,
+    SourceMetadata,
+    Topic,
+    VocabularyItem,
+)
 
 # =============================================================================
 # Configuration Fixtures
@@ -191,11 +188,23 @@ def sample_a2_article(sample_base_article: BaseArticle) -> AdaptedArticle:
                 'Estas energías son limpias.\n\n'
                 'Los expertos están contentos. Dicen que España va por buen camino. '
                 'Pero necesita hacer más para ayudar al planeta.',
-        vocabulary={
-            'medio ambiente': 'environment - el aire, agua y naturaleza que nos rodea',
-            'energías renovables': 'renewable energy - energía del sol, viento y agua',
-            'paneles solares': 'solar panels - aparatos que capturan la energía del sol'
-        },
+        vocabulary=[
+            VocabularyItem(
+                term='medio ambiente',
+                english='environment',
+                explanation='el aire, agua y naturaleza que nos rodea',
+            ),
+            VocabularyItem(
+                term='energías renovables',
+                english='renewable energy',
+                explanation='energía del sol, viento y agua',
+            ),
+            VocabularyItem(
+                term='paneles solares',
+                english='solar panels',
+                explanation='aparatos que capturan la energía del sol',
+            ),
+        ],
         summary='España contamina menos gracias a las energías limpias.',
         reading_time=2,
         level='A2',
@@ -219,22 +228,91 @@ def sample_b1_article(sample_base_article: BaseArticle) -> AdaptedArticle:
                 'Los expertos ambientales celebran estos resultados. Consideran que es un avance importante '
                 'contra el **cambio climático**. Sin embargo, advierten que España debe hacer más '
                 'para cumplir los objetivos del **Acuerdo de París**.',
-        vocabulary={
-            'emisiones de dióxido de carbono': 'carbon dioxide emissions - gases contaminantes del aire',
-            'Ministerio de Transición Ecológica': 'Ministry of Ecological Transition - departamento del gobierno español',
-            'energías renovables': 'renewable energy - energía del sol, viento y agua que no se agota',
-            'paneles solares': 'solar panels - dispositivos que convierten luz solar en electricidad',
-            'parques eólicos': 'wind farms - lugares con muchas turbinas de viento',
-            'sostenible': 'sustainable - que se puede mantener sin dañar el medio ambiente',
-            'cambio climático': 'climate change - alteración del clima global por actividad humana',
-            'Acuerdo de París': 'Paris Agreement - tratado internacional sobre cambio climático'
-        },
+        vocabulary=[
+            VocabularyItem(
+                term='emisiones de dióxido de carbono',
+                english='carbon dioxide emissions',
+                explanation='gases contaminantes del aire',
+            ),
+            VocabularyItem(
+                term='Ministerio de Transición Ecológica',
+                english='Ministry of Ecological Transition',
+                explanation='departamento del gobierno español',
+            ),
+            VocabularyItem(
+                term='energías renovables',
+                english='renewable energy',
+                explanation='energía del sol, viento y agua que no se agota',
+            ),
+            VocabularyItem(
+                term='paneles solares',
+                english='solar panels',
+                explanation='dispositivos que convierten luz solar en electricidad',
+            ),
+            VocabularyItem(
+                term='parques eólicos',
+                english='wind farms',
+                explanation='lugares con muchas turbinas de viento',
+            ),
+            VocabularyItem(
+                term='sostenible',
+                english='sustainable',
+                explanation='que se puede mantener sin dañar el medio ambiente',
+            ),
+            VocabularyItem(
+                term='cambio climático',
+                english='climate change',
+                explanation='alteración del clima global por actividad humana',
+            ),
+            VocabularyItem(
+                term='Acuerdo de París',
+                english='Paris Agreement',
+                explanation='tratado internacional sobre cambio climático',
+            ),
+        ],
         summary='España reduce emisiones de CO2 en 15% mediante energías renovables.',
         reading_time=3,
         level='B1',
         base_article=sample_base_article,
         topic=sample_base_article.topic,
         sources=sample_base_article.sources
+    )
+
+
+@pytest.fixture
+def sample_a2_text_article(sample_base_article: BaseArticle) -> AdaptedArticle:
+    """Sample A2 article after text adaptation but before glossary generation."""
+    return AdaptedArticle(
+        title='España tiene menos contaminación',
+        content='España reduce sus emisiones de CO2. El gobierno dice que la contaminación baja un 15%.\n\n'
+                'El país usa más energía limpia. Los paneles solares y el viento producen electricidad.\n\n'
+                'Los expertos están contentos. Dicen que España va por buen camino.',
+        vocabulary=[],
+        summary='España contamina menos gracias a las energías limpias.',
+        reading_time=2,
+        level='A2',
+        base_article=sample_base_article,
+        topic=sample_base_article.topic,
+        sources=sample_base_article.sources,
+    )
+
+
+@pytest.fixture
+def sample_b1_text_article(sample_base_article: BaseArticle) -> AdaptedArticle:
+    """Sample B1 article after text adaptation but before glossary generation."""
+    return AdaptedArticle(
+        title='España reduce sus emisiones de CO2 gracias a energías limpias',
+        content='España ha logrado reducir sus emisiones de dióxido de carbono en un 15% este año.\n\n'
+                'El Ministerio de Transición Ecológica publicó estos datos positivos y explicó que el '
+                'aumento de energías renovables ayudó mucho.\n\n'
+                'Los expertos consideran que es un avance importante contra el cambio climático.',
+        vocabulary=[],
+        summary='España reduce emisiones de CO2 en 15% mediante energías renovables.',
+        reading_time=3,
+        level='B1',
+        base_article=sample_base_article,
+        topic=sample_base_article.topic,
+        sources=sample_base_article.sources,
     )
 
 

@@ -6,17 +6,17 @@ Tests article generation with real topics and sources.
 """
 
 import sys
-import os
 from pathlib import Path
 
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from config import load_config  # type: ignore[attr-defined]
-from logger import setup_logger
-from topic_discovery import TopicDiscoverer
 from content_fetcher import ContentFetcher
 from content_generator import ContentGenerator
+from logger import setup_logger
+from topic_discovery import TopicDiscoverer
+
+from config import load_config  # type: ignore[attr-defined]
 
 
 def test_content_generator():
@@ -30,7 +30,7 @@ def test_content_generator():
     # Load configuration
     try:
         config = load_config('local')
-        print(f"✓ Config loaded successfully")
+        print("✓ Config loaded successfully")
         print(f"  LLM Provider: {config.llm.provider}")
         print(f"  Generation Model: {config.llm.models.generation}")
         print(f"  Target levels: {config.generation.levels}")
@@ -41,7 +41,7 @@ def test_content_generator():
     # Setup logger
     try:
         logger = setup_logger(config, 'test-generator')
-        print(f"✓ Logger initialized")
+        print("✓ Logger initialized")
     except Exception as e:
         print(f"✗ Failed to setup logger: {e}")
         return False
@@ -104,7 +104,7 @@ def test_content_generator():
     # Initialize generator
     try:
         generator = ContentGenerator(config, logger)
-        print(f"✓ ContentGenerator initialized")
+        print("✓ ContentGenerator initialized")
         print(f"  Provider: {config.llm.provider}")
     except Exception as e:
         print(f"✗ Failed to initialize generator: {e}")
@@ -123,19 +123,19 @@ def test_content_generator():
 
     try:
         print(f"Generating {level} article...")
-        print(f"(This may take 10-30 seconds...)")
+        print("(This may take 10-30 seconds...)")
         print()
 
         article = generator.generate_article(topic, sources, level)
 
-        print(f"✓ Article generated successfully!")
+        print("✓ Article generated successfully!")
         print()
         print(f"Title: {article.title}")
         print(f"Level: {article.level}")
         print(f"Word count: {len(article.content.split())} words")
-        print(f"Vocabulary words: {len(article.vocabulary)}")
+        print(f"Glossary entries attached: {len(article.vocabulary)}")
         print(f"Reading time: {article.reading_time} minutes")
-        print(f"Sources: {', '.join(article.sources)}")
+        print(f"Sources: {', '.join(source.name for source in article.sources)}")
         print()
 
         # Display first 200 characters of content
@@ -146,12 +146,17 @@ def test_content_generator():
         print("-" * 60)
         print()
 
-        # Display vocabulary
+        # Display glossary entries when testing already-enriched articles.
         if article.vocabulary:
-            print("Vocabulary (first 5):")
-            vocab_items = list(article.vocabulary.items())[:5]
-            for word, translation in vocab_items:
-                print(f"  - {word}: {translation}")
+            print("Glossary (first 5):")
+            for item in article.vocabulary[:5]:
+                definition = item.english
+                if item.explanation:
+                    definition = f"{definition} - {item.explanation}"
+                print(f"  - {item.term}: {definition}")
+            print()
+        else:
+            print("Glossary: not generated in this step (added after quality validation)")
             print()
 
     except Exception as e:
@@ -183,12 +188,12 @@ def test_content_generator():
     else:
         print(f"✓ Content length appropriate: {word_count} words (target: ~{target})")
 
-    # Check vocabulary count
-    vocab_count = len(article.get('vocabulary', {}))
-    if vocab_count < 5:
-        print(f"⚠ Few vocabulary words: {vocab_count} (expected: 10)")
+    # Glossary is generated in a later pipeline stage, so empty vocabulary is expected here.
+    vocab_count = len(article.vocabulary)
+    if vocab_count == 0:
+        print("✓ No glossary attached yet (expected before glossary generation stage)")
     else:
-        print(f"✓ Vocabulary count: {vocab_count} words")
+        print(f"✓ Glossary entries already attached: {vocab_count}")
 
     print()
     print("=" * 60)

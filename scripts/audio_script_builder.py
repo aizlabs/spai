@@ -7,7 +7,7 @@ from __future__ import annotations
 import re
 from typing import List
 
-from scripts.models import AdaptedArticle, SpeechScript
+from scripts.models import AdaptedArticle, SpeechScript, VocabularyItem, coerce_vocabulary_items
 
 _EMPHASIS_PATTERN = re.compile(r"\*\*(.+?)\*\*")
 
@@ -21,7 +21,16 @@ def _strip_markdown(text: str) -> str:
 
 def build_speech_script(article: AdaptedArticle, include_vocabulary: bool = False) -> SpeechScript:
     """Convert an adapted article into a narration-friendly plain-text script."""
-    vocabulary_included = bool(include_vocabulary and article.vocabulary)
+    raw_vocabulary = article.vocabulary or []
+    if all(isinstance(item, VocabularyItem) for item in raw_vocabulary):
+        normalized_vocabulary = raw_vocabulary
+    else:
+        normalized_vocabulary = coerce_vocabulary_items(raw_vocabulary)
+
+    vocabulary_items = [
+        item for item in normalized_vocabulary if item.explanation or item.english
+    ]
+    vocabulary_included = bool(include_vocabulary and vocabulary_items)
     sections: List[str] = [f"{article.title}. {article.summary}".strip()]
 
     paragraphs = [paragraph.strip() for paragraph in article.content.split("\n\n") if paragraph.strip()]
@@ -29,8 +38,12 @@ def build_speech_script(article: AdaptedArticle, include_vocabulary: bool = Fals
 
     if vocabulary_included:
         vocabulary_lines = [
-            f"{term} significa {definition}."
-            for term, definition in article.vocabulary.items()
+            (
+                f"{item.term} significa {item.explanation}."
+                if item.explanation
+                else f"{item.term} en inglés es {item.english}."
+            )
+            for item in vocabulary_items
         ]
         sections.append("Vocabulario. " + " ".join(_strip_markdown(line) for line in vocabulary_lines))
 

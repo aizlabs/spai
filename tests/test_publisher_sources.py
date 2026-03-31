@@ -190,6 +190,33 @@ def test_publisher_normalizes_malformed_vocabulary_terms(
     assert "****medio ambiente****" not in markdown
 
 
+def test_publisher_skips_vocabulary_items_without_any_definition(
+    base_config,
+    mock_logger,
+    sample_a2_article,
+    tmp_path,
+):
+    base_config.output['path'] = str(tmp_path)
+    article = sample_a2_article.model_copy(
+        update={
+            'vocabulary': [
+                {
+                    'term': 'bombardeos',
+                    'english': '',
+                    'explanation': '',
+                }
+            ]
+        }
+    )
+
+    publisher = Publisher(base_config, mock_logger, dry_run=True)
+
+    markdown = publisher._generate_markdown(article, datetime(2024, 1, 1, 12, 0, 0))
+
+    assert "- **bombardeos** -" not in markdown
+    assert "## Vocabulario" not in markdown
+
+
 def test_publisher_includes_audio_frontmatter_when_public_url_exists(
     base_config,
     mock_logger,

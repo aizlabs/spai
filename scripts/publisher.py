@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from scripts.config import AppConfig
-from scripts.models import AdaptedArticle
+from scripts.models import AdaptedArticle, coerce_vocabulary_items
 from scripts.text_utils import normalize_vocabulary_term, slugify_text
 from scripts.topic_utils import is_noisy_topic_keyword
 
@@ -293,26 +293,41 @@ reading_time: {article.reading_time}
         # Fallback: generic topic
         return '["general"]'
 
-    def _format_vocabulary(self, vocabulary: Dict[str, str], article_title: str) -> str:
+    def _format_vocabulary(self, vocabulary, article_title: str) -> str:
         """Format vocabulary section"""
-        if not vocabulary:
+        items = coerce_vocabulary_items(vocabulary)
+        if not items:
             return ""
 
-        vocab_lines = ["", "## Vocabulario", ""]
+        rendered_lines = []
 
-        for spanish, english in vocabulary.items():
-            normalized_spanish = normalize_vocabulary_term(spanish)
+        for item in items:
+            normalized_spanish = normalize_vocabulary_term(item.term)
             if not normalized_spanish:
                 continue
-            if normalized_spanish != spanish:
+            if normalized_spanish != item.term:
                 self.logger.warning(
                     "Normalized vocabulary term during publish for article '%s': '%s' -> '%s'",
                     article_title,
-                    spanish,
+                    item.term,
                     normalized_spanish,
                 )
-            vocab_lines.append(f"- **{normalized_spanish}** - {english}")
 
+            definition_parts = [part for part in (item.english, item.explanation) if part]
+            definition = " - ".join(definition_parts)
+            if not definition:
+                self.logger.warning(
+                    "Skipping vocabulary term without definition during publish for article '%s': '%s'",
+                    article_title,
+                    normalized_spanish,
+                )
+                continue
+            rendered_lines.append(f"- **{normalized_spanish}** - {definition}")
+
+        if not rendered_lines:
+            return ""
+
+        vocab_lines = ["", "## Vocabulario", "", *rendered_lines]
         return '\n'.join(vocab_lines)
 
     def _deduplicate_sources(self, sources) -> List[Any]:

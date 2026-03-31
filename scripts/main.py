@@ -29,6 +29,7 @@ from alerts import AlertManager
 from audio_pipeline import AudioPipeline
 from content_fetcher import ContentFetcher
 from content_generator import ContentGenerator
+from glossary_generator import GlossaryGenerator
 from logger import setup_logger
 from models import AdaptedArticle, QualityResult
 from publisher import Publisher
@@ -103,6 +104,7 @@ def main():
         fetcher = ContentFetcher(config, logger)
         generator = ContentGenerator(config, logger)
         quality_gate = QualityGate(config, logger)
+        glossary_generator = GlossaryGenerator(config, logger)
         audio_pipeline = AudioPipeline(config, logger)
         publisher = Publisher(config, logger, dry_run=dry_run)
 
@@ -175,7 +177,7 @@ def main():
 
                 logger.info(f"✓ Generated: {article.title}")
                 logger.info(f"  Word count: {word_count}")
-                logger.info(f"  Vocabulary: {len(article.vocabulary)} words")
+                logger.info("  Glossary: pending Phase 5 generation")
                 logger.info("")
 
                 # Phase 4: Quality Gate (with regeneration)
@@ -201,21 +203,25 @@ def main():
                         logger.info(f"  Strengths: {', '.join(quality_result.strengths[:2])}")
                     logger.info("")
 
+                    logger.info("Phase 5: Generating glossary...")
+                    final_article = glossary_generator.enrich_article(final_article)
+                    logger.info("")
+
                     # Optional website audio preparation
                     if config.audio.enabled:
-                        logger.info("Phase 5: Preparing website audio metadata...")
+                        logger.info("Phase 6: Preparing website audio metadata...")
                         final_article = audio_pipeline.prepare_for_publish(final_article)
                         logger.info("")
                     else:
                         logger.info(
-                            "Phase 5: Skipping website audio preparation because "
+                            "Phase 6: Skipping website audio preparation because "
                             "audio.enabled=false"
                         )
                         logger.info("")
 
-                    # Phase 5: Publish
+                    # Phase 7: Publish
                     current_stage = f"publishing:{level}"
-                    logger.info("Phase 6: Publishing...")
+                    logger.info("Phase 7: Publishing...")
                     is_published = publisher.save_article(final_article)
 
                     if is_published:
