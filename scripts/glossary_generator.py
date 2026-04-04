@@ -455,7 +455,7 @@ class GlossaryGenerator:
                     )
 
             self.last_run_stats["glossary_accepted"] = len(accepted)
-            self.last_run_stats["glossary_empty_after_retry"] = not accepted
+            self.last_run_stats["glossary_empty_after_retry"] = retried and not accepted
 
             if self.debug_dump:
                 self._write_debug_artifact(
@@ -484,7 +484,9 @@ class GlossaryGenerator:
             )
             return article.model_copy(update={"content": content, "vocabulary": accepted})
         except Exception as exc:
-            self.last_run_stats["glossary_empty_after_retry"] = True
+            self.last_run_stats["glossary_empty_after_retry"] = bool(
+                self.last_run_stats.get("retry_used")
+            )
             self.logger.error(
                 "Glossary generation failed for '%s': %s. Publishing without glossary.",
                 article.title,

@@ -42,9 +42,6 @@ layout: default
             <source src="{{ page.audio.url }}" type="{{ page.audio.mime_type | default: 'audio/mpeg' }}">
             Tu navegador no soporta la reproducción de audio.
           </audio>
-          {% if page.audio.voice %}
-            <p class="article-audio__meta">Voz: {{ page.audio.voice }}</p>
-          {% endif %}
         </section>
       {% endif %}
       {{ content }}

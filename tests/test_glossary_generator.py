@@ -418,6 +418,37 @@ def test_enrich_article_publishes_without_glossary_when_all_items_are_rejected(
     )
 
 
+def test_enrich_article_without_retry_does_not_mark_empty_after_retry(
+    glossary_generator,
+    sample_a2_text_article,
+    monkeypatch,
+):
+    glossary_generator.retry_on_empty = False
+    monkeypatch.setattr(
+        glossary_generator,
+        "generate",
+        MagicMock(
+            return_value=[
+                VocabularyItem(
+                    term="drones",
+                    english="drones",
+                    explanation="aviones no tripulados",
+                )
+            ]
+        ),
+    )
+
+    article = sample_a2_text_article.model_copy(
+        update={"content": "Los drones volaron sobre la ciudad durante la noche."}
+    )
+
+    enriched = glossary_generator.enrich_article(article)
+
+    assert enriched.vocabulary == []
+    assert glossary_generator.last_run_stats["retry_used"] is False
+    assert glossary_generator.last_run_stats["glossary_empty_after_retry"] is False
+
+
 def test_enrich_article_retries_when_initial_candidates_all_fail_for_march_31_a2(
     glossary_generator,
     sample_a2_text_article,

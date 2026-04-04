@@ -222,7 +222,7 @@ def main():
                         "  glossary_empty_after_retry="
                         f"{glossary_stats['glossary_empty_after_retry']}"
                     )
-                    if glossary_stats["glossary_empty_after_retry"]:
+                    if glossary_stats["retry_used"] and glossary_stats["glossary_empty_after_retry"]:
                         logger.warning(
                             "Glossary still empty after retry for "
                             f"'{final_article.title}' "
