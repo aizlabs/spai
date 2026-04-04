@@ -636,3 +636,45 @@ def test_debug_dump_writes_glossary_artifact(glossary_generator, sample_a2_text_
     assert payload["counts"]["accepted"] == 1
     assert payload["accepted"][0]["term"] == "bombardeos"
     assert payload["dropped"]["initial"] == []
+
+
+def test_debug_dump_failure_does_not_discard_accepted_glossary(
+    glossary_generator,
+    sample_a2_text_article,
+    monkeypatch,
+):
+    glossary_generator.debug_dump = True
+    monkeypatch.setattr(
+        glossary_generator,
+        "_call_llm",
+        MagicMock(
+            return_value=GlossaryResponse(
+                vocabulary=[
+                    {
+                        "term": "bombardeos",
+                        "english": "bombings",
+                        "explanation": "ataques con bombas desde el aire",
+                    }
+                ]
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        glossary_generator,
+        "_write_debug_artifact",
+        MagicMock(side_effect=OSError("disk full")),
+    )
+
+    article = sample_a2_text_article.model_copy(
+        update={"content": "Los bombardeos aumentaron durante la noche."}
+    )
+
+    enriched = glossary_generator.enrich_article(article)
+
+    assert [item.term for item in enriched.vocabulary] == ["bombardeos"]
+    assert "**bombardeos**" in enriched.content
+    assert any(
+        "Glossary debug dump failed for '%s': %s. Continuing without artifact."
+        in str(call.args[0])
+        for call in glossary_generator.logger.warning.call_args_list
+    )

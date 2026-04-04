@@ -458,15 +458,22 @@ class GlossaryGenerator:
             self.last_run_stats["glossary_empty_after_retry"] = retried and not accepted
 
             if self.debug_dump:
-                self._write_debug_artifact(
-                    article=article,
-                    initial_candidates=initial_candidates,
-                    initial_dropped=dropped,
-                    retry_candidates=retry_candidates,
-                    retry_dropped=retry_dropped,
-                    accepted=accepted,
-                    retried=retried,
-                )
+                try:
+                    self._write_debug_artifact(
+                        article=article,
+                        initial_candidates=initial_candidates,
+                        initial_dropped=dropped,
+                        retry_candidates=retry_candidates,
+                        retry_dropped=retry_dropped,
+                        accepted=accepted,
+                        retried=retried,
+                    )
+                except Exception as exc:
+                    self.logger.warning(
+                        "Glossary debug dump failed for '%s': %s. Continuing without artifact.",
+                        article.title,
+                        exc,
+                    )
 
             if not accepted:
                 self.logger.warning(
