@@ -76,6 +76,20 @@ def test_audio_env_overrides(monkeypatch):
             monkeypatch.delenv(key, raising=False)
 
 
+def test_glossary_env_overrides(monkeypatch):
+    """Glossary-related env vars populate the glossary config subtree."""
+    monkeypatch.setenv("GLOSSARY_RETRY_ON_EMPTY", "false")
+    monkeypatch.setenv("GLOSSARY_DEBUG_DUMP", "true")
+    try:
+        config = {}
+        apply_env_overrides(config)
+        assert config["glossary"]["retry_on_empty"] is False
+        assert config["glossary"]["debug_dump"] is True
+    finally:
+        monkeypatch.delenv("GLOSSARY_RETRY_ON_EMPTY", raising=False)
+        monkeypatch.delenv("GLOSSARY_DEBUG_DUMP", raising=False)
+
+
 def test_alerts_enabled_true(monkeypatch):
     """ALERTS_ENABLED=true sets alerts.enabled to True."""
     monkeypatch.setenv("ALERTS_ENABLED", "true")

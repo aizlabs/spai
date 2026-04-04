@@ -58,6 +58,10 @@ def base_config() -> AppConfig:
             'min_score': 7.5,
             'max_attempts': 3
         },
+        'glossary': {
+            'retry_on_empty': True,
+            'debug_dump': False,
+        },
         'sources': {
             'max_words_per_source': 300,
             'min_words_per_source': 100,

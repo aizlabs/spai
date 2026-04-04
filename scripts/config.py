@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field, model_validator
 from scripts.models import (
     AlertsConfig,
     AudioConfig,
+    GlossaryConfig,
     LLMConfig,
     TwoStepSynthesisConfig,
 )
@@ -51,6 +52,7 @@ class AppConfig(BaseModel):
     generation: GenerationConfig
     llm: LLMConfig
     quality_gate: QualityGateConfig
+    glossary: GlossaryConfig = Field(default_factory=GlossaryConfig)
     sources: SourceConfig
     audio: AudioConfig = Field(default_factory=AudioConfig)
     output: Dict[str, str] = Field(default_factory=dict)
@@ -161,6 +163,16 @@ def apply_env_overrides(config_dict: Dict) -> Dict:
     if articles_per_run:
         config_dict.setdefault('generation', {})
         config_dict['generation']['articles_per_run'] = int(articles_per_run)
+
+    glossary_retry_on_empty = parse_bool(os.getenv('GLOSSARY_RETRY_ON_EMPTY'))
+    if glossary_retry_on_empty is not None:
+        config_dict.setdefault('glossary', {})
+        config_dict['glossary']['retry_on_empty'] = glossary_retry_on_empty
+
+    glossary_debug_dump = parse_bool(os.getenv('GLOSSARY_DEBUG_DUMP'))
+    if glossary_debug_dump is not None:
+        config_dict.setdefault('glossary', {})
+        config_dict['glossary']['debug_dump'] = glossary_debug_dump
 
     audio_enabled = parse_bool(os.getenv('AUDIO_ENABLED'))
     if audio_enabled is not None:

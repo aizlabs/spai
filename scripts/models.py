@@ -429,6 +429,19 @@ class AudioConfig(BaseModel):
     website: AudioWebsiteConfig = Field(default_factory=AudioWebsiteConfig)
 
 
+class GlossaryConfig(BaseModel):
+    """Configuration for post-validation glossary generation."""
+
+    retry_on_empty: bool = Field(
+        default=True,
+        description="Retry glossary generation once when all initial candidates are rejected",
+    )
+    debug_dump: bool = Field(
+        default=False,
+        description="Write glossary candidate/validation artifacts to disk for investigation",
+    )
+
+
 # =============================================================================
 # Helper Functions
 # =============================================================================

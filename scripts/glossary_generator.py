@@ -4,9 +4,13 @@ Generate and validate glossary entries after the article text is approved.
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 import unicodedata
+from collections import Counter
+from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List
 
 import spacy
@@ -20,6 +24,7 @@ from scripts.models import AdaptedArticle, VocabularyItem, coerce_vocabulary_ite
 from scripts.text_utils import (
     ensure_vocabulary_bolded,
     normalize_vocabulary_term,
+    slugify_text,
     vocabulary_term_present,
 )
 
@@ -298,6 +303,7 @@ NON_NOUN_FOLLOWER_TOKENS = {
     "unos",
     "y",
 }
+SHORTLIST_TOKEN_PATTERN = re.compile(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ'’-]*")
 
 
 class RawGlossaryItem(BaseModel):
@@ -325,6 +331,11 @@ class GlossaryGenerator:
         self.logger = logger.getChild("GlossaryGenerator")
         self.llm_config = config.llm.model_dump()
         self.temperature = min(self.llm_config.get("temperature", 0.3), 0.2)
+        self.glossary_config = config.glossary
+        self.retry_on_empty = self.glossary_config.retry_on_empty
+        self.debug_dump = self.glossary_config.debug_dump
+        self.metrics_output_dir = Path("output/metrics/glossary")
+        self.last_run_stats = self._empty_run_stats()
         self._nlp = None
         self._init_chain()
         self._init_nlp()
@@ -332,8 +343,7 @@ class GlossaryGenerator:
     def generate(self, article: AdaptedArticle) -> List[VocabularyItem]:
         """Generate glossary candidates from the final approved text."""
         prompt = prompts.get_glossary_generation_prompt(article)
-        response = self._call_llm(prompt)
-        return coerce_vocabulary_items(response.model_dump(exclude_none=True).get("vocabulary") or [])
+        return self._generate_candidates_from_prompt(prompt)
 
     def validate(
         self,
@@ -407,38 +417,253 @@ class GlossaryGenerator:
 
     def enrich_article(self, article: AdaptedArticle) -> AdaptedArticle:
         """Attach a validated glossary to an approved article without blocking publication."""
+        self.last_run_stats = self._empty_run_stats(article)
         try:
-            candidates = self.generate(article)
-            accepted, dropped = self.validate(article.content, candidates)
+            initial_candidates = self.generate(article)
+            accepted, dropped = self.validate(article.content, initial_candidates)
+            retry_candidates: List[VocabularyItem] = []
+            retry_dropped: Dict[str, str] = {}
+            retried = False
 
-            if dropped:
-                self.logger.warning(
-                    "Dropped glossary terms for article '%s': %s",
-                    article.title,
-                    ", ".join(f"{term} ({reason})" for term, reason in dropped.items()),
-                )
+            self.last_run_stats["glossary_candidates_initial"] = len(initial_candidates)
+            self._log_validation_stage(
+                article.title,
+                "initial",
+                initial_candidates,
+                accepted,
+                dropped,
+            )
+
+            if not accepted and self.retry_on_empty:
+                retried = True
+                retry_candidates = self._retry_generate(article, dropped)
+                self.last_run_stats["glossary_candidates_retry"] = len(retry_candidates)
+                self.last_run_stats["retry_used"] = True
+
+                if retry_candidates:
+                    accepted, retry_dropped = self.validate(article.content, retry_candidates)
+                    self._log_validation_stage(
+                        article.title,
+                        "retry",
+                        retry_candidates,
+                        accepted,
+                        retry_dropped,
+                    )
+                else:
+                    self.logger.warning(
+                        f"Retry glossary generation returned no candidates for '{article.title}'"
+                    )
+
+            self.last_run_stats["glossary_accepted"] = len(accepted)
+            self.last_run_stats["glossary_empty_after_retry"] = retried and not accepted
+
+            if self.debug_dump:
+                try:
+                    self._write_debug_artifact(
+                        article=article,
+                        initial_candidates=initial_candidates,
+                        initial_dropped=dropped,
+                        retry_candidates=retry_candidates,
+                        retry_dropped=retry_dropped,
+                        accepted=accepted,
+                        retried=retried,
+                    )
+                except Exception as exc:
+                    self.logger.warning(
+                        "Glossary debug dump failed for '%s': %s. Continuing without artifact.",
+                        article.title,
+                        exc,
+                    )
 
             if not accepted:
-                self.logger.info(
-                    "No glossary entries survived validation for '%s'; publishing text without glossary",
-                    article.title,
+                self.logger.warning(
+                    f"No glossary entries survived validation for '{article.title}' "
+                    f"(glossary_candidates_initial={len(initial_candidates)}, "
+                    f"glossary_candidates_retry={len(retry_candidates)}, "
+                    f"glossary_accepted={len(accepted)}); publishing text without glossary"
                 )
                 return article.model_copy(update={"vocabulary": []})
 
             content = self.apply_bolding(article.content, accepted)
             self.logger.info(
-                "Accepted %s glossary entries for '%s'",
-                len(accepted),
-                article.title,
+                f"Accepted {len(accepted)} glossary entries for '{article.title}': "
+                f"{', '.join(item.term for item in accepted)}"
             )
             return article.model_copy(update={"content": content, "vocabulary": accepted})
         except Exception as exc:
+            self.last_run_stats["glossary_empty_after_retry"] = bool(
+                self.last_run_stats.get("retry_used")
+            )
             self.logger.error(
                 "Glossary generation failed for '%s': %s. Publishing without glossary.",
                 article.title,
                 exc,
             )
             return article.model_copy(update={"vocabulary": []})
+
+    def _generate_candidates_from_prompt(self, prompt: str) -> List[VocabularyItem]:
+        response = self._call_llm(prompt)
+        return coerce_vocabulary_items(response.model_dump(exclude_none=True).get("vocabulary") or [])
+
+    def _retry_generate(self, article: AdaptedArticle, dropped: Dict[str, str]) -> List[VocabularyItem]:
+        shortlist = self._build_retry_shortlist(article.content)
+        self.logger.info(
+            f"Retrying glossary generation for '{article.title}' after zero accepted initial candidates "
+            f"with {len(shortlist)} shortlist hints"
+        )
+        retry_prompt = prompts.get_glossary_retry_prompt(article, dropped, shortlist)
+        return self._generate_candidates_from_prompt(retry_prompt)
+
+    def _log_validation_stage(
+        self,
+        article_title: str,
+        stage: str,
+        candidates: List[VocabularyItem],
+        accepted: List[VocabularyItem],
+        dropped: Dict[str, str],
+    ) -> None:
+        reason_summary = self._format_reason_summary(dropped)
+        message = (
+            f"{stage.capitalize()} glossary validation for '{article_title}': "
+            f"candidates={len(candidates)}, accepted={len(accepted)}, dropped={len(dropped)}"
+        )
+        if reason_summary:
+            message += f", reasons={reason_summary}"
+        self.logger.info(message)
+
+        if dropped:
+            self.logger.warning(
+                f"Dropped {stage} glossary terms for '{article_title}': "
+                + ", ".join(f"{term} ({reason})" for term, reason in dropped.items())
+            )
+
+    def _format_reason_summary(self, dropped: Dict[str, str]) -> str:
+        if not dropped:
+            return ""
+        counts = Counter(dropped.values())
+        ordered = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+        return ", ".join(f"{reason}={count}" for reason, count in ordered)
+
+    def _empty_run_stats(self, article: AdaptedArticle | None = None) -> Dict[str, Any]:
+        return {
+            "article_title": article.title if article else None,
+            "article_level": article.level if article else None,
+            "glossary_candidates_initial": 0,
+            "glossary_candidates_retry": 0,
+            "glossary_accepted": 0,
+            "glossary_empty_after_retry": False,
+            "retry_used": False,
+        }
+
+    def _write_debug_artifact(
+        self,
+        article: AdaptedArticle,
+        initial_candidates: List[VocabularyItem],
+        initial_dropped: Dict[str, str],
+        retry_candidates: List[VocabularyItem],
+        retry_dropped: Dict[str, str],
+        accepted: List[VocabularyItem],
+        retried: bool,
+    ) -> None:
+        self.metrics_output_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+        filename = f"{timestamp}-{slugify_text(article.title)}-{article.level.lower()}.json"
+        payload = {
+            "article_title": article.title,
+            "level": article.level,
+            "retry_used": retried,
+            "counts": {
+                "initial_candidates": len(initial_candidates),
+                "retry_candidates": len(retry_candidates),
+                "accepted": len(accepted),
+                "initial_dropped": len(initial_dropped),
+                "retry_dropped": len(retry_dropped),
+            },
+            "initial_candidates": [item.model_dump() for item in initial_candidates],
+            "retry_candidates": [item.model_dump() for item in retry_candidates],
+            "accepted": [item.model_dump() for item in accepted],
+            "dropped": {
+                "initial": [
+                    {"term": term, "reason": reason}
+                    for term, reason in initial_dropped.items()
+                ],
+                "retry": [
+                    {"term": term, "reason": reason}
+                    for term, reason in retry_dropped.items()
+                ],
+            },
+        }
+
+        with open(self.metrics_output_dir / filename, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, ensure_ascii=False, indent=2)
+
+    def _build_retry_shortlist(self, content: str, limit: int = 18) -> List[str]:
+        doc = self._analyze_content(content)
+        seen = set()
+        shortlist: List[str] = []
+
+        if doc is not None:
+            for chunk in doc.noun_chunks:
+                candidate = chunk.text.strip()
+                if self._add_shortlist_candidate(shortlist, seen, doc, content, candidate, limit):
+                    if len(shortlist) >= limit:
+                        return shortlist
+            for token in doc:
+                if token.pos_ not in {"NOUN", "ADJ"}:
+                    continue
+                candidate = token.text.strip()
+                if self._add_shortlist_candidate(shortlist, seen, doc, content, candidate, limit):
+                    if len(shortlist) >= limit:
+                        return shortlist
+
+        for segment in re.split(r"[.!?;\n]+", content):
+            words = SHORTLIST_TOKEN_PATTERN.findall(segment)
+            for size in (3, 2, 1):
+                for index in range(0, len(words) - size + 1):
+                    candidate = " ".join(words[index:index + size]).strip()
+                    if self._add_shortlist_candidate(shortlist, seen, doc, content, candidate, limit):
+                        if len(shortlist) >= limit:
+                            return shortlist
+
+        return shortlist
+
+    def _add_shortlist_candidate(
+        self,
+        shortlist: List[str],
+        seen: set[str],
+        doc,
+        content: str,
+        candidate: str,
+        limit: int,
+    ) -> bool:
+        normalized = normalize_vocabulary_term(candidate)
+        if not normalized or len(shortlist) >= limit:
+            return False
+        if len(normalized.split()) > 3 or any(char.isdigit() for char in normalized):
+            return False
+
+        folded = normalized.casefold()
+        if folded in seen:
+            return False
+
+        tokens = self._tokenize(normalized)
+        if not tokens or max(len(token) for token in tokens) < 4:
+            return False
+        if all(token in SPANISH_STOPWORDS or token in NAME_CONNECTOR_TOKENS for token in tokens):
+            return False
+        if normalized.isupper():
+            return False
+        if not vocabulary_term_present(content, normalized):
+            return False
+        if self._is_rejected_named_entity(doc, content, normalized, "", ""):
+            return False
+        if self._is_isolated_modifier(doc, content, normalized):
+            return False
+
+        matched = self._match_term_casing_from_content(content, normalized) or normalized
+        seen.add(matched.casefold())
+        shortlist.append(matched)
+        return True
 
     def _init_chain(self) -> None:
         model_name = self.llm_config["models"].get(

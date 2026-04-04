@@ -799,3 +799,65 @@ Level: {article.level}
 Content:
 {article.content}
 """
+
+
+def get_glossary_retry_prompt(
+    article: AdaptedArticle,
+    rejected_terms: dict[str, str],
+    shortlist: list[str],
+) -> str:
+    """Prompt for retrying glossary generation after deterministic validation rejects everything."""
+    validate_level(article.level)
+
+    target_counts = {"A2": "4-8", "B1": "5-9"}
+    max_words = {"A2": 15, "B1": 20}
+    explanation_style = {
+        "A2": "Use only very simple Spanish vocabulary.",
+        "B1": "Use clear intermediate Spanish vocabulary.",
+    }
+    rejected_lines = "\n".join(
+        f"- {term}: {reason}"
+        for term, reason in rejected_terms.items()
+    ) or "- No rejected terms recorded"
+    shortlist_lines = "\n".join(f"- {term}" for term in shortlist) or "- No shortlist available"
+
+    return f"""You are retrying glossary generation for an English-speaking learner reading this Spanish article.
+
+The previous glossary attempt failed deterministic validation. Generate a NEW set of candidates from the exact article text below.
+
+HARD RULES:
+- Do NOT return any rejected term again.
+- Do NOT rewrite the article.
+- Every term must appear literally in the article text.
+- Prefer event terms, institutional phrases, domain nouns, and reusable multiword expressions.
+- Avoid names, countries, famous people, obvious cognates, transparent loanwords, and isolated modifiers.
+- If only a few strong terms remain, return only those. Do not add filler terms.
+
+PREVIOUSLY REJECTED TERMS:
+{rejected_lines}
+
+SUGGESTED LITERAL SPANS FROM THE ARTICLE:
+{shortlist_lines}
+
+LEVEL GUIDANCE:
+- Target {target_counts[article.level]} strong glossary entries when possible.
+- {explanation_style[article.level]}
+- Maximum {max_words[article.level]} words per Spanish explanation.
+
+OUTPUT FORMAT (return ONLY valid JSON, no markdown):
+{{
+  "vocabulary": [
+    {{
+      "term": "exact word or phrase from the article text, and not one of the rejected terms",
+      "english": "natural English translation",
+      "explanation": "short Spanish explanation for the learner"
+    }}
+  ]
+}}
+
+ARTICLE:
+Title: {article.title}
+Level: {article.level}
+Content:
+{article.content}
+"""
