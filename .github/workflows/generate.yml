@@ -114,7 +114,7 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
-          name: generation-diagnostics-${{ github.run_id }}
+          name: generation-diagnostics-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: |
             logs/*.log
             output/logs/*.log
@@ -167,7 +167,7 @@ jobs:
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📦 **Diagnostics artifact:** generation-diagnostics-${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "📦 **Diagnostics artifact:** generation-diagnostics-${{ github.run_id }}-attempt-${{ github.run_attempt }}" >> $GITHUB_STEP_SUMMARY
           echo "🧪 **Glossary debug dump:** ${{ env.GLOSSARY_DEBUG_DUMP }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Time:** $(date -u +"%Y-%m-%d %H:%M UTC")" >> $GITHUB_STEP_SUMMARY
