@@ -111,6 +111,7 @@ jobs:
 
       - name: Upload pipeline diagnostics
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: generation-diagnostics-${{ github.run_id }}
