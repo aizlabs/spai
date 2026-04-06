@@ -178,6 +178,12 @@ def test_glossary_response_schema_is_closed_for_openai_structured_output():
 
     assert schema["additionalProperties"] is False
     assert schema["properties"]["vocabulary"]["items"]["additionalProperties"] is False
+    assert schema["properties"]["vocabulary"]["items"]["required"] == [
+        "term",
+        "english",
+        "explanation",
+        "gloss",
+    ]
 
 
 def test_validate_keeps_high_value_terms_and_context_phrases(glossary_generator):

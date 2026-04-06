@@ -340,6 +340,7 @@ GLOSSARY_RESPONSE_SCHEMA = {
                     "explanation": {"type": ["string", "null"]},
                     "gloss": {"type": ["string", "null"]},
                 },
+                "required": ["term", "english", "explanation", "gloss"],
             },
         },
     },
