@@ -37,6 +37,7 @@ jobs:
       AUDIO_S3_REGION: ${{ vars.AWS_REGION }}
       AUDIO_S3_PREFIX: ${{ vars.AUDIO_S3_PREFIX }}
       AWS_REGION: ${{ vars.AWS_REGION }}
+      GLOSSARY_DEBUG_DUMP: ${{ vars.GLOSSARY_DEBUG_DUMP || 'true' }}
 
     permissions:
       contents: write  # Needed to commit and push files
@@ -74,6 +75,7 @@ jobs:
         run: |
           mkdir -p output/_posts
           mkdir -p output/logs
+          mkdir -p output/metrics/glossary
           mkdir -p logs
 
       - name: Run content generation pipeline
@@ -103,8 +105,22 @@ jobs:
           AUDIO_S3_REGION: ${{ env.AUDIO_S3_REGION }}
           AUDIO_S3_PREFIX: ${{ env.AUDIO_S3_PREFIX }}
           AWS_REGION: ${{ env.AWS_REGION }}
+          GLOSSARY_DEBUG_DUMP: ${{ env.GLOSSARY_DEBUG_DUMP }}
         run: |
           uv run spai-pipeline
+
+      - name: Upload pipeline diagnostics
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: generation-diagnostics-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: |
+            logs/*.log
+            output/logs/*.log
+            output/metrics/glossary/*.json
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Check for generated articles
         id: check_articles
@@ -150,6 +166,9 @@ jobs:
             echo "⚠️ **Status:** No articles generated" >> $GITHUB_STEP_SUMMARY
           fi
 
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📦 **Diagnostics artifact:** generation-diagnostics-${{ github.run_id }}-attempt-${{ github.run_attempt }}" >> $GITHUB_STEP_SUMMARY
+          echo "🧪 **Glossary debug dump:** ${{ env.GLOSSARY_DEBUG_DUMP }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Time:** $(date -u +"%Y-%m-%d %H:%M UTC")" >> $GITHUB_STEP_SUMMARY
 
