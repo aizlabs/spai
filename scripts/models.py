@@ -165,11 +165,13 @@ def coerce_vocabulary_items(value: Any) -> List["VocabularyItem"]:
         if not normalized_term:
             continue
 
-        if "gloss" in raw_item:
+        english = str(raw_item.get("english") or "").strip()
+        explanation = str(raw_item.get("explanation") or "").strip()
+
+        # Prefer explicit structured fields when present. Fall back to legacy `gloss`
+        # only when the item does not already carry usable structured values.
+        if not english and not explanation and "gloss" in raw_item:
             english, explanation = split_legacy_gloss(str(raw_item.get("gloss") or ""))
-        else:
-            english = str(raw_item.get("english") or "").strip()
-            explanation = str(raw_item.get("explanation") or "").strip()
 
         items.append(
             VocabularyItem(
