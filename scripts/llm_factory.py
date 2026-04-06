@@ -7,14 +7,11 @@ level adapter, quality gate) can share configuration and easily support
 multiple providers (OpenAI, Anthropic, etc.).
 """
 
-from typing import Any, Dict, TypeVar, cast
+from typing import Any, Dict, cast
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_openai import ChatOpenAI
-from pydantic import BaseModel
-
-T = TypeVar("T", bound=BaseModel)
 
 
 def create_chat_model(llm_config: Dict[str, Any], model_name: str, temperature: float) -> BaseChatModel:
