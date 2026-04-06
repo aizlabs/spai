@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from scripts.glossary_generator import GlossaryGenerator, GlossaryResponse
+from scripts.glossary_generator import GLOSSARY_RESPONSE_SCHEMA, GlossaryGenerator, GlossaryResponse
 from scripts.models import VocabularyItem
 
 SEMANA_SANTA_A2_CONTENT = (
@@ -132,6 +132,63 @@ def test_generate_keeps_valid_items_when_structured_output_contains_null_term(
             explanation="ataques con bombas desde el aire",
         )
     ]
+
+
+def test_generate_keeps_valid_items_when_raw_response_contains_extra_keys(
+    glossary_generator,
+    sample_a2_text_article,
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        glossary_generator,
+        "_call_llm",
+        MagicMock(
+            return_value={
+                "vocabulary": [
+                    {
+                        "term": "bombardeos",
+                        "english": "bombings",
+                        "explanation": "ataques con bombas desde el aire",
+                        "difficulty": "medium",
+                    },
+                    {
+                        "term": None,
+                        "english": "ignored",
+                        "explanation": "entrada inválida",
+                        "unexpected": {"nested": True},
+                    },
+                ]
+            }
+        ),
+    )
+
+    generated = glossary_generator.generate(sample_a2_text_article)
+
+    assert generated == [
+        VocabularyItem(
+            term="bombardeos",
+            english="bombings",
+            explanation="ataques con bombas desde el aire",
+        )
+    ]
+
+
+def test_glossary_response_schema_is_closed_for_openai_structured_output():
+    schema = GLOSSARY_RESPONSE_SCHEMA
+    item_properties = schema["properties"]["vocabulary"]["items"]["properties"]
+
+    assert schema["additionalProperties"] is False
+    assert schema["properties"]["vocabulary"]["items"]["additionalProperties"] is False
+    assert schema["properties"]["vocabulary"]["items"]["required"] == [
+        "term",
+        "english",
+        "explanation",
+        "gloss",
+    ]
+    for field_name in ("term", "english", "explanation", "gloss"):
+        assert item_properties[field_name] == {
+            "anyOf": [{"type": "string"}, {"type": "null"}]
+        }
 
 
 def test_validate_keeps_high_value_terms_and_context_phrases(glossary_generator):

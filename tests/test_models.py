@@ -1,7 +1,13 @@
 import pytest
 from pydantic import ValidationError
 
-from scripts.models import AdaptedArticle, LLMConfig, LLMModelsConfig, VocabularyItem
+from scripts.models import (
+    AdaptedArticle,
+    LLMConfig,
+    LLMModelsConfig,
+    VocabularyItem,
+    coerce_vocabulary_items,
+)
 
 
 def _valid_models() -> LLMModelsConfig:
@@ -68,6 +74,27 @@ def test_adapted_article_coerces_legacy_term_gloss_items():
     )
 
     assert article.vocabulary == [
+        VocabularyItem(
+            term="bombardeos",
+            english="bombings",
+            explanation="ataques con bombas desde el aire",
+        )
+    ]
+
+
+def test_coerce_vocabulary_items_prefers_structured_fields_over_null_gloss():
+    items = coerce_vocabulary_items(
+        [
+            {
+                "term": "bombardeos",
+                "english": "bombings",
+                "explanation": "ataques con bombas desde el aire",
+                "gloss": None,
+            }
+        ]
+    )
+
+    assert items == [
         VocabularyItem(
             term="bombardeos",
             english="bombings",
