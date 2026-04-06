@@ -7,15 +7,12 @@ level adapter, quality gate) can share configuration and easily support
 multiple providers (OpenAI, Anthropic, etc.).
 """
 
-from typing import Any, Dict, Type, TypeVar, Union, cast
+from typing import Any, Dict, TypeVar, cast
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
-
-from scripts.models import LLMConfig
-
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -65,15 +62,13 @@ def create_chat_model(llm_config: Dict[str, Any], model_name: str, temperature: 
 
 def with_structured_output(
     chat_model: BaseChatModel,
-    response_model: Type[T],
+    response_model: Any,
+    **kwargs: Any,
 ) -> Any:
     """
-    Wrap a chat model with structured output using a Pydantic model.
+    Wrap a chat model with structured output.
 
     Uses LangChain's `with_structured_output` API so that all JSON parsing
-    and validation is handled centrally by Pydantic instead of manual json.loads.
+    and validation is handled centrally instead of manual json.loads.
     """
-    # For both ChatAnthropic and ChatOpenAI, with_structured_output returns
-    # a Runnable that yields a Pydantic instance of `response_model`.
-    return cast(Any, chat_model.with_structured_output(response_model))
-
+    return cast(Any, chat_model.with_structured_output(response_model, **kwargs))
