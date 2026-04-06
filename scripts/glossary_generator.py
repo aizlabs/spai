@@ -307,24 +307,44 @@ SHORTLIST_TOKEN_PATTERN = re.compile(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za
 
 
 class RawGlossaryItem(BaseModel):
-    """Lenient structured output item so one malformed candidate does not drop the whole glossary."""
+    """Lenient local item model used after the provider returns a payload."""
 
     term: Any = None
     english: Any = None
     explanation: Any = None
     gloss: Any = None
 
-    # OpenAI structured outputs require closed object schemas.
-    # Keep fields permissive via `Any`, but forbid unknown keys in the schema itself.
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="allow")
 
 
 class GlossaryResponse(BaseModel):
-    """Structured LLM output for glossary generation."""
+    """Lenient local glossary payload model used outside provider schema enforcement."""
 
     vocabulary: List[RawGlossaryItem] = Field(default_factory=list)
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="allow")
+
+
+GLOSSARY_RESPONSE_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "vocabulary": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "term": {"type": ["string", "null"]},
+                    "english": {"type": ["string", "null"]},
+                    "explanation": {"type": ["string", "null"]},
+                    "gloss": {"type": ["string", "null"]},
+                },
+            },
+        },
+    },
+    "required": ["vocabulary"],
+}
 
 
 class GlossaryGenerator:
@@ -507,7 +527,13 @@ class GlossaryGenerator:
 
     def _generate_candidates_from_prompt(self, prompt: str) -> List[VocabularyItem]:
         response = self._call_llm(prompt)
-        return coerce_vocabulary_items(response.model_dump(exclude_none=True).get("vocabulary") or [])
+        if isinstance(response, BaseModel):
+            payload = response.model_dump(exclude_none=True)
+        elif isinstance(response, dict):
+            payload = response
+        else:
+            payload = {}
+        return coerce_vocabulary_items(payload.get("vocabulary") or [])
 
     def _retry_generate(self, article: AdaptedArticle, dropped: Dict[str, str]) -> List[VocabularyItem]:
         shortlist = self._build_retry_shortlist(article.content)
@@ -675,7 +701,7 @@ class GlossaryGenerator:
             self.llm_config["models"]["generation"],
         )
         chat_model = create_chat_model(self.llm_config, model_name, self.temperature)
-        structured_llm = with_structured_output(chat_model, GlossaryResponse)
+        structured_llm = with_structured_output(chat_model, GLOSSARY_RESPONSE_SCHEMA, strict=True)
         self.prompt_template = ChatPromptTemplate.from_messages([("user", "{prompt}")])
         self.chain = self.prompt_template | structured_llm
 
@@ -689,7 +715,7 @@ class GlossaryGenerator:
             )
             self._nlp = None
 
-    def _call_llm(self, prompt: str) -> BaseModel:
+    def _call_llm(self, prompt: str) -> Any:
         return self.chain.invoke({"prompt": prompt})
 
     def _analyze_content(self, content: str):
