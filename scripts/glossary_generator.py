@@ -314,13 +314,17 @@ class RawGlossaryItem(BaseModel):
     explanation: Any = None
     gloss: Any = None
 
-    model_config = ConfigDict(extra="allow")
+    # OpenAI structured outputs require closed object schemas.
+    # Keep fields permissive via `Any`, but forbid unknown keys in the schema itself.
+    model_config = ConfigDict(extra="forbid")
 
 
 class GlossaryResponse(BaseModel):
     """Structured LLM output for glossary generation."""
 
     vocabulary: List[RawGlossaryItem] = Field(default_factory=list)
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class GlossaryGenerator:

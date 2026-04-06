@@ -134,6 +134,13 @@ def test_generate_keeps_valid_items_when_structured_output_contains_null_term(
     ]
 
 
+def test_glossary_response_schema_is_closed_for_openai_structured_output():
+    schema = GlossaryResponse.model_json_schema()
+
+    assert schema["additionalProperties"] is False
+    assert schema["$defs"]["RawGlossaryItem"]["additionalProperties"] is False
+
+
 def test_validate_keeps_high_value_terms_and_context_phrases(glossary_generator):
     content = (
         "Los bombardeos aumentaron en la región. Los ayatolás criticaron la respuesta. "
