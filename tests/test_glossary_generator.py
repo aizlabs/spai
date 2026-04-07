@@ -2,6 +2,7 @@ import json
 from unittest.mock import MagicMock
 
 import pytest
+from langchain_core.utils.function_calling import convert_to_openai_function
 
 from scripts.glossary_generator import GLOSSARY_RESPONSE_SCHEMA, GlossaryGenerator, GlossaryResponse
 from scripts.models import VocabularyItem
@@ -177,6 +178,10 @@ def test_glossary_response_schema_is_closed_for_openai_structured_output():
     schema = GLOSSARY_RESPONSE_SCHEMA
     item_properties = schema["properties"]["vocabulary"]["items"]["properties"]
 
+    assert schema["title"] == "GlossaryResponse"
+    assert schema["description"] == (
+        "Structured glossary entries extracted from the approved article text."
+    )
     assert schema["additionalProperties"] is False
     assert schema["properties"]["vocabulary"]["items"]["additionalProperties"] is False
     assert schema["properties"]["vocabulary"]["items"]["required"] == [
@@ -189,6 +194,17 @@ def test_glossary_response_schema_is_closed_for_openai_structured_output():
         assert item_properties[field_name] == {
             "anyOf": [{"type": "string"}, {"type": "null"}]
         }
+
+
+def test_glossary_response_schema_converts_with_langchain_strict_mode():
+    function = convert_to_openai_function(GLOSSARY_RESPONSE_SCHEMA, strict=True)
+
+    assert function["name"] == "GlossaryResponse"
+    assert function["description"] == (
+        "Structured glossary entries extracted from the approved article text."
+    )
+    assert function["strict"] is True
+    assert function["parameters"]["required"] == ["vocabulary"]
 
 
 def test_validate_keeps_high_value_terms_and_context_phrases(glossary_generator):
