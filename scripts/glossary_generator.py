@@ -326,6 +326,8 @@ class GlossaryResponse(BaseModel):
 
 
 GLOSSARY_RESPONSE_SCHEMA = {
+    "title": "GlossaryResponse",
+    "description": "Structured glossary entries extracted from the approved article text.",
     "type": "object",
     "additionalProperties": False,
     "properties": {
