@@ -449,6 +449,23 @@
    Article Content
    ========================================================================== */
 
+.layout--post .page__inner-wrap {
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5em;
+  padding-right: 1.5em;
+}
+
+.layout--post .page__content {
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.layout--post .page__content p {
+  margin-bottom: 1.35em;
+}
+
 .page__inner-wrap > header .article-meta {
   display: flex;
   gap: 1.5em;
