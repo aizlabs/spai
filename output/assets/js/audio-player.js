@@ -141,6 +141,14 @@
       }
     });
 
+    waveform.addEventListener("pointercancel", function () {
+      isDragging = false;
+    });
+
+    waveform.addEventListener("lostpointercapture", function () {
+      isDragging = false;
+    });
+
     waveform.addEventListener("keydown", function (event) {
       if (event.key === "ArrowLeft") {
         event.preventDefault();
@@ -173,6 +181,7 @@
     });
 
     updateProgress(audio, waveform, elapsed, duration);
+    setPlayButton(playButton, !audio.paused);
   }
 
   document.addEventListener("DOMContentLoaded", function () {
