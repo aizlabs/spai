@@ -543,6 +543,222 @@
 }
 
 /* ==========================================================================
+   Article Audio Player
+   ========================================================================== */
+
+.article-audio {
+  margin: 1.5rem 0 2rem;
+  max-width: 760px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+}
+
+.article-audio h2 {
+  margin: 0 0 0.65rem;
+  color: #1d1d1f;
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.article-audio__native {
+  width: 100%;
+}
+
+.article-audio__player {
+  display: none;
+}
+
+.article-audio.is-enhanced .article-audio__native {
+  display: none;
+}
+
+.article-audio.is-enhanced .article-audio__player {
+  display: grid;
+  grid-template-columns: auto minmax(220px, 1fr) auto auto;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.95rem;
+  background: rgba(248, 248, 250, 0.92);
+  border: 1px solid rgba(60, 60, 67, 0.14);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  color: #1d1d1f;
+}
+
+.article-audio__transport {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.article-audio__button,
+.article-audio__download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1d1d1f;
+  box-shadow: inset 0 0 0 1px rgba(60, 60, 67, 0.12);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.article-audio__button:hover,
+.article-audio__button:focus-visible,
+.article-audio__download:hover,
+.article-audio__download:focus-visible {
+  background: #f2f2f7;
+  color: #007bff;
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.article-audio__button span {
+  margin-left: 0.14rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.article-audio__play {
+  min-width: 54px;
+  min-height: 54px;
+  background: #111111;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.article-audio__play:hover,
+.article-audio__play:focus-visible {
+  background: #007bff;
+  color: #ffffff;
+}
+
+.article-audio__timeline {
+  min-width: 0;
+}
+
+.article-audio__time {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.35rem;
+  color: #6e6e73;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.article-audio__waveform {
+  --audio-progress: 0%;
+  display: grid;
+  grid-template-columns: repeat(96, minmax(2px, 1fr));
+  align-items: center;
+  gap: 2px;
+  min-height: 58px;
+  padding: 0.25rem 0;
+  border-radius: 10px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.article-audio__waveform:focus-visible {
+  outline: 3px solid rgba(0, 123, 255, 0.25);
+  outline-offset: 3px;
+}
+
+.article-audio__waveform-bar {
+  height: var(--bar-height);
+  min-height: 12px;
+  border-radius: 999px;
+  background: rgba(60, 60, 67, 0.26);
+  transition: background 0.12s ease;
+}
+
+.article-audio__waveform-bar.is-played {
+  background: #007bff;
+}
+
+.article-audio__speed {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem;
+  border-radius: 999px;
+  background: rgba(118, 118, 128, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(60, 60, 67, 0.08);
+}
+
+.article-audio__speed button {
+  min-width: 50px;
+  min-height: 44px;
+  padding: 0 0.8rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #1d1d1f;
+  font-weight: 800;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.article-audio__speed button:hover,
+.article-audio__speed button:focus-visible {
+  color: #007bff;
+  outline: none;
+}
+
+.article-audio__speed button.is-active {
+  background: #ffffff;
+  color: #007bff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+}
+
+@media (max-width: 860px) {
+  .article-audio.is-enhanced .article-audio__player {
+    grid-template-columns: 1fr auto;
+  }
+
+  .article-audio__transport,
+  .article-audio__timeline {
+    grid-column: 1 / -1;
+  }
+
+  .article-audio__transport {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .article-audio {
+    max-width: 100%;
+  }
+
+  .article-audio.is-enhanced .article-audio__player {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    padding: 0.85rem;
+    border-radius: 16px;
+  }
+
+  .article-audio__speed {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .article-audio__speed button {
+    flex: 1 1 0;
+  }
+
+  .article-audio__download {
+    justify-self: center;
+  }
+}
+
+/* ==========================================================================
    Pagination
    ========================================================================== */
 
