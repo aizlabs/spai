@@ -14,10 +14,6 @@ minimal_mistakes_skin: "default"
 author:
   name: "Spai"
   bio: "Automated Spanish learning content from real news"
-  links:
-    - label: "GitHub"
-      icon: "fab fa-fw fa-github"
-      url: "https://github.com/aizlabs/spai"
 
 # Build settings
 markdown: kramdown
@@ -107,13 +103,6 @@ social:
 
 # Google AdSense (placeholder for future activation)
 # google_adsense: "ca-pub-XXXXXXXXXX"
-
-# Footer
-footer:
-  links:
-    - label: "GitHub"
-      icon: "fab fa-fw fa-github"
-      url: "https://github.com/aizlabs/spai"
 
 # Archives
 category_archive:
