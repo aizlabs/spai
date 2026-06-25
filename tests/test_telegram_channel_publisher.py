@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from io import BytesIO
 from pathlib import Path
 from urllib import error
@@ -10,6 +11,7 @@ from scripts.publish_telegram_channel import (
     format_telegram_message,
     parse_jekyll_post,
     publish_posts,
+    send_telegram_audio,
     send_telegram_message,
 )
 
@@ -32,6 +34,30 @@ El país usa más **energías renovables** para producir electricidad.
 
 - **medio ambiente** - environment - la naturaleza que nos rodea
 - **energías renovables** - renewable energy - energía del sol y del viento
+
+---
+*Fuentes: [elpais.com](https://elpais.com)*
+*Artículo educativo generado con fines de aprendizaje de idiomas.*
+"""
+
+AUDIO_POST_TEMPLATE = """---
+title: "España tiene menos contaminación"
+date: 2026-03-17 04:09:15
+level: A2
+topics: ["espana"]
+sources:
+- name: "elpais.com"
+  url: "https://elpais.com"
+audio:
+  url: "https://media.spaili.com/articles/2026/03/espana/article.mp3"
+  format: "mp3"
+  mime_type: "audio/mpeg"
+  provider: "openai"
+  voice: "alloy"
+reading_time: 2
+---
+
+España reduce sus emisiones de CO2. Esto ayuda al **medio ambiente**.
 
 ---
 *Fuentes: [elpais.com](https://elpais.com)*
@@ -84,6 +110,17 @@ def test_parse_jekyll_post_extracts_frontmatter_body_and_vocabulary(tmp_path):
         "- **medio ambiente** - environment - la naturaleza que nos rodea",
         "- **energías renovables** - renewable energy - energía del sol y del viento",
     ]
+    assert post.audio_url is None
+
+
+def test_parse_jekyll_post_extracts_audio_frontmatter(tmp_path):
+    post_path = write_post(tmp_path, "2026-03-17-040915-espana-a2.md", AUDIO_POST_TEMPLATE)
+
+    post = parse_jekyll_post(post_path)
+
+    assert post.audio_url == "https://media.spaili.com/articles/2026/03/espana/article.mp3"
+    assert post.audio_format == "mp3"
+    assert post.audio_mime_type == "audio/mpeg"
 
 
 def test_build_article_url_uses_timestamped_slug_and_site_config(tmp_path):
@@ -177,6 +214,80 @@ def test_publish_posts_sends_messages_in_filename_order(tmp_path):
     assert 'href="https://spai.aizlabs.ch/articles/184500-segundo-b1/"' in sent_messages[1]
 
 
+def test_publish_posts_sends_native_audio_after_article_message(tmp_path):
+    config_path = write_site_config(tmp_path, url="https://spaili.com")
+    post_path = write_post(tmp_path, "2026-03-17-040915-espana-a2.md", AUDIO_POST_TEMPLATE)
+    events: list[tuple[str, str]] = []
+
+    def fake_send(bot_token: str, chat_id: str, message: str) -> None:
+        assert bot_token == "bot-token"
+        assert chat_id == "channel-id"
+        events.append(("message", message))
+
+    def fake_send_audio(
+        bot_token: str,
+        chat_id: str,
+        audio_url: str,
+        caption: str,
+        title: str,
+    ) -> None:
+        assert bot_token == "bot-token"
+        assert chat_id == "channel-id"
+        assert title == "España tiene menos contaminación"
+        assert audio_url == "https://media.spaili.com/articles/2026/03/espana/article.mp3"
+        events.append(("audio", caption))
+
+    published_count = publish_posts(
+        [post_path],
+        config_path=config_path,
+        bot_token="bot-token",
+        chat_id="channel-id",
+        send_func=fake_send,
+        send_audio_func=fake_send_audio,
+    )
+
+    assert published_count == 1
+    assert events[0][0] == "message"
+    assert events[1] == (
+        "audio",
+        '<b>Audio del artículo</b>\n'
+        '<a href="https://spaili.com/articles/040915-espana-a2/">Leer en la web</a>',
+    )
+
+
+def test_publish_posts_keeps_article_success_when_optional_audio_fails(tmp_path, capsys):
+    config_path = write_site_config(tmp_path, url="https://spaili.com")
+    post_path = write_post(tmp_path, "2026-03-17-040915-espana-a2.md", AUDIO_POST_TEMPLATE)
+    sent_messages: list[str] = []
+
+    def fake_send(bot_token: str, chat_id: str, message: str) -> None:
+        sent_messages.append(message)
+
+    def fake_send_audio(
+        bot_token: str,
+        chat_id: str,
+        audio_url: str,
+        caption: str,
+        title: str,
+    ) -> None:
+        raise RuntimeError("Telegram could not fetch audio")
+
+    published_count = publish_posts(
+        [post_path],
+        config_path=config_path,
+        bot_token="bot-token",
+        chat_id="channel-id",
+        send_func=fake_send,
+        send_audio_func=fake_send_audio,
+    )
+
+    captured = capsys.readouterr()
+    assert published_count == 1
+    assert len(sent_messages) == 1
+    assert "Telegram audio publish skipped for" in captured.err
+    assert "Telegram could not fetch audio" in captured.err
+
+
 def test_send_telegram_message_retries_on_429_with_retry_after():
     attempts = {"count": 0}
     sleep_calls: list[float] = []
@@ -231,3 +342,32 @@ def test_send_telegram_message_retries_on_500():
 
     assert attempts["count"] == 2
     assert sleep_calls == [1]
+
+
+def test_send_telegram_audio_uses_send_audio_payload():
+    captured_payloads: list[dict[str, str]] = []
+
+    def fake_opener(req, timeout):  # noqa: ANN001, ANN002
+        assert req.full_url == "https://api.telegram.org/botbot-token/sendAudio"
+        captured_payloads.append(json.loads(req.data.decode("utf-8")))
+        return DummyResponse(b'{"ok": true, "result": {"message_id": 1}}')
+
+    send_telegram_audio(
+        "bot-token",
+        "channel-id",
+        "https://media.spaili.com/articles/test/article.mp3",
+        "<b>Audio del artículo</b>",
+        "España tiene menos contaminación",
+        opener=fake_opener,
+    )
+
+    assert captured_payloads == [
+        {
+            "chat_id": "channel-id",
+            "audio": "https://media.spaili.com/articles/test/article.mp3",
+            "caption": "<b>Audio del artículo</b>",
+            "parse_mode": "HTML",
+            "title": "España tiene menos contaminación",
+            "performer": "Spaili",
+        }
+    ]

@@ -70,6 +70,10 @@ reuse the same bot token, but keep the publish secrets distinct from `ALERT_TELE
 The GitHub Pages deploy workflow publishes each newly added article to Telegram **after** the site deployment succeeds. The
 bot must already be added to the target channel as an **admin** with permission to post messages.
 
+When generated posts include public `audio.url` metadata, the same Telegram publish job also sends that URL as a native
+Telegram audio attachment after the article message. Configure `AUDIO_ENABLED=true`, `AUDIO_UPLOAD_ENABLED=true`, and the
+`AUDIO_*`/AWS values used by the generation workflow to produce those public audio URLs.
+
 #### TELEGRAM_PUBLISH_BOT_TOKEN
 - **Name:** `TELEGRAM_PUBLISH_BOT_TOKEN`
 - **Value:** Bot token from BotFather for the bot that should publish articles

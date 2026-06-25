@@ -29,6 +29,9 @@ class TelegramPost:
     reading_time: int
     paragraphs: List[str]
     vocabulary_lines: List[str]
+    audio_url: str | None = None
+    audio_format: str | None = None
+    audio_mime_type: str | None = None
 
 
 def _strip_wrapping_quotes(value: str) -> str:
@@ -39,11 +42,39 @@ def _strip_wrapping_quotes(value: str) -> str:
 
 
 def _extract_frontmatter_value(frontmatter: str, key: str) -> str:
-    pattern = re.compile(rf"^{re.escape(key)}:\s*(.+)$", re.MULTILINE)
+    pattern = re.compile(rf"^{re.escape(key)}:[ \t]*(.+)$", re.MULTILINE)
     match = pattern.search(frontmatter)
     if not match:
         raise ValueError(f"Missing frontmatter value: {key}")
     return _strip_wrapping_quotes(match.group(1))
+
+
+def _extract_frontmatter_mapping(frontmatter: str, key: str) -> dict[str, str]:
+    pattern = re.compile(rf"^{re.escape(key)}:[ \t]*(.*)$", re.MULTILINE)
+    match = pattern.search(frontmatter)
+    if not match:
+        return {}
+
+    inline_value = match.group(1).strip()
+    if inline_value and inline_value.lower() in {"null", "~"}:
+        return {}
+    if inline_value:
+        return {"value": _strip_wrapping_quotes(inline_value)}
+
+    mapping: dict[str, str] = {}
+    following_lines = frontmatter[match.end() :].splitlines()
+    for line in following_lines:
+        if not line.strip():
+            continue
+        if not line.startswith((" ", "\t")):
+            break
+
+        item_match = re.match(r"^\s+([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$", line)
+        if item_match:
+            item_key, item_value = item_match.groups()
+            mapping[item_key] = _strip_wrapping_quotes(item_value)
+
+    return mapping
 
 
 def _split_frontmatter(content: str) -> tuple[str, str]:
@@ -82,6 +113,7 @@ def parse_jekyll_post(path: Path) -> TelegramPost:
         main_text = article_body
 
     paragraphs = [paragraph.strip() for paragraph in main_text.split("\n\n") if paragraph.strip()]
+    audio = _extract_frontmatter_mapping(frontmatter, "audio")
 
     return TelegramPost(
         path=path,
@@ -90,6 +122,9 @@ def parse_jekyll_post(path: Path) -> TelegramPost:
         reading_time=int(_extract_frontmatter_value(frontmatter, "reading_time")),
         paragraphs=paragraphs,
         vocabulary_lines=vocabulary_lines,
+        audio_url=audio.get("url"),
+        audio_format=audio.get("format"),
+        audio_mime_type=audio.get("mime_type"),
     )
 
 
@@ -100,7 +135,7 @@ def load_site_config(config_path: Path) -> tuple[str, str]:
     url = _extract_frontmatter_value(raw_config, "url")
     baseurl = ""
 
-    baseurl_match = re.search(r"^baseurl:\s*(.+)$", raw_config, re.MULTILINE)
+    baseurl_match = re.search(r"^baseurl:[ \t]*(.+)$", raw_config, re.MULTILINE)
     if baseurl_match:
         baseurl = _strip_wrapping_quotes(baseurl_match.group(1))
 
@@ -224,6 +259,17 @@ def format_telegram_message(post: TelegramPost, article_url: str, limit: int = T
     raise ValueError(f"Unable to fit Telegram message within {limit} characters for {post.path}")
 
 
+def format_telegram_audio_caption(post: TelegramPost, article_url: str) -> str:
+    """Render the short caption used for native Telegram audio attachments."""
+
+    return "\n".join(
+        [
+            "<b>Audio del artículo</b>",
+            f'<a href="{escape(article_url, quote=True)}">Leer en la web</a>',
+        ]
+    )
+
+
 def _extract_retry_after(payload: str) -> int | None:
     try:
         parsed = json.loads(payload)
@@ -259,20 +305,39 @@ def _build_telegram_request(bot_token: str, chat_id: str, message: str) -> reque
     )
 
 
-def send_telegram_message(
+def _build_telegram_audio_request(
     bot_token: str,
     chat_id: str,
-    message: str,
+    audio_url: str,
+    caption: str,
+    title: str,
+    performer: str = "Spaili",
+) -> request.Request:
+    payload = {
+        "chat_id": chat_id,
+        "audio": audio_url,
+        "caption": caption,
+        "parse_mode": "HTML",
+        "title": title,
+        "performer": performer,
+    }
+    body = json.dumps(payload).encode("utf-8")
+    return request.Request(
+        url=f"https://api.telegram.org/bot{bot_token}/sendAudio",
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+
+def _send_telegram_request(
+    request_obj: request.Request,
     *,
     timeout: int = DEFAULT_TIMEOUT_SECONDS,
     retries: int = DEFAULT_RETRIES,
     opener: Callable[..., object] = request.urlopen,
     sleep: Callable[[float], None] = time.sleep,
 ) -> None:
-    """Send a Telegram message with retry handling for throttling and transient failures."""
-
-    request_obj = _build_telegram_request(bot_token, chat_id, message)
-
     for attempt in range(retries + 1):
         try:
             response = opener(request_obj, timeout=timeout)
@@ -310,6 +375,58 @@ def send_telegram_message(
         raise RuntimeError(f"Telegram API returned an error response: {payload}")
 
 
+def send_telegram_message(
+    bot_token: str,
+    chat_id: str,
+    message: str,
+    *,
+    timeout: int = DEFAULT_TIMEOUT_SECONDS,
+    retries: int = DEFAULT_RETRIES,
+    opener: Callable[..., object] = request.urlopen,
+    sleep: Callable[[float], None] = time.sleep,
+) -> None:
+    """Send a Telegram message with retry handling for throttling and transient failures."""
+
+    request_obj = _build_telegram_request(bot_token, chat_id, message)
+    _send_telegram_request(
+        request_obj,
+        timeout=timeout,
+        retries=retries,
+        opener=opener,
+        sleep=sleep,
+    )
+
+
+def send_telegram_audio(
+    bot_token: str,
+    chat_id: str,
+    audio_url: str,
+    caption: str,
+    title: str,
+    *,
+    timeout: int = DEFAULT_TIMEOUT_SECONDS,
+    retries: int = DEFAULT_RETRIES,
+    opener: Callable[..., object] = request.urlopen,
+    sleep: Callable[[float], None] = time.sleep,
+) -> None:
+    """Send a native Telegram audio attachment from a public audio URL."""
+
+    request_obj = _build_telegram_audio_request(
+        bot_token,
+        chat_id,
+        audio_url,
+        caption,
+        title,
+    )
+    _send_telegram_request(
+        request_obj,
+        timeout=timeout,
+        retries=retries,
+        opener=opener,
+        sleep=sleep,
+    )
+
+
 def publish_posts(
     post_paths: Iterable[Path],
     *,
@@ -317,6 +434,7 @@ def publish_posts(
     bot_token: str,
     chat_id: str,
     send_func: Callable[[str, str, str], None] = send_telegram_message,
+    send_audio_func: Callable[[str, str, str, str, str], None] = send_telegram_audio,
 ) -> int:
     """Publish a sequence of posts to Telegram in deterministic filename order."""
 
@@ -327,6 +445,15 @@ def publish_posts(
         article_url = build_article_url(post_path, config_path)
         message = format_telegram_message(post, article_url)
         send_func(bot_token, chat_id, message)
+        if post.audio_url:
+            audio_caption = format_telegram_audio_caption(post, article_url)
+            try:
+                send_audio_func(bot_token, chat_id, post.audio_url, audio_caption, post.title)
+            except Exception as exc:  # noqa: BLE001
+                print(
+                    f"Telegram audio publish skipped for {post.path}: {exc}",
+                    file=sys.stderr,
+                )
         published_count += 1
 
     return published_count
