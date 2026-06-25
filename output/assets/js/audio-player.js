@@ -165,13 +165,6 @@
       });
     });
 
-    if (downloadLink) {
-      downloadLink.addEventListener("click", function (event) {
-        event.preventDefault();
-        downloadAudio(downloadLink);
-      });
-    }
-
     let isDragging = false;
 
     waveform.addEventListener("pointerdown", function (event) {
