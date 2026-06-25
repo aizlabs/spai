@@ -73,7 +73,7 @@
     link.remove();
     setTimeout(function () {
       URL.revokeObjectURL(objectUrl);
-    }, 0);
+    }, 100);
   }
 
   async function downloadAudio(downloadLink) {
@@ -88,7 +88,7 @@
       const blob = await response.blob();
       saveBlob(blob, downloadFilename(url));
     } catch (error) {
-      window.open(url, "_blank", "noopener") || window.location.assign(url);
+      window.open(url, "_blank", "noopener");
     }
   }
 
