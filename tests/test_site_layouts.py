@@ -14,5 +14,7 @@ def test_post_layout_does_not_render_audio_voice_label():
     assert 'data-speed="0.5"' in layout
     assert 'data-speed="0.75"' in layout
     assert 'data-speed="1"' in layout
+    assert "data-audio-download" in layout
+    assert 'href="{{ page.audio.url }}" download' not in layout
     assert "Voz:" not in layout
     assert "page.audio.voice" not in layout

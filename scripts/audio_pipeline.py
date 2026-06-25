@@ -204,6 +204,7 @@ class AudioPipeline:
 
         extra_args = {"ContentType": mime_type or "application/octet-stream"}
         extra_args["CacheControl"] = "public, max-age=31536000, immutable"
+        extra_args["ContentDisposition"] = f'attachment; filename="{Path(storage_key).name}"'
 
         try:
             self._get_s3_client().upload_file(

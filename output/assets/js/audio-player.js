@@ -48,6 +48,50 @@
     icon.classList.toggle("fa-pause", isPlaying);
   }
 
+  function downloadFilename(url) {
+    try {
+      const pathname = new URL(url, window.location.href).pathname;
+      const filename = pathname.split("/").filter(Boolean).pop();
+      if (filename) {
+        return decodeURIComponent(filename);
+      }
+    } catch (error) {
+      return "audio.mp3";
+    }
+
+    return "audio.mp3";
+  }
+
+  function saveBlob(blob, filename) {
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () {
+      URL.revokeObjectURL(objectUrl);
+    }, 0);
+  }
+
+  async function downloadAudio(downloadLink) {
+    const url = downloadLink.href;
+
+    try {
+      const response = await fetch(url, { credentials: "omit", mode: "cors" });
+      if (!response.ok) {
+        throw new Error(`Audio download failed: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      saveBlob(blob, downloadFilename(url));
+    } catch (error) {
+      window.open(url, "_blank", "noopener") || window.location.assign(url);
+    }
+  }
+
   function updateProgress(audio, waveform, elapsed, duration) {
     const audioDuration = Number.isFinite(audio.duration) ? audio.duration : 0;
     const ratio = audioDuration > 0 ? audio.currentTime / audioDuration : 0;
@@ -72,6 +116,7 @@
     const waveform = root.querySelector(".article-audio__waveform");
     const elapsed = root.querySelector(".article-audio__elapsed");
     const duration = root.querySelector(".article-audio__duration");
+    const downloadLink = root.querySelector(".article-audio__download");
     const speedButtons = Array.from(root.querySelectorAll(".article-audio__speed button"));
 
     if (!audio || !player || !playButton || !skipBack || !skipForward || !waveform || !elapsed || !duration) {
@@ -119,6 +164,13 @@
         });
       });
     });
+
+    if (downloadLink) {
+      downloadLink.addEventListener("click", function (event) {
+        event.preventDefault();
+        downloadAudio(downloadLink);
+      });
+    }
 
     let isDragging = false;
 
