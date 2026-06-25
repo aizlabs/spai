@@ -548,7 +548,8 @@
 
 .article-audio {
   margin: 1.5rem 0 2rem;
-  max-width: 760px;
+  width: 100%;
+  max-width: 920px;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
 }
 
@@ -573,10 +574,14 @@
 
 .article-audio.is-enhanced .article-audio__player {
   display: grid;
-  grid-template-columns: auto minmax(220px, 1fr) auto auto;
+  grid-template-columns: auto minmax(260px, 1fr) auto;
+  grid-template-areas:
+    "transport timeline download"
+    "speed speed speed";
   align-items: center;
-  gap: 0.9rem;
-  padding: 0.95rem;
+  column-gap: 1rem;
+  row-gap: 0.85rem;
+  padding: 1rem;
   background: rgba(248, 248, 250, 0.92);
   border: 1px solid rgba(60, 60, 67, 0.14);
   border-radius: 18px;
@@ -585,6 +590,7 @@
 }
 
 .article-audio__transport {
+  grid-area: transport;
   display: flex;
   align-items: center;
   gap: 0.45rem;
@@ -595,15 +601,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   border: 0;
   border-radius: 999px;
   background: #ffffff;
   color: #1d1d1f;
   box-shadow: inset 0 0 0 1px rgba(60, 60, 67, 0.12);
   cursor: pointer;
+  appearance: none;
   text-decoration: none;
+  font-size: 1rem;
+  line-height: 1;
   transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
@@ -624,9 +634,14 @@
   line-height: 1;
 }
 
+.article-audio__skip-back,
+.article-audio__skip-forward {
+  width: 58px;
+}
+
 .article-audio__play {
-  min-width: 54px;
-  min-height: 54px;
+  width: 56px;
+  height: 56px;
   background: #111111;
   color: #ffffff;
   box-shadow: none;
@@ -639,6 +654,7 @@
 }
 
 .article-audio__timeline {
+  grid-area: timeline;
   min-width: 0;
 }
 
@@ -659,7 +675,7 @@
   grid-template-columns: repeat(96, minmax(2px, 1fr));
   align-items: center;
   gap: 2px;
-  min-height: 58px;
+  min-height: 52px;
   padding: 0.25rem 0;
   border-radius: 10px;
   cursor: pointer;
@@ -684,8 +700,11 @@
 }
 
 .article-audio__speed {
+  grid-area: speed;
+  justify-self: center;
   display: inline-flex;
   align-items: center;
+  width: min(100%, 360px);
   padding: 0.2rem;
   border-radius: 999px;
   background: rgba(118, 118, 128, 0.12);
@@ -693,7 +712,8 @@
 }
 
 .article-audio__speed button {
-  min-width: 50px;
+  flex: 1 1 0;
+  min-width: 0;
   min-height: 44px;
   padding: 0 0.8rem;
   border: 0;
@@ -701,8 +721,9 @@
   background: transparent;
   color: #1d1d1f;
   font-weight: 800;
-  font-size: 0.86rem;
+  font-size: 0.95rem;
   cursor: pointer;
+  appearance: none;
 }
 
 .article-audio__speed button:hover,
@@ -717,18 +738,22 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
 }
 
+.article-audio__download {
+  grid-area: download;
+  justify-self: end;
+}
+
 @media (max-width: 860px) {
   .article-audio.is-enhanced .article-audio__player {
     grid-template-columns: 1fr auto;
-  }
-
-  .article-audio__transport,
-  .article-audio__timeline {
-    grid-column: 1 / -1;
+    grid-template-areas:
+      "transport download"
+      "timeline timeline"
+      "speed speed";
   }
 
   .article-audio__transport {
-    justify-content: center;
+    justify-content: start;
   }
 }
 
@@ -739,6 +764,11 @@
 
   .article-audio.is-enhanced .article-audio__player {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "transport"
+      "timeline"
+      "speed"
+      "download";
     gap: 0.75rem;
     padding: 0.85rem;
     border-radius: 16px;
@@ -747,10 +777,6 @@
   .article-audio__speed {
     justify-content: center;
     width: 100%;
-  }
-
-  .article-audio__speed button {
-    flex: 1 1 0;
   }
 
   .article-audio__download {
