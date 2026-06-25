@@ -449,8 +449,11 @@ def publish_posts(
             audio_caption = format_telegram_audio_caption(post, article_url)
             try:
                 send_audio_func(bot_token, chat_id, post.audio_url, audio_caption, post.title)
-            except Exception as exc:
-                print(f"Warning: Failed to send audio for {post_path.name}: {exc}", file=sys.stderr)
+            except Exception as exc:  # noqa: BLE001
+                print(
+                    f"Telegram audio publish skipped for {post.path}: {exc}",
+                    file=sys.stderr,
+                )
         published_count += 1
 
     return published_count
