@@ -40,7 +40,7 @@ El país usa más **energías renovables** para producir electricidad.
 *Artículo educativo generado con fines de aprendizaje de idiomas.*
 """
 
-AUDIO_POST_TEMPLATE = """---
+POST_WITH_AUDIO_TEMPLATE = """---
 title: "España tiene menos contaminación"
 date: 2026-03-17 04:09:15
 level: A2
@@ -49,11 +49,12 @@ sources:
 - name: "elpais.com"
   url: "https://elpais.com"
 audio:
-  url: "https://media.spaili.com/articles/2026/03/espana/article.mp3"
+  url: "https://media.spaili.com/articles/2026/03/espana-a2/article.mp3"
   format: "mp3"
   mime_type: "audio/mpeg"
   provider: "openai"
   voice: "alloy"
+  duration_seconds: 105
 reading_time: 2
 ---
 
@@ -114,13 +115,17 @@ def test_parse_jekyll_post_extracts_frontmatter_body_and_vocabulary(tmp_path):
 
 
 def test_parse_jekyll_post_extracts_audio_frontmatter(tmp_path):
-    post_path = write_post(tmp_path, "2026-03-17-040915-espana-a2.md", AUDIO_POST_TEMPLATE)
+    post_path = write_post(
+        tmp_path,
+        "2026-03-17-040915-espana-a2.md",
+        content=POST_WITH_AUDIO_TEMPLATE,
+    )
 
     post = parse_jekyll_post(post_path)
 
-    assert post.audio_url == "https://media.spaili.com/articles/2026/03/espana/article.mp3"
-    assert post.audio_format == "mp3"
+    assert post.audio_url == "https://media.spaili.com/articles/2026/03/espana-a2/article.mp3"
     assert post.audio_mime_type == "audio/mpeg"
+    assert post.audio_duration_seconds == 105
 
 
 def test_build_article_url_uses_timestamped_slug_and_site_config(tmp_path):
@@ -214,51 +219,15 @@ def test_publish_posts_sends_messages_in_filename_order(tmp_path):
     assert 'href="https://spai.aizlabs.ch/articles/184500-segundo-b1/"' in sent_messages[1]
 
 
-def test_publish_posts_sends_native_audio_after_article_message(tmp_path):
-    config_path = write_site_config(tmp_path, url="https://spaili.com")
-    post_path = write_post(tmp_path, "2026-03-17-040915-espana-a2.md", AUDIO_POST_TEMPLATE)
-    events: list[tuple[str, str]] = []
-
-    def fake_send(bot_token: str, chat_id: str, message: str) -> None:
-        assert bot_token == "bot-token"
-        assert chat_id == "channel-id"
-        events.append(("message", message))
-
-    def fake_send_audio(
-        bot_token: str,
-        chat_id: str,
-        audio_url: str,
-        caption: str,
-        title: str,
-    ) -> None:
-        assert bot_token == "bot-token"
-        assert chat_id == "channel-id"
-        assert title == "España tiene menos contaminación"
-        assert audio_url == "https://media.spaili.com/articles/2026/03/espana/article.mp3"
-        events.append(("audio", caption))
-
-    published_count = publish_posts(
-        [post_path],
-        config_path=config_path,
-        bot_token="bot-token",
-        chat_id="channel-id",
-        send_func=fake_send,
-        send_audio_func=fake_send_audio,
+def test_publish_posts_sends_audio_when_post_has_audio_url(tmp_path):
+    config_path = write_site_config(tmp_path)
+    post_path = write_post(
+        tmp_path,
+        "2026-03-17-040915-espana-a2.md",
+        content=POST_WITH_AUDIO_TEMPLATE,
     )
-
-    assert published_count == 1
-    assert events[0][0] == "message"
-    assert events[1] == (
-        "audio",
-        '<b>Audio del artículo</b>\n'
-        '<a href="https://spaili.com/articles/040915-espana-a2/">Leer en la web</a>',
-    )
-
-
-def test_publish_posts_keeps_article_success_when_optional_audio_fails(tmp_path, capsys):
-    config_path = write_site_config(tmp_path, url="https://spaili.com")
-    post_path = write_post(tmp_path, "2026-03-17-040915-espana-a2.md", AUDIO_POST_TEMPLATE)
     sent_messages: list[str] = []
+    sent_audio: list[tuple[TelegramPost, str]] = []
 
     def fake_send(bot_token: str, chat_id: str, message: str) -> None:
         sent_messages.append(message)
@@ -266,26 +235,79 @@ def test_publish_posts_keeps_article_success_when_optional_audio_fails(tmp_path,
     def fake_send_audio(
         bot_token: str,
         chat_id: str,
-        audio_url: str,
-        caption: str,
-        title: str,
+        post: TelegramPost,
+        article_url: str,
     ) -> None:
-        raise RuntimeError("Telegram could not fetch audio")
+        assert bot_token == "bot-token"
+        assert chat_id == "channel-id"
+        sent_audio.append((post, article_url))
 
-    published_count = publish_posts(
+    publish_posts(
         [post_path],
         config_path=config_path,
         bot_token="bot-token",
         chat_id="channel-id",
         send_func=fake_send,
-        send_audio_func=fake_send_audio,
+        audio_send_func=fake_send_audio,
     )
 
-    captured = capsys.readouterr()
-    assert published_count == 1
-    assert len(sent_messages) == 1
-    assert "Telegram audio publish skipped for" in captured.err
-    assert "Telegram could not fetch audio" in captured.err
+    assert sent_messages == []
+    assert len(sent_audio) == 1
+    post, article_url = sent_audio[0]
+    assert post.title == "España tiene menos contaminación"
+    assert post.audio_url == "https://media.spaili.com/articles/2026/03/espana-a2/article.mp3"
+    assert article_url == "https://spai.aizlabs.ch/articles/040915-espana-a2/"
+
+
+def test_send_telegram_audio_uses_audio_metadata_and_web_button():
+    captured_payloads: list[dict] = []
+
+    post = TelegramPost(
+        path=Path("output/_posts/2026-03-17-040915-espana-a2.md"),
+        title="España tiene menos contaminación",
+        level="A2",
+        reading_time=2,
+        paragraphs=[],
+        vocabulary_lines=[],
+        audio_url="https://media.spaili.com/articles/2026/03/espana-a2/article.mp3",
+        audio_mime_type="audio/mpeg",
+        audio_duration_seconds=105,
+    )
+
+    def fake_opener(req, timeout):  # noqa: ANN001, ANN002
+        assert req.full_url == "https://api.telegram.org/botbot-token/sendAudio"
+        captured_payloads.append(json.loads(req.data.decode("utf-8")))
+        return DummyResponse(b'{"ok": true, "result": {"message_id": 1}}')
+
+    send_telegram_audio(
+        "bot-token",
+        "channel-id",
+        post,
+        "https://example.com/articles/040915-espana-a2/",
+        opener=fake_opener,
+    )
+
+    assert captured_payloads == [
+        {
+            "chat_id": "channel-id",
+            "audio": "https://media.spaili.com/articles/2026/03/espana-a2/article.mp3",
+            "title": "España tiene menos contaminación",
+            "performer": "Spai • A2",
+            "caption": "<b>España tiene menos contaminación</b>\n<i>A2 • 2 min</i>",
+            "parse_mode": "HTML",
+            "reply_markup": {
+                "inline_keyboard": [
+                    [
+                        {
+                            "text": "Leer en la web",
+                            "url": "https://example.com/articles/040915-espana-a2/",
+                        }
+                    ]
+                ]
+            },
+            "duration": 105,
+        }
+    ]
 
 
 def test_send_telegram_message_retries_on_429_with_retry_after():
@@ -342,32 +364,3 @@ def test_send_telegram_message_retries_on_500():
 
     assert attempts["count"] == 2
     assert sleep_calls == [1]
-
-
-def test_send_telegram_audio_uses_send_audio_payload():
-    captured_payloads: list[dict[str, str]] = []
-
-    def fake_opener(req, timeout):  # noqa: ANN001, ANN002
-        assert req.full_url == "https://api.telegram.org/botbot-token/sendAudio"
-        captured_payloads.append(json.loads(req.data.decode("utf-8")))
-        return DummyResponse(b'{"ok": true, "result": {"message_id": 1}}')
-
-    send_telegram_audio(
-        "bot-token",
-        "channel-id",
-        "https://media.spaili.com/articles/test/article.mp3",
-        "<b>Audio del artículo</b>",
-        "España tiene menos contaminación",
-        opener=fake_opener,
-    )
-
-    assert captured_payloads == [
-        {
-            "chat_id": "channel-id",
-            "audio": "https://media.spaili.com/articles/test/article.mp3",
-            "caption": "<b>Audio del artículo</b>",
-            "parse_mode": "HTML",
-            "title": "España tiene menos contaminación",
-            "performer": "Spaili",
-        }
-    ]
