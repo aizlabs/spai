@@ -269,7 +269,7 @@ MIT License - see [LICENSE](LICENSE) file
 ## 📧 Contact
 
 - **Repository:** [github.com/aizlabs/spai](https://github.com/aizlabs/spai)
-- **Issues:** [github.com/aizlabs/spai/issues)
+- **Issues:** [github.com/aizlabs/spai/issues](https://github.com/aizlabs/spai/issues)
 - **Live Site:** [spaili.com](https://spaili.com)
 
 ---
