@@ -1,6 +1,18 @@
 from pathlib import Path
 
 
+def test_homepage_uses_compact_overview_strip():
+    homepage = Path("output/index.html").read_text(encoding="utf-8")
+
+    assert 'class="home-overview"' in homepage
+    assert "Aprende español con noticias reales" in homepage
+    assert "/articles/bienvenidos-a-autospanishblog/" in homepage
+    assert 'class="level-box" data-level="A2" role="button" tabindex="0"' in homepage
+    assert 'class="level-box" data-level="B1" role="button" tabindex="0"' in homepage
+    assert 'class="featured-section"' not in homepage
+    assert 'class="featured-card"' not in homepage
+
+
 def test_post_layout_does_not_render_audio_voice_label():
     layout = Path("output/_layouts/post.html").read_text(encoding="utf-8")
 

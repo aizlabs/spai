@@ -4,42 +4,37 @@ title: "Spai"
 excerpt: "Learn Spanish with automatically generated articles from real news sources. New content daily at A2 and B1 levels."
 ---
 
-<div class="intro-section">
-  <p class="lead">
-    Aprende español leyendo artículos de actualidad adaptados a tu nivel. Contenido nuevo todos los días.
-  </p>
-
-  <div class="level-info">
-    <div class="level-box" data-level="A2" role="button" tabindex="0">
-      <span class="level-badge level-a2">A2</span>
-      <h3>Principiante</h3>
-      <p>Artículos sencillos con vocabulario básico y presente simple.</p>
-    </div>
-    <div class="level-box" data-level="B1" role="button" tabindex="0">
-      <span class="level-badge level-b1">B1</span>
-      <h3>Intermedio</h3>
-      <p>Artículos más complejos con diferentes tiempos verbales.</p>
-    </div>
+<section class="home-overview" aria-labelledby="home-overview-title">
+  <div class="home-overview__intro">
+    <h1 id="home-overview-title">Aprende español con noticias reales</h1>
+    <p>Artículos de actualidad adaptados a tu nivel. Contenido nuevo todos los días.</p>
   </div>
-</div>
 
-<!-- Featured Welcome Post -->
-<div class="featured-section">
-  <div class="featured-badge">
-    <i class="fas fa-star"></i> Empieza Aquí
-  </div>
-  <article class="featured-card">
-    <div class="featured-content">
-      <div class="featured-text">
-        <h2>¿Nuevo en Spai?</h2>
-        <p>Descubre cómo este sitio te ayuda a aprender español con noticias reales. ¡Lee nuestra guía de bienvenida para empezar!</p>
+  <div class="home-overview__learning">
+    <div class="level-info" aria-label="Elige un nivel">
+      <div class="level-box" data-level="A2" role="button" tabindex="0" aria-label="Filtrar artículos A2 para principiantes">
+        <span class="level-badge level-a2">A2</span>
+        <span class="level-box__text">
+          <strong>Principiante</strong>
+          <span>Vocabulario básico y presente simple.</span>
+        </span>
       </div>
-      <a href="{{ '/articles/bienvenidos-a-autospanishblog/' | relative_url }}" class="featured-btn">
-        Leer Guía de Bienvenida <i class="fas fa-arrow-right"></i>
-      </a>
+      <div class="level-box" data-level="B1" role="button" tabindex="0" aria-label="Filtrar artículos B1 intermedios">
+        <span class="level-badge level-b1">B1</span>
+        <span class="level-box__text">
+          <strong>Intermedio</strong>
+          <span>Tiempos verbales variados y textos más largos.</span>
+        </span>
+      </div>
     </div>
-  </article>
-</div>
+
+    <a href="{{ '/articles/bienvenidos-a-autospanishblog/' | relative_url }}" class="welcome-link">
+      <span>¿Nuevo en Spai?</span>
+      <strong>Leer guía de bienvenida</strong>
+      <i class="fas fa-arrow-right" aria-hidden="true"></i>
+    </a>
+  </div>
+</section>
 
 <div class="filter-section">
   <h2>Últimos Artículos</h2>
