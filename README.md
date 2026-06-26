@@ -6,11 +6,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
 
-AutoSpanishBlog automatically generates high-quality Spanish learning articles from real news sources. The published site runs as **Spai** at [spaili.com](https://spaili.com), with new content published 3x daily at A2 and B1 CEFR levels.
+AutoSpanishBlog automatically generates high-quality Spanish learning articles from real news sources. The published site runs as **Spai** at [spaili.com](https://spaili.com), with new content published daily at A2 and B1 CEFR levels.
 
 ## 🎯 Features
 
-- **Automated Generation:** up to 12 articles/day from 20+ active sources
+- **Automated Generation:** up to 4 articles/day from 20+ active sources
 - **Multi-Source Synthesis:** Original content from 3-5 sources per article
 - **CEFR Levels:** A2 (beginner) and B1 (intermediate)
 - **Quality Assurance:** LLM judge with 7.5/10 minimum score
@@ -149,9 +149,12 @@ Each article synthesizes information from **3-5 different sources**:
 
 ## 🔄 Automation
 
-**Schedule:** 3x daily (2am, 10am, 6pm UTC)
-**Output:** 4 articles per run = 12 articles/day
-**Cost:** ~$10-12/month (LLM API calls only)
+**Schedule:** 1x daily (2am UTC)
+**Output:** 4 articles per run = 4 articles/day
+**Cost:** ~$3-4/month (LLM API calls only)
+
+To adjust volume later, change the schedule in `.github/workflows/generate.yml` and the
+per-run article count in `config/base.yaml` (`generation.articles_per_run`).
 
 ### Alerting and notifications
 
@@ -178,7 +181,7 @@ Each article synthesizes information from **3-5 different sources**:
 name: Generate Articles
 on:
   schedule:
-    - cron: '0 2,10,18 * * *'
+    - cron: '0 2 * * *'
   workflow_dispatch:  # Manual trigger
 ```
 
@@ -209,8 +212,8 @@ Features:
 **Monthly Operating Costs:**
 - GitHub Actions: $0 (free tier)
 - GitHub Pages: $0 (free hosting)
-- OpenAI API: ~$10-12 (360 articles/month)
-- **Total: $10-12/month**
+- OpenAI API: ~$3-4 (120 articles/month)
+- **Total: $3-4/month**
 
 **Per Article Cost:** ~$0.03 (including regenerations)
 

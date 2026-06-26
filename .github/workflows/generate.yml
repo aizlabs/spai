@@ -2,10 +2,8 @@ name: Generate Spanish Learning Articles
 
 on:
   schedule:
-    # 3x daily: 2am, 10am, 6pm UTC
+    # Once daily at 02:00 UTC
     - cron: '0 2 * * *'
-    - cron: '0 10 * * *'
-    - cron: '0 18 * * *'
   workflow_dispatch:  # Manual trigger button
 
 # Prevent overlapping runs
