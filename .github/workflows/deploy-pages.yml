@@ -231,18 +231,20 @@ jobs:
       - name: Summarize Telegram publish warning
         if: always() && steps.publish.outcome == 'failure'
         run: |
-          echo "### Telegram publish warning" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "GitHub Pages deployment succeeded, but Telegram article publishing failed." >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Article files:**" >> "$GITHUB_STEP_SUMMARY"
-          sed 's/^/- /' telegram_posts.txt >> "$GITHUB_STEP_SUMMARY"
-          if [ -f telegram_publish.log ]; then
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo '```text' >> "$GITHUB_STEP_SUMMARY"
-            tail -n 50 telegram_publish.log >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-          fi
+          {
+            echo "### Telegram publish warning"
+            echo ""
+            echo "GitHub Pages deployment succeeded, but Telegram article publishing failed."
+            echo ""
+            echo "**Article files:**"
+            sed 's/^/- /' telegram_posts.txt
+            if [ -f telegram_publish.log ]; then
+              echo ""
+              echo '```text'
+              tail -n 50 telegram_publish.log
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
           echo "::warning::Telegram article publishing failed. See the workflow summary for details."
 
       - name: Notify operators about Telegram publish failure
